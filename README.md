@@ -63,5 +63,11 @@ Foca-se em Behavior Coverage e na prova inegável de execução de testes: afirm
 
 ## Instalação no Antigravity
 
-Copie o diretório `.agents/` para a raiz do seu projeto. O Antigravity IDE descobre automaticamente as `skills` e `agents` ali presentes.
+Copie o diretório `.agents/` para a raiz do seu novo projeto. O Antigravity IDE descobre automaticamente as `skills` e `agents` ali presentes.
 O agente de entrada principal de delegação não-trivial é o **`orchestrator`**.
+
+---
+
+### Project-Agnostic Core
+A partir da versão mais recente, o XP Multi-Agent Kit tornou-se puramente agnóstico de projetos. Toda a inteligência do kit (workflows, policies, skills e agents) está contida estritamente na pasta `.agents/`.
+Para novos projetos, basta colar esta pasta e seguir com os prompts descritivos no Antigravity IDE. A infraestrutura de CI/CD não está mais acoplada.
