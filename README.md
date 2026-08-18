@@ -1,8 +1,6 @@
 # XP Multi-Agent Kit  (Antigravity)
 
-Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco.
-
-A V2 substitui o pipeline linear (onde todos os agentes executam em sequência) por um workflow dinâmico e flexível (L0 a L3), orquestrando disciplinas essenciais: TDD Estrito, Secure Software Development (SSDLC), Arquitetura de Dados e Design System/Frontend.
+Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco. É flexível (L0 a L3), orquestrando disciplinas essenciais: TDD Estrito, Secure Software Development (SSDLC), Arquitetura de Dados e Design System/Frontend.
 
 > **Regra de Ouro**: Use o menor número de agentes, skills e etapas capaz de produzir uma mudança correta, testada, segura, acessível, observável e sustentável.
 
