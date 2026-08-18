@@ -1,0 +1,15 @@
+{
+  "execution_id": "exec_afd348b85979d22b",
+  "command": "npx vitest run tests/stats.test.ts",
+  "task_id": null,
+  "target": null,
+  "workspace_hash": "07d146dc07b29e7f",
+  "status": "COMPLETED",
+  "exit_code": 1,
+  "stdout": "\n RUN  v4.1.11 /home/andrevmp/Downloads/xp-multiagent-kit/taskboard/backend\n\nstdout | tests/stats.test.ts\n◇ injected env (2) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }\n\n{\"level\":30,\"time\":1787067562248,\"pid\":371651,\"hostname\":\"andrevmp-pc\",\"reqId\":\"req-1\",\"req\":{\"method\":\"GET\",\"url\":\"/stats\",\"host\":\"localhost:80\",\"remoteAddress\":\"127.0.0.1\"},\"msg\":\"incoming request\"}\n{\"level\":30,\"time\":1787067562250,\"pid\":371651,\"hostname\":\"andrevmp-pc\",\"reqId\":\"req-1\",\"msg\":\"Route GET:/stats not found\"}\n{\"level\":30,\"time\":1787067562257,\"pid\":371651,\"hostname\":\"andrevmp-pc\",\"reqId\":\"req-1\",\"res\":{\"statusCode\":404},\"responseTime\":7.4591369999999415,\"msg\":\"request completed\"}\n ❯ tests/stats.test.ts (1 test | 1 failed) 201ms\n   × GET /stats should return system stats 198ms\n\n Test Files  1 failed (1)\n      Tests  1 failed (1)\n   Start at  12:39:21\n   Duration  1.02s (transform 93ms, setup 0ms, import 535ms, tests 201ms, environment 0ms)\n\n",
+  "stderr": "(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:\n  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `\"type\": \"module\"` in the closest package.json\nSet `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.\n\n⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯\n\n FAIL  tests/stats.test.ts > GET /stats should return system stats\nAssertionError: expected 404 to be 200 // Object.is equality\n\n- Expected\n+ Received\n\n- 200\n+ 404\n\n ❯ tests/stats.test.ts:12:31\n     10|   });\n     11|\n     12|   expect(response.statusCode).toBe(200);\n       |                               ^\n     13|   const data = JSON.parse(response.payload);\n     14|   expect(data).toHaveProperty('users');\n\n⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯\n\n",
+  "truncated": false,
+  "started_at": "2026-08-18T15:39:20.021Z",
+  "finished_at": "2026-08-18T15:39:22.390Z",
+  "signature": "d3996365e0e8ced5dbc03752bdd3ac75c68b8246a9ee82c5c17a732cdd69dd4b"
+}

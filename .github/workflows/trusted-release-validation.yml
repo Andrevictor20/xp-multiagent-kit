@@ -1,0 +1,51 @@
+name: Trusted Release Validation
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Strict Environment Sanitization
+        run: |
+          # Ensure no malicious NODE_OPTIONS or PATHs are carried over
+          unset NODE_OPTIONS
+          unset NODE_PATH
+          unset LD_PRELOAD
+          unset BASH_ENV
+          export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+      - name: Install Dependencies securely
+        # Using npm ci instead of install for lockfile integrity check
+        run: npm ci
+        working-directory: ./taskboard
+
+      - name: Run Backend Tests
+        run: npm run test:backend
+        working-directory: ./taskboard
+
+      - name: Run Frontend Tests
+        run: npm run test:frontend
+        working-directory: ./taskboard
+
+      - name: Run Security Audits
+        run: npm run test:security
+        working-directory: ./taskboard
+
+      - name: Run E2E Tests
+        run: npm run test:e2e
+        working-directory: ./taskboard

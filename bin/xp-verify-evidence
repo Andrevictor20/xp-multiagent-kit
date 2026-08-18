@@ -1,0 +1,101 @@
+#!/usr/bin/env node
+
+import { execSync } from 'child_process';
+import path from 'path';
+
+// Parse args
+const args = process.argv.slice(2);
+if (args.length !== 1) {
+  console.error("Usage: xp-verify-evidence <exact_commit_sha>");
+  console.error("Note: this script no longer accepts execution_id or branch names.");
+  console.error("It MUST be the exact commit SHA that you want to release.");
+  process.exit(1);
+}
+
+const requestedSha = args[0];
+
+// Validate SHA format (40 hex chars)
+if (!/^[0-9a-f]{40}$/i.test(requestedSha)) {
+  console.error(`[xp-verify-evidence] BLOCK: Invalid SHA format: ${requestedSha}`);
+  process.exit(1);
+}
+
+// Sanitize PATH to ensure we use system git and gh, not agent-injected ones
+const safeEnv = { ...process.env };
+const systemPaths = process.env.PATH.split(path.delimiter).filter(p => !p.startsWith('/tmp') && !p.includes('fake')).join(path.delimiter);
+safeEnv.PATH = systemPaths;
+safeEnv.NODE_OPTIONS = '';
+safeEnv.LD_PRELOAD = '';
+safeEnv.BASH_ENV = '';
+
+console.log(`[xp-verify-evidence] Authenticating with CI authority (GitHub Actions)...`);
+console.log(`[xp-verify-evidence] WARNING: THIS SCRIPT HAS NO REAL AUTHORITY.`);
+console.log(`[xp-verify-evidence] WARNING: The real Release Gate is the Protected CI Workflow.`);
+
+let currentHead;
+try {
+  currentHead = execSync('git rev-parse HEAD', { env: safeEnv, encoding: 'utf-8' }).trim();
+} catch (e) {
+  console.error(`[xp-verify-evidence] BLOCK: Failed to get current HEAD. Are you in a git repository?`);
+  process.exit(1);
+}
+
+if (currentHead !== requestedSha) {
+  console.error(`[xp-verify-evidence] BLOCK: SHA mismatch. requestedSha (${requestedSha}) != local HEAD (${currentHead})`);
+  process.exit(1);
+}
+
+console.log(`[xp-verify-evidence] Checking exact SHA: ${requestedSha}`);
+
+let ghOutput;
+try {
+  // Use gh CLI to fetch the runs for the specific workflow and specific commit
+  // We specify the exact workflow name to avoid trusting any random workflow
+  ghOutput = execSync(`gh run list --workflow "trusted-release-validation.yml" --commit ${requestedSha} --json status,conclusion,headSha,workflowName,databaseId --limit 1`, { env: safeEnv, encoding: 'utf-8' });
+} catch (e) {
+  console.error(`[xp-verify-evidence] BLOCK: Failed to communicate with GitHub API. Is 'gh' installed and authenticated?`);
+  console.error(e.message);
+  process.exit(1);
+}
+
+let runs = [];
+try {
+  runs = JSON.parse(ghOutput);
+} catch (e) {
+  console.error(`[xp-verify-evidence] BLOCK: Invalid JSON from GitHub API.`);
+  process.exit(1);
+}
+
+if (runs.length === 0) {
+  console.error(`[xp-verify-evidence] BLOCK: No trusted CI runs found for SHA ${requestedSha}.`);
+  process.exit(1);
+}
+
+const latestRun = runs[0];
+
+console.log(`[xp-verify-evidence] Found Run ${latestRun.databaseId} for workflow "${latestRun.workflowName}"`);
+console.log(`[xp-verify-evidence] SHA: ${latestRun.headSha} -> Status: ${latestRun.status}, Conclusion: ${latestRun.conclusion}`);
+
+if (latestRun.headSha !== requestedSha) {
+  console.error(`[xp-verify-evidence] BLOCK: CI run SHA (${latestRun.headSha}) does not match requested SHA (${requestedSha}).`);
+  process.exit(1);
+}
+
+if (latestRun.workflowName !== 'Trusted Release Validation') {
+  console.error(`[xp-verify-evidence] BLOCK: CI run was not executed by the trusted workflow. Found: ${latestRun.workflowName}`);
+  process.exit(1);
+}
+
+if (latestRun.status !== 'completed') {
+  console.error(`[xp-verify-evidence] BLOCK: CI run is still ${latestRun.status}. Wait for it to finish.`);
+  process.exit(1);
+}
+
+if (latestRun.conclusion !== 'success') {
+  console.error(`[xp-verify-evidence] FAIL: CI run finished with conclusion: ${latestRun.conclusion}.`);
+  process.exit(1);
+}
+
+console.log(`[xp-verify-evidence] LOCAL_TEST_PASS: Evidence is VALID externally.`);
+console.log(`[xp-verify-evidence] Note: This script is informational. The actual release must be performed by the CI itself.`);
+process.exit(0);
