@@ -52,14 +52,14 @@ jobs:
         run: npx prisma db push
         working-directory: ./taskboard/backend
         env:
-          DATABASE_URL: postgresql://admin:admin@localhost:5432/taskboard?schema=public
+          DATABASE_URL: postgresql://taskboard:taskboard_password@localhost:5432/taskboard?schema=public
 
       - name: Run Backend Tests
         run: npm run test
         working-directory: ./taskboard/backend
         env:
           JWT_SECRET: test-secret-for-ci
-          DATABASE_URL: postgresql://admin:admin@localhost:5432/taskboard?schema=public
+          DATABASE_URL: postgresql://taskboard:taskboard_password@localhost:5432/taskboard?schema=public
 
       - name: Run Frontend Tests
         run: npm run test
