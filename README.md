@@ -56,10 +56,10 @@ O `orchestrator` lê o pedido, preenche conceitualmente um **Task Contract** (Si
 - **L2 (Feature)**: Aciona o `sentinel` e `designer` apenas se aplicável. Requer níveis maiores de evidência.
 - **L3 (Critical)**: Passagem obrigatória pelo `sentinel` para Threat Modeling, revisão de design, testes extensos e validação antes do release.
 
-## TDD e Evidence Walkthrough
+## TDD e Native Toolchain Execution Evidence
 
-TDD continua sendo o pilar do Kit. Porém, sem métricas arbitrárias de volume de código.
-Foca-se em Behavior Coverage e na prova inegável de execução de testes: afirmações verbais (ex: "Os testes passaram") sem a saída colada do terminal/runner não permitem que a tarefa avance de RED para GREEN, ou de GREEN para Release.
+TDD continua sendo o pilar do Kit. Porém, sem métricas arbitrárias de volume de código ou dependências de scripts estritos de runtime legados.
+Foca-se em Behavior Coverage e na prova inegável da execução **nativa** da toolchain do seu projeto (ex: `npm test`, `pytest`, `cargo test`). Afirmações verbais (ex: "Os testes passaram") sem a saída e o comando reais executados não permitem que a tarefa avance de RED para GREEN, e muito menos para um Release.
 
 ## Instalação no Antigravity
 
