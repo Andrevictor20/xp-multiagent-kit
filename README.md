@@ -1,4 +1,4 @@
-# XP Multi-Agent Kit v2 (Antigravity)
+# XP Multi-Agent Kit  (Antigravity)
 
 Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco.
 
