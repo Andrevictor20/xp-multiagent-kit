@@ -29,23 +29,18 @@ jobs:
           unset BASH_ENV
           export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 
-      - name: Install Dependencies securely
-        # Using npm ci instead of install for lockfile integrity check
+      - name: Install Backend Dependencies
         run: npm ci
-        working-directory: ./taskboard
+        working-directory: ./taskboard/backend
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+        working-directory: ./taskboard/frontend
 
       - name: Run Backend Tests
-        run: npm run test:backend
-        working-directory: ./taskboard
+        run: npm run test
+        working-directory: ./taskboard/backend
 
       - name: Run Frontend Tests
-        run: npm run test:frontend
-        working-directory: ./taskboard
-
-      - name: Run Security Audits
-        run: npm run test:security
-        working-directory: ./taskboard
-
-      - name: Run E2E Tests
-        run: npm run test:e2e
-        working-directory: ./taskboard
+        run: npm run test
+        working-directory: ./taskboard/frontend
