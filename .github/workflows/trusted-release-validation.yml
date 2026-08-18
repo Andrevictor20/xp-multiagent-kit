@@ -37,6 +37,10 @@ jobs:
         run: npm ci
         working-directory: ./taskboard/frontend
 
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        working-directory: ./taskboard/backend
+
       - name: Run Backend Tests
         run: npm run test
         working-directory: ./taskboard/backend
