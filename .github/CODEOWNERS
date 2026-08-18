@@ -2,7 +2,7 @@
 # This file is used to enforce external release authority.
 # Any changes to CI workflows or release policies MUST be approved by the designated owner.
 
-.github/workflows/*  @admin
-.github/CODEOWNERS   @admin
-.agents/policies/*   @admin
-bin/*                @admin
+.github/workflows/*  @Andrevictor20
+.github/CODEOWNERS   @Andrevictor20
+.agents/policies/*   @Andrevictor20
+bin/*                @Andrevictor20
