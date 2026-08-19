@@ -61,7 +61,7 @@ Foca-se em Behavior Coverage e na prova inegável da execução **nativa** da to
 
 ## Instalação no Antigravity
 
-Copie o diretório `.agents/` para a raiz do seu novo projeto. O Antigravity IDE descobre automaticamente as `skills` e `agents` ali presentes.
+Copie o diretório `.agents/` e o arquivo `AGENTS.md` para a raiz do seu novo projeto. O Antigravity IDE descobre automaticamente as `skills`, `agents` e regras globais ali presentes.
 O agente de entrada principal de delegação não-trivial é o **`orchestrator`**.
 
 ---
