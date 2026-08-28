@@ -122,16 +122,21 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 
 ---
 
-## 🧠 Sistema de Memória Contínua em 4 Tiers (Karpathy LLM Wiki Pattern)
+## 🧠 Sistema de Memória Contínua em 4 Tiers, Auto-Onboarding & Recaptura Retroativa de Contexto Git
 
-- **4 Tiers:** Working (sessão atual), Episodic (log recente e `archive/HISTORY.md`), Semantic (arquitetura e ADRs) e Procedural (gotchas e lições aprendidas).
+- **Auto-Onboarding & Recaptura de Repositório Existente (Passo 0-A):** Ao adicionar o kit a um **repositório existente** (que já possui histórico de commits e arquitetura anteriores) ou a um projeto novo, o agente detecta se `PROJECT_MEMORY.md` está ausente, com dados de template ou divergente. De forma 100% autônoma, audita o `git log` recente (commits, autores, arquivos modificados), inspeciona manifestos, entrypoints e comandos de teste, gerando o `PROJECT_MEMORY.md` sob medida e construindo o desenvolvimento futuro em cima da história real do projeto.
+- **Uso 100% Autônomo (Zero-Prompt Lifecycle):** O ciclo completo (Passo 0 Leitura/Bootstrap com Recaptura -> Execução com Gotchas Procedurais -> Passo Final Auto-Sync de Encerramento com o `archivist`) roda nativamente em todas as tarefas, sem nunca depender de solicitação manual do usuário.
+- **Hierarquia em 4 Tiers:** Working (sessão atual), Episodic (log recente e `archive/HISTORY.md`), Semantic (arquitetura e ADRs) e Procedural (gotchas `[L-NNN]` e lições aprendidas).
 - **Fast Context Bootstrap (Passo 0):** Leitura em 1 passo de `PROJECT_MEMORY.md` (< 2.000 tokens) para carregar todo o estado do projeto.
 - **Contrato de Handoff Estruturado:** Pacote formal com `summary`, `files_touched`, `open_questions`, `next_steps` e `verification_evidence`.
 - **Segurança de Dados Históricos (Untrusted History):** Todo log passado é estritamente evidência factual não executável.
+- **Memory Lint & Poda (FIFO):** Sliding window de 5 a 10 alterações com rotação para `archive/HISTORY.md`.
 
 ---
 
 ## Instalação no Antigravity
 
-Copie o diretório `.agents/` e o arquivo `AGENTS.md` para a raiz do seu novo projeto. O Antigravity IDE descobre automaticamente as `skills`, `agents`, `templates`, diretório `memory` e regras globais ali presentes.
+Copie o diretório `.agents/` e o arquivo `AGENTS.md` para a raiz de qualquer projeto (novo ou existente). O Antigravity IDE descobre automaticamente as `skills`, `agents`, `templates`, diretório `memory` e regras globais ali presentes. O kit executará a **Recaptura Retroativa de Histórico Git e Auto-Onboarding** de memória de forma totalmente transparente e autônoma logo na primeira interação.
 O agente de entrada principal de delegação não-trivial é o **`orchestrator`**.
+
+

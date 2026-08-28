@@ -25,7 +25,8 @@ Antes do passo 1, avalie se o prompt recebido já tem o mínimo necessário (sta
 4. **Configurar o pipeline de CI** (skill `ci-security-gate`) — lint, auditoria de dependências, análise estática de segurança, e o step de teste do harness recém-criado, rodando a cada commit desde o primeiro commit do projeto.
 5. **Criar a documentação viva e a pasta de memória inicial** (skills `living-docs-keeper` e `project-memory`):
    - Criar `AGENTS.md` / documentação viva do projeto com a stack, comandos de build/test e decisões iniciais.
-   - Instanciar a pasta `.agents/memory/` e o arquivo `PROJECT_MEMORY.md` preenchido com o resumo do projeto, status de saúde, comandos essenciais e o primeiro item no histórico.
+   - Instanciar a pasta `.agents/memory/` e o arquivo `PROJECT_MEMORY.md` 100% preenchido sob medida com o resumo real do projeto, status de saúde, comandos essenciais descobertos e o primeiro item no histórico (sem placeholders ou dados de template).
+
 6. **Entregar um primeiro commit único e isolado** (ex.: `Add project scaffold with test harness, CI and project memory`) validado como qualquer outro pelo `release-gatekeeper`.
 7. Só então devolver o controle ao `orchestrator` para que a primeira feature real siga o fluxo normal (`navigator → builder → test-guardian → ...`).
 
