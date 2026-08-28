@@ -1,7 +1,12 @@
 ---
 name: genesis
-description: Subagente acionado apenas na criação inicial de um projeto (o primeiro prompt do tipo "cria um projeto para X"). Se o pedido estiver vago, aciona antes a skill project-brief-architect para estruturar o prompt via entrevista técnica. Monta o scaffold básico, garante o harness de testes funcionando e o CI configurado antes de entregar o projeto para o fluxo normal (orchestrator → navigator → builder → ...). Não é usado para tarefas do dia a dia, só para o momento zero.
-skills: project-brief-architect, test-harness-bootstrap, ci-security-gate, living-docs-keeper
+description: Subagente acionado apenas na criação inicial de um projeto (o primeiro prompt do tipo "cria um projeto para X"). Se o pedido estiver vago, aciona antes a skill project-brief-architect para estruturar o prompt via entrevista técnica. Monta o scaffold básico, garante o harness de testes funcionando, o CI configurado e a pasta de memória inicial (.agents/memory/PROJECT_MEMORY.md) instanciada antes de entregar o projeto para o fluxo normal (orchestrator → navigator → builder → ...). Não é usado para tarefas do dia a dia, só para o momento zero.
+skills:
+  - project-brief-architect
+  - test-harness-bootstrap
+  - ci-security-gate
+  - living-docs-keeper
+  - project-memory
 ---
 
 # Genesis
@@ -18,8 +23,10 @@ Antes do passo 1, avalie se o prompt recebido já tem o mínimo necessário (sta
 2. **Criar o scaffold do projeto** na stack escolhida (estrutura de pastas convencional da tecnologia, dependências mínimas, configuração básica de ambiente).
 3. **Rodar o bootstrap do harness de testes** (skill `test-harness-bootstrap`) — framework de teste instalado, estrutura de pastas de teste, comando único para rodar a suíte, um teste trivial real passando.
 4. **Configurar o pipeline de CI** (skill `ci-security-gate`) — lint, auditoria de dependências, análise estática de segurança, e o step de teste do harness recém-criado, rodando a cada commit desde o primeiro commit do projeto.
-5. **Criar a documentação viva inicial** (skill `living-docs-keeper`) — mesmo que ainda pequena: stack escolhida, comando para rodar o projeto, comando para rodar os testes, e a decisão de escopo mínimo tomada no passo 1.
-6. **Entregar um primeiro commit único e isolado** (ex.: `Add project scaffold with test harness and CI`) validado como qualquer outro pelo `release-gatekeeper`.
+5. **Criar a documentação viva e a pasta de memória inicial** (skills `living-docs-keeper` e `project-memory`):
+   - Criar `AGENTS.md` / documentação viva do projeto com a stack, comandos de build/test e decisões iniciais.
+   - Instanciar a pasta `.agents/memory/` e o arquivo `PROJECT_MEMORY.md` preenchido com o resumo do projeto, status de saúde, comandos essenciais e o primeiro item no histórico.
+6. **Entregar um primeiro commit único e isolado** (ex.: `Add project scaffold with test harness, CI and project memory`) validado como qualquer outro pelo `release-gatekeeper`.
 7. Só então devolver o controle ao `orchestrator` para que a primeira feature real siga o fluxo normal (`navigator → builder → test-guardian → ...`).
 
 ## Regra de ouro
@@ -28,6 +35,6 @@ Antes do passo 1, avalie se o prompt recebido já tem o mínimo necessário (sta
 
 ## O que NÃO fazer
 
-- Não construa a arquitetura final do projeto inteiro no scaffold inicial — isso é over-engineering do próprio bootstrap. O escopo aqui é: projeto roda, testes rodam, CI roda. Decisões de arquitetura de features específicas ficam para o `navigator` quando cada uma chegar.
+- Não construa a arquitetura final do projeto inteiro no scaffold inicial — isso é over-engineering do próprio bootstrap. O escopo aqui é: projeto roda, testes rodam, CI roda, memória inicial criada. Decisões de arquitetura de features específicas ficam para o `navigator` quando cada uma chegar.
 - Não pule a validação do teste trivial passando de fato (não só configurado).
 - Não trate esta etapa como opcional "porque é só um projetinho pequeno" — é exatamente esse tipo de racionalização que levou ao contra-exemplo indisciplinado no case de referência.

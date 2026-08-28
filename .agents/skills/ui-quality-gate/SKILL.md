@@ -1,38 +1,36 @@
 ---
 name: ui-quality-gate
-description: Gate de qualidade de interface aplicado depois que uma UI é implementada — acessibilidade (contraste, foco de teclado, semântica), responsividade (mobile a desktop), respeito a prefers-reduced-motion, e autocrítica visual antes de considerar a feature pronta. Complementa a skill de direção estética (frontend-design): aquela decide a direção visual, esta valida se a implementação está de fato pronta para produção. Use sempre que uma feature envolver componente de UI novo ou alterado, antes de passar para o refactor-warden/release-gatekeeper.
+description: Gate de qualidade de interface aplicado depois que uma UI é implementada — acessibilidade (contraste WCAG AA, foco de teclado, semântica), responsividade real (min-h-[100dvh], single-line nav), respeito a prefers-reduced-motion, ban de quebra de CTA e autocrítica anti-slop antes do release. Complementa as skills de direção estética.
 ---
 
 # UI Quality Gate
 
-Direção estética (paleta, tipografia, personalidade visual — coberta pela skill `frontend-design`) e qualidade de produção são preocupações diferentes. Um design pode ser visualmente distinto e ainda assim quebrar no mobile, ser inacessível de teclado, ou ignorar preferência de movimento reduzido. Esta skill garante a segunda parte.
+A direção estética e a qualidade de produção caminham juntas. Esta skill garante que o código final implementado é robusto, acessível, responsivo e livre de defeitos de layout e clichês de IA.
 
-## Checklist de validação (rodar após a implementação, antes do commit)
+---
 
-**Acessibilidade**
-- Contraste de texto atende no mínimo AA (4.5:1 para texto normal, 3:1 para texto grande) — validar, não estimar visualmente.
-- Todo elemento interativo (botão, link, campo) é alcançável e operável só de teclado, com estado de foco visível.
-- Marcação semântica correta (`button` para ação, `a` para navegação, labels associados a inputs) — não usar `div` com `onClick` para algo que é, na prática, um botão.
-- Imagens informativas têm texto alternativo; imagens puramente decorativas são marcadas como tais.
+## Checklist de Validação Obrigatório (Pré-Commit / Pré-Release)
 
-**Responsividade**
-- Layout testado (ou revisado via screenshot, quando o ambiente permitir) em pelo menos três larguras: mobile estreito, tablet, desktop.
-- Nenhum elemento crítico (ação principal, conteúdo essencial) depende de hover-only em contexto que também precisa funcionar em touch.
-- Texto e espaçamento escalam sem quebrar layout ou criar overflow horizontal indesejado.
+### 1. Acessibilidade & Contraste (WCAG AA)
+- [ ] **Contraste de Texto:** Atende no mínimo 4.5:1 para texto normal e 3:1 para texto grande.
+- [ ] **Contraste de Botões:** O texto de todos os CTAs é legível contra o fundo (proibido botão branco com texto branco ou botão transparente sem borda).
+- [ ] **Contraste de Formulários:** Inputs, placeholders, helper texts e estados de foco passam em 4.5:1 contra o fundo da seção.
+- [ ] **Foco de Teclado:** Todo elemento interativo possui anel de foco visível (`focus-visible:ring-2`).
+- [ ] **Semântica HTML:** Uso de `<button>`, `<a>`, `<nav>`, `<main>`, `<section>` em vez de divs genéricas com `onClick`.
 
-**Movimento e preferências do usuário**
-- Animações respeitam `prefers-reduced-motion` — a interface continua funcional e compreensível com movimento reduzido/desativado.
-- Nenhuma animação bloqueia a leitura do conteúdo ou a ação do usuário (ex. auto-scroll ou auto-avanço sem controle de pausa).
+### 2. Responsividade & Estabilidade de Viewport
+- [ ] **Viewport Stability:** Uso estrito de `min-h-[100dvh]` para heros e seções cheias (NUNCA usar `h-screen`, que causa saltos no iOS Safari).
+- [ ] **Navegação em Uma Linha:** Barra de navegação cabe em uma única linha no desktop, com altura máxima de `80px`.
+- [ ] **CTA Button Wrap Ban:** O texto dos botões principais de CTA cabe em uma única linha no desktop (sem quebra feia de linha).
+- [ ] **Colapso Mobile Explícito:** Layouts assimétricos colapsam com segurança para `grid-cols-1 w-full px-4` em telas `< 768px`.
 
-**Autocrítica visual antes de finalizar**
-- Se o ambiente permitir capturar screenshot da UI implementada, faça isso e compare contra o plano de design aprovado — divergências (espaçamento, alinhamento, hierarquia visual) devem ser corrigidas antes do commit, não deixadas para depois.
-- Pergunta de calibração: esta tela, isolada, poderia ser confundida com o template padrão de qualquer outro projeto gerado por IA? Se sim, isso é um sinal de que a direção da skill `frontend-design` não foi seguida até o fim na implementação — não é motivo para refazer a direção, é motivo para revisar se o código realmente aplicou o plano aprovado.
+### 3. Movimento, Performance & Preferências
+- [ ] **Prefers-Reduced-Motion:** Animações e físicas colapsam para transições estáticas/instantâneas sob `prefers-reduced-motion`.
+- [ ] **Sem Listeners no Window:** Proibido `window.addEventListener('scroll')`. Uso exclusivo de Motion, ScrollTrigger ou IntersectionObserver.
+- [ ] **GPU-Safe:** Transições animam apenas `transform` e `opacity`.
 
-## Quando esta skill NÃO se aplica
-
-- Mudanças que não tocam em UI renderizada (lógica de backend pura, scripts, configuração) não precisam passar por este gate.
-- Protótipos/spikes exploratórios explicitamente descartáveis (ver skill `pair-navigator`) podem pular esta validação, mas devem passar por ela antes de qualquer versão que vá para produção.
-
-## Ao encontrar um problema
-
-Trate achados de acessibilidade como bloqueantes (mesmo padrão de severidade da skill `security-sentinel-review`: não é "nice to have", é requisito de produção) — corrija antes de liberar para `refactor-warden`/`release-gatekeeper`. Achados menores de polimento visual podem ser registrados como dívida aceita via `living-docs-keeper`, desde que explicitamente decidido, não esquecido.
+### 4. Filtro Anti-Slop (Livre de Clichês de IA)
+- [ ] **Zero Em-Dashes (`—`):** Nenhum travessão longo ou meia-risca em headlines, botões, pills, body copy ou legendas.
+- [ ] **Imagens Reais / Geradas:** Ausência de falsos screenshots desenhados com divs (`<div>` simulando tela de app).
+- [ ] **Hero Despoluído:** Headline com no máximo 2 linhas, subtexto com no máximo 20 palavras e CTA visível sem rolagem.
+- [ ] **Page Theme Lock:** A página mantém um único tema consistente do topo ao rodapé, sem inversões aleatórias no meio do scroll.
