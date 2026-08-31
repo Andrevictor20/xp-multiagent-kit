@@ -5,7 +5,7 @@ description: "Workflow obrigatório para correção de bugs com debugging sistem
 # Bugfix Workflow
 
 ## Flow
-Passo 0: Fast Context Bootstrap (`.agents/memory/PROJECT_MEMORY.md`) [com Auto-Onboarding se não inicializado/divergente] → **Systematic Debugging (4 Fases: Investigação de Causa Raiz → Análise de Padrões → Hipótese → Teste RED)** → **No-Workarounds Check** → builder → GREEN → full suite → **Code Deslop Review** → refactor → Passo Final: archivist (Auto-Sync obrigatório de `PROJECT_MEMORY.md` & `lesson-learned`) → release
+Passo 0: Fast Context Bootstrap (`.agents/memory/PROJECT_MEMORY.md`) [com Auto-Onboarding se não inicializado/divergente] → **Systematic Debugging (4 Fases: Investigação de Causa Raiz → Análise de Padrões → Hipótese → Teste RED)** → **No-Workarounds Check** → builder → GREEN → full suite → **Code Deslop Review** → refactor → **Passo Final OBRIGATÓRIO (Hard-Enforcement Gate): Escrita Física em Disco no `.agents/memory/PROJECT_MEMORY.md` & `lesson-learned` pelo `archivist`** → release
 
 ## Diretrizes Inegociáveis
 1. **Passo 0 & Auto-Onboarding:**
@@ -19,5 +19,5 @@ Passo 0: Fast Context Bootstrap (`.agents/memory/PROJECT_MEMORY.md`) [com Auto-O
    - O `builder` DEVE recusar a implementação se o estado anterior não contiver a evidência real do teste falhando.
 5. **A Regra dos 3 Fixes:**
    - Se 3 tentativas consecutivas de correção falharem, pare e questione a arquitetura antes de tentar qualquer novo remendo.
-6. **Zero-Prompt Auto-Sync & Lições Aprendidas:**
-   - Ao concluir a correção (**GREEN**), o `archivist` sincroniza automaticamente o `PROJECT_MEMORY.md` e registra a lição aprendida (`lesson-learned`) se o bug envolveu comportamentos não-triviais, sem esperar solicitação do usuário.
+6. **Hard-Enforced Auto-Sync & Lições Aprendidas:**
+   - Ao concluir a correção (**GREEN**), o `archivist` DEVE fisicamente persistir a atualização no `.agents/memory/PROJECT_MEMORY.md` e registrar a lição aprendida (`lesson-learned [L-NNN]`) em disco antes de finalizar.
