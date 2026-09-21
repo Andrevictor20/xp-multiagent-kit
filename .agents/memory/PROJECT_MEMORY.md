@@ -96,3 +96,23 @@
 
 
 
+
+---
+## [v2.14.0] - Token Tracker: 5 Bugs de Contabilização Corrigidos
+
+### Bugs Corrigidos em `scripts/token_tracker.py`
+
+| # | Bug | Impacto | Correção |
+|---|-----|---------|----------|
+| 1 | Rolling window estimava tokens via linha JSONL bruta | Overestimava 3-5x (metadata JSON incluso) | `calculate_rolling_windows()` parseia `content+thinking` de cada step |
+| 2 | Steps `is_truncated=True` eram contados no contexto ativo | Double-counting de conteúdo já removido | Loop pula steps com `is_truncated: true` |
+| 3 | `CONVERSATION_HISTORY` contava 100% | Double-counting de resumos de histórico | HISTORY conta 50% (compressão); CHECKPOINT e KNOWLEDGE_ARTIFACTS contam 100% |
+| 4 | `estimate_tokens(" " * bytes)` usava ratio uniforme | Tool outputs (JSON) subestimados, prose superestimados | `_tokens_from_bytes(bytes, ratio)` com ratios por tipo: PROSE=4.0, CODE=3.2, MIXED=3.5, CONFIG=3.3 |
+| 5 | `detect_model_name()` ignorava env vars e config.json | Fallback errado para Gemini ao usar Claude | Pipeline: env vars → config.json → SQLite → padrão |
+
+### Nova função auxiliar
+- `_tokens_from_bytes(byte_count, chars_per_token)` — conversão direta sem proxy de espaços
+- `_measure_system_prompt_bytes()` — lê tamanho real de regras/schemas no disco
+
+### Lição Procedural
+- **[L-018]** Nunca use `estimate_tokens(" " * bytes)` como proxy de byte→token. Esse padrão ignora o ratio de code_chars e sempre usa chars_per_token=3.8 (prose puro), subestimando outputs de ferramentas JSON/código em ~16% e superestimando prose em ~5%.

@@ -41,6 +41,12 @@ DEFAULT_SYSTEM_PROMPT_BYTES = 85_000
 DEFAULT_LIMIT_5H = 500_000        # Teto padrão de rate limit para janela de 5 horas
 DEFAULT_LIMIT_WEEKLY = 10_000_000  # Teto padrão de cota semanal da conta
 
+# Chars/token por tipo de conteúdo (BPE empirico)
+_CHARS_PER_TOKEN_PROSE = 4.0   # Texto corrido: mensagens de usuário
+_CHARS_PER_TOKEN_CODE = 3.2    # JSON / código / saídas de ferramentas
+_CHARS_PER_TOKEN_MIXED = 3.5   # Misto: respostas do modelo (texto + código)
+_CHARS_PER_TOKEN_CONFIG = 3.3  # Regras / schemas / markdown de configuração
+
 
 def parse_token_limit(val: Any, default: int = 500_000) -> int:
     """Converte valores com sufixos k, M para inteiros (ex: '500k' -> 500000, '10M' -> 10000000)."""
@@ -119,19 +125,53 @@ class TokenStats:
 
 
 def estimate_tokens(text: Optional[str]) -> int:
-    """Estima a quantidade de tokens para um texto arbitrário (BPE/SentencePiece)."""
+    """Estima tokens para texto arbitrário via heurística BPE/SentencePiece."""
     if not text:
         return 0
-
     char_len = len(text)
     if char_len == 0:
         return 0
-
     code_chars = len(re.findall(r'[{}\[\]()<>=;:\'"`_\\\/\-\+\*&\|\$@#]', text))
     code_ratio = code_chars / char_len
-
     chars_per_token = 3.2 if code_ratio > 0.15 else 3.8
     return max(1, int(char_len / chars_per_token))
+
+
+def _tokens_from_bytes(byte_count: int, chars_per_token: float) -> int:
+    """Converte contagem de bytes para tokens usando ratio específico ao tipo de conteúdo."""
+    return max(0, int(byte_count / chars_per_token))
+
+
+def _measure_system_prompt_bytes() -> int:
+    """Mede o tamanho real do system prompt somando regras e schemas carregados."""
+    home = Path.home()
+    total = 0
+
+    # Regras globais IDE e CLI
+    for rules_root in [
+        home / ".gemini" / "config" / "rules",
+        home / ".gemini" / "antigravity-ide" / "builtin",
+    ]:
+        if rules_root.is_dir():
+            for f in rules_root.rglob("*.md"):
+                try:
+                    total += f.stat().st_size
+                except Exception:
+                    pass
+
+    # Regras do workspace (AGENTS.md / GEMINI.md)
+    for ws_file in [Path("AGENTS.md"), Path("GEMINI.md"), Path(".agents/agents")]:
+        if ws_file.is_file():
+            try:
+                total += ws_file.stat().st_size
+            except Exception:
+                pass
+
+    # Overhead base: schemas de ferramentas, MCP, instruções builtin
+    BASE_OVERHEAD = 45_000
+    total += BASE_OVERHEAD
+
+    return max(DEFAULT_SYSTEM_PROMPT_BYTES, total)
 
 
 def get_model_limits(model_name: Optional[str]) -> Dict[str, int]:
@@ -195,8 +235,32 @@ def calculate_rolling_windows(
             file_tokens = 0
             try:
                 with open(t_file, "r", encoding="utf-8", errors="ignore") as fp:
-                    for line in fp:
-                        file_tokens += estimate_tokens(line)
+                    for raw_line in fp:
+                        raw_line = raw_line.strip()
+                        if not raw_line:
+                            continue
+                        try:
+                            step = json.loads(raw_line)
+                            # Extrai apenas conteúdo real (não metadata JSON)
+                            content = step.get("content", "") or ""
+                            thinking = step.get("thinking", "") or ""
+                            if not isinstance(content, str):
+                                content = json.dumps(content)
+                            if not isinstance(thinking, str):
+                                thinking = ""
+                            stype = step.get("type", "")
+                            # Usa ratio correto por tipo de conteúdo
+                            if stype == "PLANNER_RESPONSE":
+                                file_tokens += _tokens_from_bytes(
+                                    len(content) + len(thinking), _CHARS_PER_TOKEN_MIXED
+                                )
+                            elif stype == "USER_INPUT":
+                                file_tokens += _tokens_from_bytes(len(content), _CHARS_PER_TOKEN_PROSE)
+                            else:
+                                file_tokens += _tokens_from_bytes(len(content), _CHARS_PER_TOKEN_CODE)
+                        except Exception:
+                            # Fallback conservador: linha bruta com fator de correção JSON
+                            file_tokens += max(0, estimate_tokens(raw_line) // 3)
             except Exception:
                 pass
 
@@ -221,35 +285,60 @@ def parse_transcript_data(
     conversation_id: str,
     model_name: str,
     steps: List[Dict[str, Any]],
-    system_prompt_bytes: int = DEFAULT_SYSTEM_PROMPT_BYTES,
+    system_prompt_bytes: int = 0,
     rolling: Optional[RollingWindowStats] = None,
 ) -> TokenStats:
-    """Processa a lista de passos do transcript e consolida a telemetria em 3 camadas."""
+    """Processa steps do transcript e consolida telemetria em 3 camadas.
+
+    Correções aplicadas:
+    - Ignora steps com is_truncated=True (não consomem contexto ativo)
+    - CONVERSATION_HISTORY conta apenas 50% (é compressão de conteúdo já registrado)
+    - Usa ratio chars/token específico por tipo de conteúdo
+    - Mede system prompt dinamicamente se não fornecido
+    """
     limits = get_model_limits(model_name)
-    sys_tokens = estimate_tokens(" " * system_prompt_bytes)
+
+    # Mede o system prompt real se não fornecido
+    eff_sys_bytes = system_prompt_bytes if system_prompt_bytes > 0 else _measure_system_prompt_bytes()
+    sys_tokens = _tokens_from_bytes(eff_sys_bytes, _CHARS_PER_TOKEN_CONFIG)
 
     user_bytes = 0
     tool_bytes = 0
     model_bytes = 0
     tool_breakdown: Dict[str, Dict[str, int]] = {}
+    active_steps = 0
 
     for step in steps:
         stype = step.get("type", "UNKNOWN")
+
+        # Pula steps truncados — foram removidos da janela de contexto ativa
+        if step.get("is_truncated", False):
+            continue
+
         content = step.get("content", "")
         if not isinstance(content, str):
             content = json.dumps(content) if content else ""
 
         step_len = len(content)
+        active_steps += 1
 
         if stype == "USER_INPUT":
             user_bytes += step_len
+
         elif stype == "PLANNER_RESPONSE":
             thinking = step.get("thinking", "")
             if isinstance(thinking, str):
                 step_len += len(thinking)
             model_bytes += step_len
-        elif stype in ("CHECKPOINT", "CONVERSATION_HISTORY", "KNOWLEDGE_ARTIFACTS"):
+
+        elif stype == "CONVERSATION_HISTORY":
+            # É compressão de turnos antigos já contados → peso 50% para evitar double-count
+            user_bytes += step_len // 2
+
+        elif stype in ("CHECKPOINT", "KNOWLEDGE_ARTIFACTS"):
+            # Novo contexto injetado, conta integral
             user_bytes += step_len
+
         else:
             tool_bytes += step_len
             if stype not in tool_breakdown:
@@ -257,12 +346,13 @@ def parse_transcript_data(
             tool_breakdown[stype]["bytes"] += step_len
             tool_breakdown[stype]["calls"] += 1
 
-    user_tokens = estimate_tokens(" " * user_bytes)
-    tool_tokens = estimate_tokens(" " * tool_bytes)
-    model_tokens = estimate_tokens(" " * model_bytes)
+    # Aplica ratio correto por tipo (prose=4.0, code=3.2, mixed=3.5)
+    user_tokens = _tokens_from_bytes(user_bytes, _CHARS_PER_TOKEN_PROSE)
+    tool_tokens = _tokens_from_bytes(tool_bytes, _CHARS_PER_TOKEN_CODE)
+    model_tokens = _tokens_from_bytes(model_bytes, _CHARS_PER_TOKEN_MIXED)
 
     for t_name, t_data in tool_breakdown.items():
-        t_data["tokens"] = estimate_tokens(" " * t_data["bytes"])
+        t_data["tokens"] = _tokens_from_bytes(t_data["bytes"], _CHARS_PER_TOKEN_CODE)
 
     sorted_tools = dict(
         sorted(tool_breakdown.items(), key=lambda item: item[1]["bytes"], reverse=True)
@@ -278,7 +368,7 @@ def parse_transcript_data(
         context_window=limits["context_window"],
         max_output=limits["max_output"],
         system_prompt_tokens=sys_tokens,
-        system_prompt_bytes=system_prompt_bytes,
+        system_prompt_bytes=eff_sys_bytes,
         user_input_tokens=user_tokens,
         user_input_bytes=user_bytes,
         tool_tokens=tool_tokens,
@@ -290,7 +380,7 @@ def parse_transcript_data(
         percent_used=pct,
         rolling=rolling or RollingWindowStats(),
         top_tools=sorted_tools,
-        steps_count=len(steps),
+        steps_count=active_steps,
     )
 
 
@@ -551,24 +641,58 @@ def load_transcript(transcript_path: Path) -> List[Dict[str, Any]]:
 
 
 def detect_model_name(conversation_id: str) -> str:
-    """Tenta detectar o modelo a partir do SQLite da conversa."""
+    """Detecta o modelo ativo via: env vars → SQLite → config files → padrão."""
+    # 1. Variáveis de ambiente (maior prioridade — usuário configurou explicitamente)
+    for env_key in ("AGY_MODEL", "XP_MODEL", "ANTHROPIC_MODEL", "GEMINI_MODEL"):
+        env_val = os.environ.get(env_key, "").strip().lower()
+        if env_val:
+            return env_val
+
+    # 2. Arquivo de configuração do Antigravity
     home = Path.home()
+    for cfg_path in [
+        home / ".gemini" / "antigravity-ide" / "config.json",
+        home / ".gemini" / "antigravity-cli" / "config.json",
+        home / ".gemini" / "config" / "settings.json",
+    ]:
+        if cfg_path.is_file():
+            try:
+                cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+                model = (
+                    cfg.get("model")
+                    or cfg.get("defaultModel")
+                    or cfg.get("default_model")
+                    or ""
+                )
+                if model:
+                    return str(model).lower().strip()
+            except Exception:
+                pass
+
+    # 3. SQLite da conversa
+    KNOWN_MODELS = (
+        "claude-sonnet-4-6", "claude-opus-4-6", "claude-3-5-sonnet",
+        "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-pro",
+        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash",
+    )
     for app in ("antigravity-ide", "antigravity-cli"):
         db_path = home / ".gemini" / app / "conversations" / f"{conversation_id}.db"
         if db_path.is_file():
             try:
                 con = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
                 cur = con.cursor()
-                rows = cur.execute("SELECT data FROM gen_metadata ORDER BY idx DESC LIMIT 3").fetchall()
+                rows = cur.execute("SELECT data FROM gen_metadata ORDER BY idx DESC LIMIT 5").fetchall()
                 for (data,) in rows:
-                    if isinstance(data, bytes):
-                        for m in ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-pro", "gemini-1.5-pro", "claude-sonnet-4-6"):
-                            if m.encode() in data:
-                                con.close()
-                                return m
+                    payload = data if isinstance(data, bytes) else str(data).encode()
+                    for m in KNOWN_MODELS:
+                        if m.encode() in payload:
+                            con.close()
+                            return m
                 con.close()
             except Exception:
                 pass
+
+    # 4. Padrão conservador
     return "gemini-3.8-flash"
 
 
