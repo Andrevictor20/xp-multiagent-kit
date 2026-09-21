@@ -1,6 +1,6 @@
 ---
 name: ui-quality-gate
-description: Gate de qualidade de interface aplicado depois que uma UI é implementada — acessibilidade (contraste WCAG AA, foco de teclado, semântica), responsividade real (min-h-[100dvh], single-line nav), respeito a prefers-reduced-motion, ban de quebra de CTA e autocrítica anti-slop antes do release. Complementa as skills de direção estética.
+description: "Checklist pré-release de acessibilidade, viewport 100dvh e qualidade visual."
 ---
 
 # UI Quality Gate

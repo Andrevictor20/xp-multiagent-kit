@@ -1,6 +1,6 @@
 ---
 name: api-security
-description: "Verificação de vulnerabilidades conhecidas em APIs (OWASP API Security Top 10)."
+description: "Verificação de vulnerabilidades em APIs (OWASP API Security Top 10)."
 ---
 
 # API Security

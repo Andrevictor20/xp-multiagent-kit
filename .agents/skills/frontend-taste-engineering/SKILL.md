@@ -1,6 +1,6 @@
 ---
 name: frontend-taste-engineering
-description: "Framework mestre de engenharia frontend anti-slop e direção estética de alto nível. Elimina layouts genéricos com cara de IA através de inferência de briefing, calibração por três dials (VARIANCE, MOTION, DENSITY), escolha honesta de design systems, skeletons canônicos (Sticky-Stack, Horizontal-Pan, Liquid Glass), banimento absoluto de em-dash (—) e checklist de pré-voo rigoroso."
+description: "Direção estética Anti-Slop, calibração por dials e skeletons canônicos."
 ---
 
 # Frontend Taste Engineering (Anti-Slop Framework)

@@ -1,26 +1,32 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-08-31 08:01 (Local)  
+> **Última Atualização:** 2026-09-21 14:48 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.9.0 (Global Antigravity Customization & Hard-Enforced Memory Persistence)
+> **Versão / Marco Atual:** v2.12.0 (CI/CD Auto-Healer, Autonomous Pipeline Self-Correction Loop & Machine-Wide Token Optimization)
 
 ---
 
 ## 1. Quick Project Summary (Semantic)
-- **Propósito:** Kit modular de governança, agentes, skills, workflows e políticas para pair programming com IA baseado na metodologia Extreme Programming (XP), Task Routing adaptativo por risco (L0-L3), TDD estrito com Matriz Multi-Camadas, Política Anti-Test-Bypass, SSDLC, Engenharia de Causa Raiz & Anti-Workaround, Code Deslop, DevOps & Zero-Downtime Deployments, Observabilidade & SLOs, Cloud Security & Zero Trust Architecture, Engenharia de Frontend Anti-Slop, Motor de Conversion Copywriting e Sistema de Memória Contínua em 4 Tiers com Auto-Onboarding, Recaptura Retroativa de Histórico Git (Reverse Ingestion), Instalação Global no Antigravity (`~/.gemini/config/`) e Hard-Enforced Disk Persistence Gate.
-- **Tech Stack:** Antigravity Agent Framework (Markdown + YAML Frontmatter), Agnóstico de linguagem de produção, Bash, Git.
-- **Arquitetura Chave:** Estrutura modular em `.agents/` contendo `agents` (11 especialistas), `skills` (61 capacidades granulares), `workflows` (7 esteiras L0-L3 com Passo 0 e Passo Final autônomos), `policies` (9 regras inegociáveis), `templates` (scaffolds) e `memory` (memória viva em 4 tiers, auto-onboarding, recaptura git e arquivo permanente). Instalável globalmente via symlinks em `~/.gemini/config/`.
+- **Propósito:** Kit modular de governança, agentes, skills, workflows e políticas para pair programming com IA baseado na metodologia Extreme Programming (XP), Task Routing adaptativo por risco (L0-L3), TDD estrito com Matriz Multi-Camadas, Política Anti-Test-Bypass, SSDLC, Engenharia de Causa Raiz & Anti-Workaround, Code Deslop, DevOps & Zero-Downtime Deployments, Observabilidade & SLOs, Cloud Security & Zero Trust Architecture, Engenharia de Frontend Anti-Slop, Motor de Conversion Copywriting, Suíte Global de Otimização de Tokens no Antigravity (IDE & CLI), CI/CD Auto-Healer com Loop Autônomo de Autocorreção e Sistema de Memória Contínua em 4 Tiers com Auto-Onboarding, Recaptura Retroativa de Histórico Git (Reverse Ingestion), Instalação Global no Antigravity (`~/.gemini/config/`) e Hard-Enforced Disk Persistence Gate.
+- **Tech Stack:** Antigravity Agent Framework (Markdown + YAML Frontmatter), Agnóstico de linguagem de produção, Python, Bash, Git, GitHub Actions CLI (`gh`).
+- **Arquitetura Chave:** Estrutura modular em `.agents/` contendo `agents` (11 especialistas), `skills` (63 capacidades granulares com `ci-auto-heal`), `workflows` (7 esteiras L0-L3 com Passo 0 e Passo Final autônomos), `policies` (9 regras inegociáveis), `templates` (scaffolds) e `memory` (memória viva em 4 tiers, auto-onboarding, recaptura git e arquivo permanente). Suíte global instalada em `~/.local/bin/` (`agy-ci-heal`, `xp-ci-heal`, `agy-tokens`, `xp-tokens`, `agy-sanitize`, `agy-handoff`, `agy-audit`, `agy-fast`, `agy-deep`).
 - **Comandos Essenciais:**
   - Instalação / Re-sincronização Global: `./scripts/install-global.sh`
+  - CI/CD Auto-Healer: `agy-ci-heal --status` ou `agy-ci-heal --watch --heal --auto-push`
+  - Diagnóstico Cirúrgico de CI: `agy-ci-heal --diagnose-run <run-id>`
+  - Telemetria de Tokens: `agy-tokens --badge` ou `agy-tokens --check`
+  - Sanitizador Anti-Flood: `agy-sanitize <cmd>` ou `<cmd> | agy-sanitize`
+  - Handoff / Reset de Sessão: `agy-handoff --write-file`
+  - Auditoria de Configuração: `agy-audit`
   - Validação Git: `git status && git log -n 5 --oneline`
 
 ---
 
 ## 2. Current Health & System Status
-- **Agent Suite Status:** OPERATIONAL (11 Agentes, 61 Skills, 7 Workflows, 9 Policies, Configuração Global Ativa em `~/.gemini/config/`, Memória em 4 Tiers com Persistência Forçada em Disco)
-- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-GLOBAL-ENFORCE-20260831-01` (Validação de symlinks globais, catálogo completo no AGENTS.md, scripts de instalação e execução dos gates de memória em todos os workflows)
-- **Ambiente Ativo:** Local & Global / Antigravity IDE
+- **Agent Suite Status:** OPERATIONAL (11 Agentes, 63 Skills, 7 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Memória em 4 Tiers com Persistência Forçada em Disco)
+- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003 e Hard Disk Persistence)
+- **Última Execução / Evidência:** `EV-CI-AUTO-HEAL-20260921-01` (28/28 testes unitários aprovados, validação de execução nativa do agy-ci-heal no GitHub Actions run #32161220784 e diagnóstico cirúrgico do Prisma)
+- **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
 
@@ -28,34 +34,39 @@
 
 | Data / Hora | Tipo | Resumo da Alteração | Arquivos Principais | Test Evidence / Status |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-09-21 | `FEAT` | CI/CD Auto-Healer & Loop Autônomo de Autocorreção: ci_healer.py (comandos agy-ci-heal/xp-ci-heal), extração cirúrgica de falhas via gh CLI, salvaguarda de 3 iterações (L-003), skill ci-auto-heal e hook post-push | `scripts/ci_healer.py`, `scripts/hooks/post-push-watcher.sh`, `.agents/skills/ci-auto-heal/SKILL.md`, `AGENTS.md`, `.agents/workflows/release.md`, `tests/test_ci_healer.py` | `PASS (EV-CI-AUTO-HEAL-20260921-01)` |
+| 2026-09-21 | `FEAT` | Suíte Global de Redução de Tokens no Antigravity (IDE & CLI em qualquer projeto): agy-sanitize, agy-handoff, agy-audit, perfis de CLI agy-fast/agy-deep, aliases Fish/Bash, universal.geminiignore e guia prático | `scripts/agy-sanitize`, `scripts/agy-handoff`, `scripts/agy-audit-config`, `scripts/global-token-optimizer/*`, `templates/universal.geminiignore`, `docs/universal-token-reduction-guide.md`, `tests/` | `PASS (EV-GLOBAL-TOKEN-OPT-20260921-01)` |
+| 2026-09-21 | `FEAT` | Implementação dos 4 Pilares de Redução de Tokens: Protocolo Anti-Flood de Ferramentas, sanitize-tool-output.sh, auditoria de gargalos (--audit), Session Reset aos 25 turnos e modulação de reasoning effort | `scripts/token_tracker.py`, `scripts/sanitize-tool-output.sh`, `AGENTS.md`, `.agents/skills/token-budget-tracker/` | `PASS (EV-TOKEN-OPTIMIZE-20260921-02)` |
+| 2026-09-21 | `FEAT` | Telemetria de Tokens em 3 Camadas (Context Window, Janela Móvel de 5 Horas e Cota Semanal), comandos CLI xp-tokens/agy-tokens, skill token-budget-tracker, testes unitários e eliminação de duplicações de regras | `scripts/token_tracker.py`, `tests/test_token_tracker.py`, `.agents/skills/token-budget-tracker/`, `AGENTS.md`, `scripts/install-global.sh` | `PASS (EV-TOKEN-TRACKER-20260921-01)` |
+| 2026-09-05 | `FEAT` | Paridade total Antigravity IDE -> CLI: sincronização de skills, rules, workflows, agents, policies, memory e hooks, configuração nativa de auto-aprovação de edições de arquivo (agentMode=accept-edits, toolPermission=always-proceed, write_file(*)) e aliases Fish/Bash | `~/.gemini/antigravity-cli/settings.json`, `~/.gemini/antigravity-cli/`, `~/.config/fish/config.fish`, `PROJECT_MEMORY.md` | `PASS (EV-CLI-SYNC-20260905-01)` |
+| 2026-08-31 | `PERF` | Otimização drástica do consumo de tokens: remoção de regras redundantes em ~/.gemini/config/, desduplicação de skills e condensação das descrições frontmatter mantendo 100% dos padrões | `AGENTS.md`, `.agents/skills/*/SKILL.md`, `scripts/install-global.sh`, `~/.gemini/config/` | `PASS (EV-TOKEN-OPTIMIZE-20260831-01)` |
 | 2026-08-31 | `FEAT` | Instalação global do kit (~/.gemini/config/), cross-referencing exaustivo no AGENTS.md, script install-global.sh e gate estrito de persistência física de memória | `AGENTS.md`, `.agents/policies/memory.md`, `.agents/workflows/*`, `.agents/agents/archivist/agent.md`, `scripts/install-global.sh` | `PASS (EV-GLOBAL-ENFORCE-20260831-01)` |
 | 2026-08-28 | `FEAT` | Adição do protocolo de Recaptura Retroativa de Contexto Git (Reverse Ingestion) para repositórios existentes adicionados tardiamente | `AGENTS.md`, `.agents/policies/memory.md`, `.agents/skills/project-memory/SKILL.md`, `.agents/agents/{archivist, orchestrator}/`, `README.md` | `PASS (EV-GIT-RECAPTURE-20260828-01)` |
-| 2026-08-28 | `FEAT` | Integração do Auto-Onboarding para projetos alvo (Passo 0-A) e ciclo de vida de memória 100% autônomo (Zero-Prompt Lifecycle) | `AGENTS.md`, `.agents/policies/memory.md`, `.agents/skills/project-memory/SKILL.md`, `.agents/agents/{orchestrator, archivist, genesis}/`, `.agents/workflows/*`, `README.md` | `PASS (EV-MEMORY-AUTONOMOUS-20260828-01)` |
-| 2026-08-28 | `FEAT` | Reforço de Diversidade de Tipos de Teste (Matriz de 8 Camadas) e Política Inegociável Anti-Test-Bypass (proibição de mocks cegos, skips e asserções fakes) | `AGENTS.md`, `.agents/policies/tdd.md`, `.agents/skills/tdd-safety-net/SKILL.md`, `.agents/agents/{test-guardian, release-gatekeeper}/`, `README.md` | `PASS (EV-TEST-INTEGRITY-20260828-01)` |
-| 2026-08-28 | `FEAT` | Integração da suíte de DevOps, Deploy sem Downtime (Blue/Green, Canary), Governança de IaC, Observabilidade (Métricas RED, Logs JSON) e CloudSec Zero Trust (OIDC, Cosign/SBOM) | `.agents/skills/{zero-downtime-deployment, infrastructure-as-code-governance, observability-and-slo-engineering, cloud-security-and-zero-trust}/`, `.agents/agents/{shipper, sentinel}/`, `.agents/workflows/release.md`, `.agents/policies/release.md`, `README.md` | `PASS (EV-DEVOPS-CLOUDSEC-20260828-01)` |
-| 2026-08-28 | `FEAT` | Integração da suíte de Engenharia de Causa Raiz, Debugging Sistemático, Proibição de Remendos (No Workarounds), Code Deslop e Lições Aprendidas | `.agents/skills/{systematic-debugging, no-workarounds, code-deslop-review, lesson-learned}/`, `.agents/workflows/bugfix.md`, `.agents/policies/tdd.md`, `.agents/agents/{builder, refactor-warden, test-guardian, archivist}/`, `README.md` | `PASS (EV-ENGINEERING-DESLOP-20260828-01)` |
-| 2026-08-28 | `FEAT` | Integração da arquitetura de 4 Tiers de Memória (Working, Episodic, Semantic, Procedural), Handoffs Estruturados, Memory Lint e salvaguarda Untrusted History | `.agents/skills/project-memory/SKILL.md`, `.agents/templates/PROJECT_MEMORY_TEMPLATE.md`, `.agents/policies/memory.md`, `.agents/agents/archivist/agent.md`, `AGENTS.md`, `README.md` | `PASS (EV-MEMORY-4TIER-20260828-01)` |
 
 ---
 
 ## 4. Active Backlog & Immediate Handoff (Working / Episodic)
-- [x] **[DONE] Instalação global e linkagem de 61 skills, 9 políticas, 7 workflows e 11 agentes em ~/.gemini/config/.**
+- [x] **[DONE] CI/CD Auto-Healer: monitoramento autônomo de GitHub Actions (gh run), extração cirúrgica de logs de erro, loop de autocorreção em até 3 tentativas (L-003) e hook post-push.**
+- [x] **[DONE] Suíte Global de Redução de Tokens (IDE & CLI em qualquer projeto): agy-sanitize, agy-handoff, agy-audit, perfis de CLI (fast/deep) e universal.geminiignore com 28/28 testes unitários aprovados.**
+- [x] **[DONE] Otimização de consumo de tokens: orçamento de Rules e Skills < 20% com zero truncamento.**
+- [x] **[DONE] Instalação global e linkagem de 63 skills, 9 políticas, 7 workflows e 11 agentes em ~/.gemini/config/.**
 - [x] **[DONE] Cross-referencing exaustivo de todos os pacotes e arquivos no AGENTS.md.**
 - [x] **[DONE] Hard-Enforcement Gate para escrita física obrigatória em disco no PROJECT_MEMORY.md em todos os workflows e agentes.**
-- [x] **[DONE] Integrar Recaptura Retroativa de Histórico Git e Contexto para repositórios existentes.**
-- [x] **[DONE] Integrar Auto-Onboarding automático de novos projetos e ciclo de vida zero-prompt da memória viva.**
-- [x] **[DONE] Reforçar diversidade de tipos de teste e política Anti-Test-Bypass em todas as diretrizes.**
-- [x] **[DONE] Integrar suíte de DevOps, Zero-Downtime, IaC Governance, Observabilidade e CloudSec Zero Trust.**
-- [x] **[DONE] Integrar suíte de Engenharia de Causa Raiz, No Workarounds, Code Deslop e Lições Aprendidas.**
+- [x] **[DONE] Token Optimization & Tracker: Telemetria em 3 Camadas (Contexto, 5h e Semanal), binários xp-tokens/agy-tokens, skill token-budget-tracker e eliminação de injeções redundantes.**
+- [x] **[DONE] 4 Pilares de Redução de Tokens: Protocolo Anti-Flood de Ferramentas, sanitize-tool-output.sh, auditoria de gargalos (--audit), Session Reset aos 25 turnos e modulação de reasoning effort.**
 - [ ] **[P1] Validar a execução da matriz multi-testes em um projeto piloto complexo.**
 
 ---
 
 ## 5. Architectural Decisions & Domain Models (Semantic Memory)
+- **2026-09-21 - CI/CD Auto-Healer & Loop Autônomo de Autocorreção:** Mecanismo autônomo acoplado ao GitHub Actions (`gh` CLI) para monitoramento em tempo real de esteiras, isolamento cirúrgico de logs de falha (`agy-ci-heal`), TDD local corretivo e re-push automático com teto estrito de 3 iterações (Regra [L-003]) para prevenção de loops infinitos.
+- **2026-09-21 - Suíte Global de Redução de Tokens no Antigravity:** Desacoplamento da otimização de tokens do escopo exclusivo do kit para abranger qualquer pasta/repositório aberto na máquina via `~/.local/bin/` (`agy-sanitize`, `agy-handoff`, `agy-audit`, `agy-fast`, `agy-deep`) e aliases em `fish`/`bash`, com governança de `.geminiignore` e limites de linha de saída.
+- **2026-09-21 - 4 Pilares de Otimização de Tokens:** Combate sistemático ao acúmulo de histórico reenviado através de (1) Protocolo Anti-Flood em comandos e leituras, (2) Desduplicação de rules globais, (3) Rotação compulsória aos 25 turnos / 70k tokens e (4) Modulação de esforço de raciocínio por nível de risco (L0-L3).
+- **2026-09-21 - Telemetria de Tokens em 3 Camadas:** O kit diferencia rigorosamente (1) Janela de Mensagem/Sessão (Context Window até 1M/2M tokens), (2) Janela Móvel de 5 Horas (Rolling Rate Limit de curto prazo) e (3) Limite Semanal (Weekly Quota Cycle). Utilitário `xp-tokens` calcula agregação em tempo real através dos bancos SQLite e transcripts do Antigravity.
+- **2026-09-05 - Paridade Antigravity CLI e Auto-Aprovação de Edições:** Configuração unificada em `~/.gemini/antigravity-cli/settings.json` com `agentMode: "accept-edits"` e `permissions.allow: ["write_file(*)", "read_file(*)", "command(*)", "mcp(*)", "read_url(*)"]`. Symlinks espelhados em `~/.gemini/antigravity-cli/` garantem que o ecossistema multiagente e a governança XP funcionem identicamente no terminal sem fricção de confirmações repetitivas.
+- **2026-08-31 - Otimização de Token Budget no Antigravity:** `rules/` e `plugins/.../rules` não devem conter symlinks redundantes de agents/policies/workflows (que são carregados sob demanda). O `AGENTS.md` atua como regra mestre única e as descrições no frontmatter YAML das skills são mantidas concisas (1-2 frases), reduzindo o consumo de tokens em >75%.
 - **2026-08-31 - Instalação Global por Symlinks:** Configuração de `~/.gemini/config/` apontando diretamente para o repositório mestre, permitindo que todas as regras, skills e workflows fiquem ativos globalmente e sejam atualizados em tempo real a cada edição.
 - **2026-08-31 - Hard-Enforced Memory Disk Persistence:** Proibição estrita de encerramento de tarefas ou respostas de conclusão sem chamada explícita de ferramenta (`write_to_file`/`replace_file_content`) no `PROJECT_MEMORY.md`.
-- **2026-08-28 - Recaptura Retroativa Git (Reverse Ingestion):** Ao ser introduzido em repositórios pré-existentes, o kit reconstrói a memória viva a partir do git log, manifestos e código existente, prosseguindo com o desenvolvimento contínuo.
-- **2026-08-28 - Zero-Prompt Memory & Auto-Onboarding:** Todo agente e workflow roda Passo 0 (Bootstrap com Auto-Onboarding se repositório não inicializado/divergente) e Passo Final (Auto-Sync pelo Archivist) de forma nativa e incondicional sem depender de comandos do usuário.
 
 ---
 
@@ -68,8 +79,19 @@
 - **[L-006] Auto-Onboarding de Repositórios:** Se o repositório aberto for novo ou diferente do kit, o Passo 0-A deve detectar manifestos e reconstruir `PROJECT_MEMORY.md` imediatamente antes de qualquer outra ação.
 - **[L-007] Ingestão Reversa de Commits:** Usar formato conciso de git log (`%h - %ad : %s`) com janela deslizante de 5 a 10 commits para não estourar o orçamento de tokens da memória ativa.
 - **[L-008] Bash set -e em Incrementos Aritméticos:** No bash com `set -e`, a expressão `(( count++ ))` quando `count=0` avalia para 0 e retorna status de saída 1, abortando o script. Use sempre `count=$((count + 1))` ou `(( count += 1 ))`.
+- **[L-009] Token Budget de Customizações no Antigravity:** Arquivos colocados em `rules/` ou descrições verbosas em `SKILL.md` são injetados diretamente em cada turno. Mantenha `rules/` enxuto (apenas regras mestras) e o frontmatter YAML de skills com no máximo 1-2 sentenças objetivas.
+- **[L-010] 3 Camadas de Limites no Antigravity:** Não confundir a janela de contexto da mensagem com os limites de rate limit da API. O modelo pode suportar 1M de tokens por turno, mas rajadas contínuas de 50k+ tokens podem atingir a barreira móvel de 5 horas ou o teto semanal da conta.
+- **[L-011] Pre-Flight Token Gate & Modo Cirúrgico Atômico:** Sempre alertar o usuário quando qualquer camada estiver crítica (>80% em 5h/Semana ou >70% no Contexto). Se o usuário insistir em rodar, dimensionar o escopo estritamente para o que for cabível no orçamento restante, garantindo um checkpoint completo, testado e estável, proibindo deixar trabalho quebrado ou pela metade.
+- **[L-012] O Maior Devorador de Tokens é o Histórico de Ferramentas:** Em sessões longas, saídas volumosas de terminal (logs de testes/builds) e leituras de arquivos inteiros sem StartLine/EndLine representam mais de 50% dos tokens faturados a cada novo turno. Use sempre sanitize-tool-output.sh e grep cirúrgico.
+- **[L-013] Sanitização Transparente com Preservação de Exit Code:** O `agy-sanitize` trunca saídas excessivas intermediárias mantendo o topo (head) e a cauda diagnóstica (tail), propagando 100% o código de retorno para garantir compatibilidade com scripts de automação e pipelines de CI.
+- **[L-014] Rotação Cirúrgica de Sessão via Handoff Packet:** Usar `agy-handoff --write-file` ao aproximar-se de 25 turnos para gerar um resumo de menos de 25 linhas (~300 tokens). Abrir um novo chat com esse pacote restaura o modelo à velocidade máxima e reduz os custos por turno em mais de 90%.
+- **[L-015] Auditoria Proativa de Configuração Global:** O utilitário `agy-audit` monitora a saúde de `~/.gemini/config/`, alertando sobre inchaço de regras (>150 linhas), servidores MCP configurados como `eager` e quantidade excessiva de skills globais (>50) que causam descarte de contexto.
+- **[L-016] Extração Cirúrgica de Logs de CI/CD:** Falhas de CI/CD contêm em média 95% de ruído em seus logs brutos (prints de instalação e setup). A filtragem focada em blocos `##[error]`, `Error:`, `FAILED` e stack traces pelo `ci_healer.py` reduz o contexto a menos de 10 linhas, viabilizando o auto-diagnóstico sem estourar a janela de contexto.
 
 ---
 
 ## 7. Technical Debts & Known Blockers
-- **Nenhum bloqueio ativo.** O kit está 100% autossuficiente e configurado globalmente.
+- **Nenhum bloqueio ativo.** CI/CD Auto-Healer operacional, 28/28 testes unitários aprovados, comandos integrados em `~/.local/bin/` e persistência de disco rigorosamente cumprida.
+
+
+

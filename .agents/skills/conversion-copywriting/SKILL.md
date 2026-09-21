@@ -1,6 +1,6 @@
 ---
 name: conversion-copywriting
-description: "Frameworks de copywriting de alta conversão para landing pages, websites, páginas de produto e checkout. Estruturação de headlines magnéticas, a ponte 'E daí?' (benefícios vs features), fórmulas de CTAs de ação, eliminação de jargões vazios e testes de clareza pré-código."
+description: "Copywriting de alta conversão, headlines magnéticas e ponte benefício."
 ---
 
 # Conversion Copywriting: Escrita Persuasiva para UI & Landing Pages

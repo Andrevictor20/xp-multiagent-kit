@@ -1,6 +1,6 @@
 ---
 name: minimalist-ui
-description: "Diretiva de engenharia para interfaces ultra-minimalistas, estilo editorial e produtos de alta produtividade (estilo Linear/Notion). Paleta monocromática quente com spot pastels desaturados, contraste tipográfico refinado, bento grids planos (1px border), macro-whitespace generoso e zero sombras pesadas."
+description: "Interfaces minimalistas, estilo editorial Linear/Notion e macro-whitespace."
 ---
 
 # Minimalist UI: Utilitarian Minimalism & Editorial Design

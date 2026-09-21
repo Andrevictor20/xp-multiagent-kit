@@ -1,6 +1,6 @@
 ---
 name: infrastructure-as-code-governance
-description: "Governança, modularização e segurança em Infraestrutura como Código (IaC). Cobre Terraform/OpenTofu, Kubernetes (Helm, Kustomize), Docker Compose, NetworkPolicies, least privilege em IAM e validação estática pré-apply."
+description: "Governança e segurança em IaC (Terraform, Kubernetes, Docker Compose)."
 ---
 
 # Infrastructure as Code (IaC) Governance & Security

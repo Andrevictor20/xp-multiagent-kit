@@ -1,6 +1,6 @@
 ---
 name: deploy-pipeline-conductor
-description: "Condução do pipeline de deploy contínuo (CD) — build de artefato, promoção entre ambientes (staging/produção), estratégia de rollback, health checks pós-deploy, gestão de variáveis de ambiente/secrets por ambiente, e feature flags para desacoplar deploy de release. Inclui workflow de referência em GitHub Actions com Docker (assets/cd.yml, Dockerfile, docker-compose.dev.yml). Use esta skill sempre que uma mudança já aprovada pelo release-gatekeeper precisar ir para staging ou produção, sempre que configurar ou revisar a esteira de deploy de um projeto (incluindo GitHub Actions e Docker), e sempre que decidir como uma feature arriscada deve ser lançada (rollout gradual, flag, canary). Não confundir com ci-security-gate: aquela skill valida o commit (lint/segurança estática/testes); esta skill cuida do que acontece depois que o commit já está aprovado, até estar rodando de verdade em produção."
+description: "Condução de CD, build de containers, ambientes e rollout gradual."
 ---
 
 # Deploy Pipeline Conductor

@@ -1,6 +1,6 @@
 ---
 name: code-deslop-review
-description: "Revisão e remoção sistemática de 'slop' (vícios, poluição e código desnecessário) gerado por IA antes de commits, PRs e releases. Impõe a regra 'No God Files' (< 500 linhas) e mantém o código limpo, idiomático e enxuto."
+description: "Remoção de código redundante de IA e imposição da regra No God Files (<500 linhas)."
 ---
 
 # Code Deslop Review: Limpeza Sistemática de Código de IA

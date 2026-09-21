@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: "Protocolo de debugging sistemático e investigação metódica de causa raiz. Deve ser ativado antes de qualquer tentativa de correção de bugs, falhas de testes ou comportamentos inesperados. Impõe a regra dos 3 fixes e proíbe palpites às cegas."
+description: "Debugging sistemático em 4 fases e investigação metódica de causa raiz."
 ---
 
 # Systematic Debugging: Investigação Metódica de Causa Raiz

@@ -1,6 +1,6 @@
 ---
 name: test-harness-bootstrap
-description: Configuração do harness de testes no momento zero de um projeto — framework de teste instalado e configurado, estrutura de pastas de teste, step de teste rodando no CI, e um teste trivial passando antes de qualquer feature real ser escrita. Use esta skill sempre que um projeto novo estiver sendo criado a partir de um prompt inicial (scaffold), sempre que um projeto existente não tiver nenhum framework de teste configurado ainda, e sempre antes de aceitar a primeira feature real em um projeto recém-criado. Ative com prioridade máxima no primeiro commit de qualquer projeto novo — sem isso, toda a disciplina de TDD do restante do fluxo não tem onde rodar.
+description: "Configuração de harness de testes no Momento Zero antes de features."
 ---
 
 # Test Harness Bootstrap

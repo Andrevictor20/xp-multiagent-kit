@@ -1,6 +1,6 @@
 ---
 name: dependency-governance
-description: "Avalia a real necessidade e os riscos antes de introduzir uma nova dependência no projeto."
+description: "Avaliação de risco, segurança e necessidade de novas dependências."
 ---
 
 # Dependency Governance

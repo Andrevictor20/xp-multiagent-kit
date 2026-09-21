@@ -1,6 +1,6 @@
 ---
 name: task-routing
-description: "Roteamento de tarefas baseado em superfícies e capacidades (Capability Routing)."
+description: "Roteamento de tarefas baseado em superfícies e níveis de risco (L0-L3)."
 ---
 
 # Task Routing & Capability Routing

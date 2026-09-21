@@ -1,6 +1,6 @@
 ---
 name: lesson-learned
-description: "Protocolo de captura e formalização de lições aprendidas (L-001..L-NNN) com causa raiz comprovada e regras práticas para a memória procedural. Garante que problemas difíceis e peculiaridades de bibliotecas nunca sejam repetidos em sessões futuras."
+description: "Captura e formalização de lições aprendidas (L-001..L-NNN) na memória procedural."
 ---
 
 # Institutional Lessons Learned: Memória Procedural Permanente

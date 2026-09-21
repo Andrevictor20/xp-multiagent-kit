@@ -1,6 +1,6 @@
 ---
 name: crypto-guardian
-description: "Avalia a corretude do uso de primitivas e bibliotecas criptográficas."
+description: "Auditoria do uso correto de primitivas criptográficas e geração de chaves."
 ---
 
 # Crypto Guardian

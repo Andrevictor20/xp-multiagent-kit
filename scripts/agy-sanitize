@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""
+agy-sanitize: Universal tool output sanitizer to prevent terminal flood and token waste.
+Can be used as a command wrapper or in pipes:
+    agy-sanitize pytest -v
+    cat big_log.txt | agy-sanitize
+"""
+
+import os
+import sys
+import subprocess
+
+
+def sanitize_lines(lines, max_lines, head_count, tail_count):
+    total = len(lines)
+    if total <= max_lines:
+        return lines
+
+    if head_count + tail_count >= total:
+        head_count = max(1, total // 4)
+        tail_count = max(1, total // 3)
+
+    omitted = total - (head_count + tail_count)
+    if omitted <= 0:
+        return lines
+
+    marker = f"\n[... {omitted} linhas omitidas pelo agy-sanitize para poupar tokens ...]\n"
+    return lines[:head_count] + [marker] + lines[-tail_count:]
+
+
+def main():
+    max_lines = int(os.environ.get("AGY_MAX_LINES", 40))
+    head_count = int(os.environ.get("AGY_HEAD_LINES", 10))
+    tail_count = int(os.environ.get("AGY_TAIL_LINES", 20))
+
+    args = sys.argv[1:]
+
+    # Parse optional --max-lines argument
+    if len(args) >= 2 and args[0] in ("-m", "--max-lines"):
+        try:
+            max_lines = int(args[1])
+            args = args[2:]
+        except ValueError:
+            pass
+
+    exit_code = 0
+    raw_lines = []
+
+    if args:
+        # Running as a command wrapper
+        try:
+            proc = subprocess.run(
+                args,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
+            exit_code = proc.returncode
+            raw_lines = proc.stdout.splitlines(keepends=True)
+        except Exception as e:
+            sys.stderr.write(f"agy-sanitize execution error: {e}\n")
+            sys.exit(1)
+    else:
+        # Reading from stdin / pipe
+        try:
+            raw_lines = sys.stdin.readlines()
+        except KeyboardInterrupt:
+            sys.exit(130)
+
+    sanitized = sanitize_lines(raw_lines, max_lines, head_count, tail_count)
+    for line in sanitized:
+        sys.stdout.write(line)
+        if not line.endswith("\n"):
+            sys.stdout.write("\n")
+    sys.stdout.flush()
+
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+"""
+agy-audit-config: Universal configuration auditor for Antigravity.
+Detects bloat in global rules, eager MCP servers, and skill count saturation
+that cause excessive token consumption machine-wide.
+"""
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+
+def audit_config_directory(config_dir: Path):
+    warnings = []
+    recommendations = []
+    stats = {
+        "rules_count": 0,
+        "total_rule_lines": 0,
+        "skills_count": 0,
+        "mcp_servers_count": 0,
+        "eager_mcp_servers": 0,
+    }
+
+    # 1. Audit Rules
+    rules_dir = config_dir / "rules"
+    if rules_dir.is_dir():
+        for rfile in rules_dir.glob("*.md"):
+            try:
+                content = rfile.read_text(encoding="utf-8")
+                lines = content.splitlines()
+                stats["rules_count"] += 1
+                stats["total_rule_lines"] += len(lines)
+                if len(lines) > 150:
+                    warnings.append(
+                        f"Rule '{rfile.name}' possui {len(lines)} linhas (> 150). Regras globais obesas inflam o system prompt em 100% dos turnos."
+                    )
+                    recommendations.append(
+                        f"Mova detalhes de '{rfile.name}' para uma skill sob demanda ou reduza para diretrizes essenciais."
+                    )
+            except Exception:
+                pass
+
+    # 2. Audit MCP Servers
+    mcp_json = config_dir / "mcp_config.json"
+    if mcp_json.is_file():
+        try:
+            mcp_data = json.loads(mcp_json.read_text(encoding="utf-8"))
+            servers = mcp_data.get("mcpServers", {})
+            stats["mcp_servers_count"] = len(servers)
+            for sname, sconfig in servers.items():
+                if isinstance(sconfig, dict) and sconfig.get("eager") is True:
+                    stats["eager_mcp_servers"] += 1
+                    warnings.append(
+                        f"MCP server '{sname}' está configurado como 'eager'. Seus schemas JSON são injetados em todo prompt."
+                    )
+                    recommendations.append(
+                        f"Configure '{sname}' com carregamento sob demanda (lazy) para poupar milhares de tokens de schema."
+                    )
+        except Exception:
+            pass
+
+    # 3. Audit Skills
+    skills_dir = config_dir / "skills"
+    if skills_dir.is_dir():
+        skill_items = [d for d in skills_dir.iterdir() if d.is_dir() or d.is_symlink()]
+        stats["skills_count"] = len(skill_items)
+        if len(skill_items) > 50:
+            warnings.append(
+                f"Diretório global de skills possui {len(skill_items)} skills (> 50). O Antigravity pode descartar skills por limite de orçamento de contexto."
+            )
+            recommendations.append(
+                "Remova skills obsoletas do escopo global ou agrupe-as em plugins dedicados."
+            )
+
+    status = "HEALTHY" if not warnings else "WARNING"
+
+    return {
+        "status": status,
+        "config_dir": str(config_dir),
+        "stats": stats,
+        "bloat_warnings": warnings,
+        "recommendations": recommendations,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Antigravity Global Configuration Auditor")
+    parser.add_argument("--config-dir", type=str, default=str(Path.home() / ".gemini" / "config"))
+    parser.add_argument("--json", action="store_true", help="Output audit results in JSON")
+
+    args = parser.parse_args()
+    config_dir = Path(args.config_dir).resolve()
+
+    result = audit_config_directory(config_dir)
+
+    if args.json:
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+    else:
+        print("====================================================================")
+        print(f"🔍 Auditoria de Configurações do Antigravity: {result['config_dir']}")
+        print(f"📊 Status Geral: {result['status']}")
+        print(f"   • Rules globais: {result['stats']['rules_count']} arquivos ({result['stats']['total_rule_lines']} linhas)")
+        print(f"   • Skills globais: {result['stats']['skills_count']} instaladas")
+        print(f"   • MCP Servers: {result['stats']['mcp_servers_count']} cadastrados ({result['stats']['eager_mcp_servers']} eager)")
+        print("====================================================================")
+
+        if result["bloat_warnings"]:
+            print("\n⚠️ AVISOS DE VAZAMENTO DE TOKENS:")
+            for w in result["bloat_warnings"]:
+                print(f"  - {w}")
+            print("\n💡 RECOMENDAÇÕES DE OTIMIZAÇÃO:")
+            for r in result["recommendations"]:
+                print(f"  - {r}")
+        else:
+            print("✅ Nenhuma anomalia de inchaço detectada! O ambiente global está otimizado.")
+
+
+if __name__ == "__main__":
+    main()

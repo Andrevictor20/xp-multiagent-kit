@@ -1,6 +1,6 @@
 ---
 name: ci-security-gate
-description: Gate de integração contínua e segurança — pipeline de lint, auditoria de dependências, análise estática de segurança e testes que deve rodar em todo commit, tratando segurança como hábito distribuído em cada mudança, não como fase isolada no final. Inclui um workflow de referência em GitHub Actions (assets/ci.yml). Use esta skill sempre que for validar se uma mudança está pronta para commit/merge, sempre que configurar ou revisar um pipeline de CI (incluindo GitHub Actions), e sempre que uma mudança tocar em autenticação, dados de usuário, chamadas a serviços externos, upload de arquivos, ou qualquer superfície exposta a input não confiável. Ative também quando o usuário pedir para "revisar segurança" de um projeto ou "configurar CI".
+description: "Pipeline de CI com lint, testes, auditoria de dependências e SAST."
 ---
 
 # CI & Security Gate

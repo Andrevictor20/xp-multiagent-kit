@@ -1,6 +1,6 @@
 ---
 name: security-sentinel-review
-description: Revisão proativa de segurança da informação além do que a análise estática automática cobre — gestão de secrets, superfícies sensíveis (autenticação, dados pessoais, pagamentos, permissões), política de dependências, e prontidão para incidentes. Use esta skill sempre que uma proposta do navigator tocar em dado sensível, autenticação, autorização, pagamentos, upload de arquivo ou integração com serviço externo que recebe dados do usuário, e sempre que o usuário pedir uma revisão de segurança mais ampla do projeto (não apenas rodar o scanner). Não confundir com ci-security-gate, que é o scanner automático rodando a cada commit — esta skill é a revisão de julgamento humano/agente sobre risco, algo que ferramenta automática não decide sozinha.
+description: "Revisão proativa de segurança e superfícies sensíveis além de SAST."
 ---
 
 # Security Sentinel Review

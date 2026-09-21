@@ -1,6 +1,6 @@
 ---
 name: zero-downtime-deployment
-description: "Estratégias de deploy sem indisponibilidade (Zero-Downtime), Blue/Green, Canary Releases com tráfego gradual, Rolling Updates com probes de liveness/readiness, padrão Expand-and-Contract de banco/API e automação de rollback imediato."
+description: "Deploy Zero-Downtime (Blue/Green, Canary) e rollback automatizado."
 ---
 
 # Zero-Downtime Deployment & Automated Rollback

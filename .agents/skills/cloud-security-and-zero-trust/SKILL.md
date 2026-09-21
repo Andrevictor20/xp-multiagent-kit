@@ -1,6 +1,6 @@
 ---
 name: cloud-security-and-zero-trust
-description: "Segurança em nuvem, arquitetura Zero Trust e pipelines de CD sem segredos estáticos via OIDC. Cobre autenticação federada (GitHub Actions OIDC), assinatura de imagens com Cosign/Sigstore, geração de SBOM e defesa em profundidade (WAF, Rate Limiting, mTLS, proteção contra SSRF)."
+description: "Zero Trust, autenticação federada OIDC, Cosign/SBOM e WAF/mTLS."
 ---
 
 # Cloud Security, Zero Trust & OIDC CD Pipelines

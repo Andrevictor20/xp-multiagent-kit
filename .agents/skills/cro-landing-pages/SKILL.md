@@ -1,6 +1,6 @@
 ---
 name: cro-landing-pages
-description: "Otimização de taxa de conversão (CRO) para landing pages, páginas de preço e formulários. Redução de atrito, hierarquia visual de CTAs, gestão de objeções, provas de confiança e eliminação de pontos de fuga."
+description: "Otimização de taxa de conversão, redução de atrito e gestão de objeções."
 ---
 
 # CRO Landing Pages: Otimização de Conversão & Redução de Atrito

@@ -1,6 +1,6 @@
 ---
 name: frontend-performance
-description: "Auditoria de desempenho no Frontend, Core Web Vitals (LCP, INP, CLS), renderização GPU-safe, isolamento de interatividade em client components e governança de DOM e camadas."
+description: "Auditoria de Core Web Vitals (LCP, INP, CLS) e renderização GPU-safe."
 ---
 
 # Frontend Performance & Core Web Vitals

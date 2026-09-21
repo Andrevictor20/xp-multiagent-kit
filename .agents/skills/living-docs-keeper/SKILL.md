@@ -1,6 +1,6 @@
 ---
 name: living-docs-keeper
-description: Manutenção de um documento vivo de projeto (estilo CLAUDE.md/AGENTS.md) que qualquer agente lê no início de cada sessão — arquitetura, stack, hurdles conhecidos com solução, padrões de design e checklist do projeto. Use esta skill sempre que um agente descobrir algo novo e não-óbvio durante o desenvolvimento (uma dificuldade de API externa, uma decisão de arquitetura, um padrão que deve ser seguido daqui pra frente), sempre que iniciar trabalho em um projeto que já tem esse documento (leia-o primeiro), e sempre que o usuário pedir para "documentar" uma decisão ou "atualizar o contexto do projeto". Ative com prioridade alta sempre que um problema difícil for resolvido — a informação deve ser registrada antes que a sessão termine, ou ela se perde.
+description: "Manutenção contínua de documentação viva e decisões arquiteturais."
 ---
 
 # Living Docs Keeper

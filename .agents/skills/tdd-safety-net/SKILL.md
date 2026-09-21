@@ -1,6 +1,6 @@
 ---
 name: tdd-safety-net
-description: "Garante a aplicação estrita do ciclo RED-GREEN-REFACTOR, matriz multi-camadas de testes (Unitário, Integração, Contrato, Regressão, E2E, Fuzzing) e proíbe expressamente qualquer forma de burla de testes (Anti-Test-Bypass)."
+description: "Ciclo RED-GREEN-REFACTOR, matriz multi-camadas e Anti-Test-Bypass estrito."
 ---
 
 # TDD Safety Net & Anti-Test-Bypass

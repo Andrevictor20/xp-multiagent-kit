@@ -1,6 +1,6 @@
 ---
 name: secrets-guardian
-description: "Governança, detecção e mitigação de vazamento de credenciais."
+description: "Detecção e prevenção contra vazamento de credenciais e chaves."
 ---
 
 # Secrets Guardian

@@ -1,6 +1,6 @@
 ---
 name: visual-regression
-description: "Controle de regressão visual para garantir fidelidade da UI."
+description: "Controle e testes de regressão visual para fidelidade de interface."
 ---
 
 # Visual Regression Guardian

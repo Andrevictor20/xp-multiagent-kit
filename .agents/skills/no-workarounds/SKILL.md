@@ -1,6 +1,6 @@
 ---
 name: no-workarounds
-description: "Disciplina estrita de correção de causa raiz. Proíbe expressamente workarounds, remendos e supressões que apenas calam o compilador, linter ou runtime sem resolver a fonte do problema."
+description: "Correção estrita na causa raiz, proibindo remendos, typecasts e hacks."
 ---
 
 # No Workarounds: Corrija a Fonte, Nunca Silencie o Sinal

@@ -1,6 +1,6 @@
 ---
 name: supply-chain-security
-description: "Audita bibliotecas e a cadeia de fornecimento de software (SCA)."
+description: "Auditoria de segurança de dependências e integridade da cadeia (SCA)."
 ---
 
 # Supply Chain Security

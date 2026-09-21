@@ -1,6 +1,6 @@
 ---
 name: design-tokens
-description: "Padrões de tokens visuais e semânticos com Color Consistency Lock e Shape Consistency Lock. Governança de cores desaturadas, raios concêntricos e tipografia parametrizada sem hardcoding."
+description: "Tokens visuais semânticos com Color Consistency e Shape Locks."
 ---
 
 # Design Tokens

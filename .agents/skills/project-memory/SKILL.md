@@ -1,6 +1,6 @@
 ---
 name: project-memory
-description: "Protocolo de memória contínua, governança de 4 tiers temporais, Auto-Onboarding, Recaptura Retroativa de Histórico Git (Reverse Ingestion) e ciclo de vida 100% autônomo (Zero-Prompt). Permite que novas sessões iniciem instantaneamente (Fast Context Bootstrap) sem varredura custosa do repositório, mantendo o resumo da arquitetura, histórico recente de alterações, backlog ativo, decisões semânticas e playbooks procedurais na pasta .agents/memory/."
+description: "Memória contínua em 4 Tiers, Fast Bootstrap e Auto-Onboarding."
 ---
 
 # Project Memory, Auto-Onboarding & Zero-Prompt Lifecycle

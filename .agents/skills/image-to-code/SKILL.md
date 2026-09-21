@@ -1,6 +1,6 @@
 ---
 name: image-to-code
-description: "Pipeline image-first para desenvolvimento de interfaces. Gera referências visuais dedicadas por seção, realiza extração estruturada de tipografia, espaçamentos, hierarquia e cores, e implementa o código frontend com fidelidade absoluta à direção artística estabelecida."
+description: "Pipeline image-first para implementação de UI com fidelidade visual."
 ---
 
 # Image-to-Code: Pipeline de Design Orientado a Imagem

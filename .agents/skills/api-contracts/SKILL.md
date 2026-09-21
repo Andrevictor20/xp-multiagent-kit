@@ -1,6 +1,6 @@
 ---
 name: api-contracts
-description: "Design de contratos de API, schemas de request/response e versionamento."
+description: "Design e versionamento de contratos de API e schemas request/response."
 ---
 
 # API Contracts

@@ -1,6 +1,6 @@
 ---
 name: availability-security
-description: "Proteção contra DoS e esgotamento de recursos."
+description: "Proteção contra DoS, Rate Limiting e esgotamento de recursos."
 ---
 
 # Availability Security

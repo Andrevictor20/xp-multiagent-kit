@@ -1,6 +1,6 @@
 ---
 name: redesign-ui-audit
-description: "Auditoria e modernização cirúrgica de interfaces existentes. Identifica padrões genéricos de IA e fraquezas de UI, aplicando melhorias de alto impacto (tipografia, espaçamento, contraste, hierarquia, motion sutil) sem quebrar arquitetura de informação, SEO ou funcionalidades."
+description: "Auditoria e modernização de interfaces existentes sem quebrar layout."
 ---
 
 # Redesign UI Audit: Protocolo de Modernização de Interfaces

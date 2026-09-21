@@ -1,6 +1,6 @@
 ---
 name: database-architecture
-description: "Revisão e arquitetura de dados (modelagem, índices, concorrência, performance)."
+description: "Modelagem relacional/NoSQL, índices, concorrência e performance."
 ---
 
 # Database Architecture

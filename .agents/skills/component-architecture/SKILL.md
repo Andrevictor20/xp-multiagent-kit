@@ -1,6 +1,6 @@
 ---
 name: component-architecture
-description: "Design e arquitetura de componentes de UI de alta fidelidade. Padrões Double-Bezel (Doppelrand), Button-in-Button, Bento Diversity, estados completos (Loading/Empty/Error) e alternativas avançadas para listas longas."
+description: "Arquitetura de componentes modulares, estados e micro-interações."
 ---
 
 # Component Architecture

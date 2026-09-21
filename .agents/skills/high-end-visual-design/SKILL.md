@@ -1,6 +1,6 @@
 ---
 name: high-end-visual-design
-description: "Diretiva de design visual de alta costura para experiências digitais de nível agência Awwwards ($150k+ Tier). Arquitetura Double-Bezel (Doppelrand com raios concêntricos calculados matematicamente), botões ilha com trailing icon aninhado (Button-in-Button), física de mola com curvas cubic-bezier proprietárias, macro-padding e micro-interações táteis."
+description: "Design visual $150k+ Tier: Double-Bezel, Button-in-Button e física de mola."
 ---
 
 # High-End Visual Design & Motion Choreography (Awwwards-Tier)

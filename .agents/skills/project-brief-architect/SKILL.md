@@ -1,6 +1,6 @@
 ---
 name: project-brief-architect
-description: Conduz a entrevista técnica inicial de um projeto novo, fazendo as perguntas que um engenheiro sênior faria antes de começar (features e escopo, stack, persistência de dados, autenticação, containerização, deploy/hosting, integrações externas, requisitos não-funcionais) e sintetiza tudo num prompt inicial estruturado, pronto para o agente genesis processar. Use esta skill sempre que o usuário disser algo como "quero começar um projeto novo mas não sei bem o que definir", "me ajuda a montar o prompt inicial", ou sempre que o usuário der um pedido de projeto novo vago demais para o genesis processar direto (ex. só "cria um app para X" sem stack, sem features detalhadas). Ative antes do genesis, nunca depois — esta skill prepara o input, não implementa nada.
+description: "Entrevista técnica e estruturação de requisitos no Momento Zero."
 ---
 
 # Project Brief Architect

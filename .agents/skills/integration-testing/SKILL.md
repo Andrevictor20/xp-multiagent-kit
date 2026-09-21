@@ -1,6 +1,6 @@
 ---
 name: integration-testing
-description: "Foco em testar fronteiras e integração entre componentes (API, DB), complementando testes unitários e E2E."
+description: "Testes de integração em fronteiras reais de banco, filas e APIs."
 ---
 # Integration Testing
 

@@ -1,6 +1,6 @@
 ---
 name: migration-safety
-description: "Garante a segurança e a compatibilidade retroativa das migrations de banco de dados."
+description: "Migrações de banco de dados expand-and-contract seguras e sem downtime."
 ---
 
 # Migration Safety

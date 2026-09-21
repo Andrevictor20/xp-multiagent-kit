@@ -1,6 +1,6 @@
 ---
 name: industrial-brutalist-ui
-description: "Engenharia de interfaces em brutalismo industrial e telemetria tática. Combina design tipográfico suíço de meados do século com terminais militares aeroespaciais. Grids rígidos de 90° sem border-radius, tipografia neo-grotesque maciça com tracking comprimido, dados densos em monospace, acento vermelho de perigo/aviação e texturas analógicas."
+description: "Engenharia de UI brutalista industrial, grid 90° e dados densos."
 ---
 
 # Industrial Brutalism & Tactical Telemetry UI

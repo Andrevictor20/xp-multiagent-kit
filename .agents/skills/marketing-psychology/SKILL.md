@@ -1,6 +1,6 @@
 ---
 name: marketing-psychology
-description: "Modelos mentais e psicologia comportamental aplicada a interfaces e marketing. Ancoragem de preços, aversão à perda, prova social, lei de Hick, efeito IKEA, gradiente de meta e reciprocidade aplicados eticamente em UI."
+description: "Princípios de economia comportamental (Hick, Ancoragem) aplicados a UI."
 ---
 
 # Marketing Psychology: Modelos Mentais & Ciência Comportamental para UI

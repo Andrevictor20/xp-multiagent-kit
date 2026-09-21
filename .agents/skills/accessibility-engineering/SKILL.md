@@ -1,6 +1,6 @@
 ---
 name: accessibility-engineering
-description: "Avaliação de acessibilidade: teclado, contraste, ARIA, focus."
+description: "Avaliação de acessibilidade: teclado, contraste WCAG AA, ARIA e foco."
 ---
 
 # Accessibility Engineering

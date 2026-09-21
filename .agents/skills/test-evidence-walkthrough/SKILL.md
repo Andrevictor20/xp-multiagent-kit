@@ -1,6 +1,6 @@
 ---
 name: test-evidence-walkthrough
-description: "Exige níveis de evidência de teste adequados ao risco da mudança (Evidence Levels L0 a L4)."
+description: "Validação de evidência de testes nativos de acordo com risco (L0-L4)."
 ---
 
 # Test Evidence Walkthrough

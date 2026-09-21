@@ -1,6 +1,6 @@
 ---
 name: visual-direction-studio
-description: Direção estética intencional e distintiva ao criar ou redesenhar uma UI — calibração de dials (VARIANCE, MOTION, DENSITY), paleta, tipografia e layout deliberados, eliminando totalmente o "look padrão de IA", em-dashes excessivos e layouts repetitivos. Use esta skill sempre que uma tela, componente ou página nova for projetada, antes de qualquer código de UI ser escrito.
+description: "Definição de direção visual deliberada, eliminando UI genérica de IA."
 ---
 
 # Visual Direction Studio (Anti-Slop Art Direction)

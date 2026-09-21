@@ -1,6 +1,6 @@
 ---
 name: atomic-commit-discipline
-description: Disciplina de "small releases" — cada commit é pequeno, categorizado, e production-ready por definição, nunca "quebrando temporariamente". Use esta skill sempre que for preparar, agrupar ou escrever uma mensagem de commit, sempre que uma tarefa terminar e for hora de consolidar a mudança, ou sempre que notar que uma mudança está ficando grande demais para um único commit. Ative também quando o usuário pedir para revisar o histórico de commits de um projeto conduzido com IA, avaliar se o ritmo de entrega está saudável, ou organizar um changelog.
+description: "Disciplina de commits atômicos, pequenos, categorizados e testados."
 ---
 
 # Atomic Commit Discipline

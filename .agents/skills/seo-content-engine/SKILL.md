@@ -1,6 +1,6 @@
 ---
 name: seo-content-engine
-description: "Otimização de SEO On-Page, SEO Semântico e visibilidade em buscadores de IA (AI Search / GEO / AEO: Google AI Overviews, ChatGPT, Perplexity). Estruturação de meta tags, dados estruturados Schema.org em JSON-LD, arquivos /pricing.md e llms.txt, e blocos de resposta direta."
+description: "SEO On-Page, Schema.org JSON-LD e otimização para AI Search (GEO/AEO)."
 ---
 
 # SEO Content Engine: On-Page SEO & AI Search Optimization (GEO)

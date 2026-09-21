@@ -1,6 +1,6 @@
 ---
 name: observability-instrumentation
-description: "Instrumentação de observabilidade em produção — logging estruturado, métricas essenciais (latência, taxa de erro, saturação), captura de exceções, e uma janela de monitoramento ativo logo após cada deploy. Use esta skill sempre que implementar uma operação crítica (endpoint público, job assíncrono, integração externa, fluxo de pagamento/autenticação) para decidir o que logar/medir, e sempre depois de um deploy em produção para saber o que observar nos minutos seguintes. Não confundir com ci-security-gate/deploy-pipeline-conductor: aquelas validam que o código está correto e que o deploy funcionou (health check binário, sim/não); esta skill cuida de saber o que está acontecendo de verdade em produção ao longo do tempo, inclusive quando o health check passa mas algo já está degradando."
+description: "Instrumentação de telemetria e monitoramento ativo pós-deploy."
 ---
 
 # Observability Instrumentation

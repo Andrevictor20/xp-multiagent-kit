@@ -1,6 +1,6 @@
 ---
 name: pair-navigator
-description: "Protocolo de navegação em pair programming com IA — como interromper propostas over-engineered, injetar contexto de domínio que o agente não tem, e fechar decisões de arquitetura em conjunto antes de codificar. Use esta skill sempre que um agente (principal ou subagente) estiver prestes a propor ou implementar uma solução técnica, sempre que o humano interromper um plano com 'simplifica' ou 'para', ou sempre que surgir uma decisão de arquitetura com trade-offs (monolito vs. serviços separados, sync vs. async, escolha de biblioteca/API externa). Ative também quando perceber sinais de over-engineering: múltiplos estados/camadas para um problema simples, abstrações prematuras, ou generalização não pedida."
+description: "Navegação em pair programming, foco de domínio e combate ao over-engineering."
 ---
 
 # Pair Navigator

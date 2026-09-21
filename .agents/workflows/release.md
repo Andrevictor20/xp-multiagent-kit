@@ -20,3 +20,5 @@ Passo 0: Fast Context Bootstrap (`.agents/memory/PROJECT_MEMORY.md`) [com Auto-O
    - Em caso de degradação da latência p99 > 50% ou taxa de erro 5xx > 1%, o rollback imediato é acionado automaticamente.
 5. **Hard-Enforced Auto-Sync de Memória:**
    - O `archivist` DEVE fisicamente persistir em disco a nova versão/tag, status e as evidências de release no `.agents/memory/PROJECT_MEMORY.md` antes de qualquer liberação final.
+6. **CI/CD Auto-Healer & Loop de Autocorreção (`ci-auto-heal`):**
+   - Caso a esteira remota (GitHub Actions) ou local apresente falhas durante os testes/build, aciona o `agy-ci-heal` para diagnosticar a causa raiz via logs sanitizados, aplicar correção sistemática e re-disparar até no máximo 3 iterações consecutivas (Regra [L-003]). Se não estabilizar na 3ª tentativa, encerra a auto-tentativa e notifica o desenvolvedor.

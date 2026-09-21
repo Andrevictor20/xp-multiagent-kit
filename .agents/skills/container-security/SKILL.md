@@ -1,6 +1,6 @@
 ---
 name: container-security
-description: "Boas práticas de segurança em imagens Docker e contêineres."
+description: "Hardening de Dockerfiles, imagens seguras, non-root e multi-stage builds."
 ---
 
 # Container Security

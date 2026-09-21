@@ -1,6 +1,6 @@
 ---
 name: copy-editing-sweeps
-description: "Protocolo de edição cirúrgica de copy em 7 passadas (Seven Sweeps Framework). Polimento de clareza, alinhamento de tom, corte de jargões e palavras vazias, fortalecimento de benefícios ('E daí?'), prova de afirmações e eliminação de riscos."
+description: "Edição cirúrgica de copy em 7 passadas para eliminar clichês e ruído."
 ---
 
 # Copy Editing Sweeps: O Framework das 7 Passadas de Edição

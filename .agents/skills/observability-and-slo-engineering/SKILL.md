@@ -1,6 +1,6 @@
 ---
 name: observability-and-slo-engineering
-description: "Engenharia de observabilidade, telemetria e governança de SLOs. Cobre os 3 pilares (logs estruturados em JSON, métricas RED via OpenTelemetry/Prometheus, distributed tracing), definição de SLIs/SLOs/Error Budgets e alertas acionáveis."
+description: "Engenharia de observabilidade (logs JSON, métricas RED, tracing e SLOs)."
 ---
 
 # Observability, Telemetry & SLO Engineering
