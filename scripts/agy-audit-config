@@ -42,6 +42,31 @@ def audit_config_directory(config_dir: Path):
             except Exception:
                 pass
 
+    agents_md = config_dir / "AGENTS.md"
+    if agents_md.is_file():
+        try:
+            content = agents_md.read_text(encoding="utf-8")
+            lines = content.splitlines()
+            stats["rules_count"] += 1
+            stats["total_rule_lines"] += len(lines)
+        except Exception:
+            pass
+
+    # Check for duplicate rules in parent directory (e.g. ~/.gemini/AGENTS.md)
+    if config_dir.name == "config" and config_dir.parent.is_dir():
+        parent_rules = []
+        for name in ["AGENTS.md", "GEMINI.md"]:
+            pfile = config_dir.parent / name
+            if pfile.exists() or pfile.is_symlink():
+                parent_rules.append(name)
+        if parent_rules:
+            warnings.append(
+                f"Regras redundantes detectadas em {config_dir.parent} ({', '.join(parent_rules)}). Causam injeção duplicada de regras globais."
+            )
+            recommendations.append(
+                f"Remova os links redundantes em {config_dir.parent}/ e mantenha apenas {config_dir}/AGENTS.md."
+            )
+
     # 2. Audit MCP Servers
     mcp_json = config_dir / "mcp_config.json"
     if mcp_json.is_file():
@@ -66,9 +91,9 @@ def audit_config_directory(config_dir: Path):
     if skills_dir.is_dir():
         skill_items = [d for d in skills_dir.iterdir() if d.is_dir() or d.is_symlink()]
         stats["skills_count"] = len(skill_items)
-        if len(skill_items) > 50:
+        if len(skill_items) > 70:
             warnings.append(
-                f"Diretório global de skills possui {len(skill_items)} skills (> 50). O Antigravity pode descartar skills por limite de orçamento de contexto."
+                f"Diretório global de skills possui {len(skill_items)} skills (> 70). O Antigravity pode descartar skills por limite de orçamento de contexto."
             )
             recommendations.append(
                 "Remova skills obsoletas do escopo global ou agrupe-as em plugins dedicados."

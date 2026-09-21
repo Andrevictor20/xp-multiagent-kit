@@ -15,11 +15,15 @@ echo "===================================================================="
 
 # 1. Configurar no Fish
 if [ -f "$FISH_CONFIG" ]; then
-  if ! grep -q "agy-fast" "$FISH_CONFIG"; then
+  # Garantir PATH no fish
+  if ! grep -q "\.local/bin" "$FISH_CONFIG"; then
+    echo 'set -gx PATH "$HOME/.local/bin" $PATH' >> "$FISH_CONFIG"
+  fi
+  if ! grep -q "agy-ci-heal" "$FISH_CONFIG"; then
     echo "🔗 Injetando aliases em $FISH_CONFIG..."
     cat << 'EOF' >> "$FISH_CONFIG"
 
-# --- Antigravity Token Saver Aliases ---
+# --- Antigravity Token Saver & CI Aliases ---
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"
@@ -29,7 +33,8 @@ alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
-# ---------------------------------------
+alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+# ---------------------------------------------
 EOF
     echo "   ✅ Aliases configurados no Fish!"
   else
@@ -38,12 +43,31 @@ EOF
 fi
 
 # 2. Configurar no Bash
+if [ -L "$BASH_CONFIG" ] && [ ! -e "$BASH_CONFIG" ]; then
+  echo "⚠️ Symlink quebrado detectado em $BASH_CONFIG. Criando arquivo real..."
+  rm -f "$BASH_CONFIG"
+fi
+
+if [ ! -f "$BASH_CONFIG" ]; then
+  echo "📄 Criando $BASH_CONFIG..."
+  cat << 'EOF' > "$BASH_CONFIG"
+# ~/.bashrc
+if [ -f /etc/bashrc ]; then
+  . /etc/bashrc
+fi
+export PATH="$HOME/.local/bin:$PATH"
+EOF
+fi
+
 if [ -f "$BASH_CONFIG" ]; then
-  if ! grep -q "agy-fast" "$BASH_CONFIG"; then
+  if ! grep -q "\.local/bin" "$BASH_CONFIG"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$BASH_CONFIG"
+  fi
+  if ! grep -q "agy-ci-heal" "$BASH_CONFIG"; then
     echo "🔗 Injetando aliases em $BASH_CONFIG..."
     cat << 'EOF' >> "$BASH_CONFIG"
 
-# --- Antigravity Token Saver Aliases ---
+# --- Antigravity Token Saver & CI Aliases ---
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"
@@ -53,7 +77,8 @@ alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
-# ---------------------------------------
+alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+# ---------------------------------------------
 EOF
     echo "   ✅ Aliases configurados no Bash!"
   else
@@ -62,11 +87,18 @@ EOF
 fi
 
 # 3. Configurar no Zsh se existir
+if [ -L "$ZSH_CONFIG" ] && [ ! -e "$ZSH_CONFIG" ]; then
+  rm -f "$ZSH_CONFIG"
+fi
+
 if [ -f "$ZSH_CONFIG" ]; then
-  if ! grep -q "agy-fast" "$ZSH_CONFIG"; then
+  if ! grep -q "\.local/bin" "$ZSH_CONFIG"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$ZSH_CONFIG"
+  fi
+  if ! grep -q "agy-ci-heal" "$ZSH_CONFIG"; then
     cat << 'EOF' >> "$ZSH_CONFIG"
 
-# --- Antigravity Token Saver Aliases ---
+# --- Antigravity Token Saver & CI Aliases ---
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"
@@ -76,7 +108,8 @@ alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
-# ---------------------------------------
+alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+# ---------------------------------------------
 EOF
     echo "   ✅ Aliases configurados no Zsh!"
   fi

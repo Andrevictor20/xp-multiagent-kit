@@ -81,6 +81,27 @@ class TestAgyAuditConfig(unittest.TestCase):
             data = json.loads(proc.stdout)
             self.assertTrue(any("heavy-server" in w for w in data["bloat_warnings"]))
 
+    def test_duplicate_parent_rules_detected(self):
+        """Redundant AGENTS.md / GEMINI.md in parent folder should trigger a warning."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base_dir = Path(tmpdir)
+            config_dir = base_dir / "config"
+            config_dir.mkdir()
+            (config_dir / "rules").mkdir()
+            (config_dir / "skills").mkdir()
+
+            # Create redundant AGENTS.md in parent
+            (base_dir / "AGENTS.md").write_text("# Master Rule\n")
+
+            proc = subprocess.run(
+                [str(AUDIT_BIN), "--config-dir", str(config_dir), "--json"],
+                text=True,
+                capture_output=True,
+            )
+            data = json.loads(proc.stdout)
+            self.assertIn("WARNING", data["status"])
+            self.assertTrue(any("Regras redundantes" in w for w in data["bloat_warnings"]))
+
 
 if __name__ == "__main__":
     unittest.main()
