@@ -24,18 +24,84 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 MODEL_LIMITS: Dict[str, Dict[str, int]] = {
+    # Modelos Google
     "gemini-3.8-flash": {"context_window": 1_048_576, "max_output": 65_536},
+    "gemini-3.8-pro": {"context_window": 2_097_152, "max_output": 65_536},
     "gemini-3.7-flash": {"context_window": 1_048_576, "max_output": 65_536},
+    "gemini-3.7-pro": {"context_window": 2_097_152, "max_output": 65_536},
     "gemini-3.6-flash": {"context_window": 1_048_576, "max_output": 65_536},
-    "gemini-2.0-flash": {"context_window": 1_048_576, "max_output": 65_536},
-    "gemini-1.5-flash": {"context_window": 1_048_576, "max_output": 65_536},
     "gemini-3.1-pro": {"context_window": 2_097_152, "max_output": 65_536},
+    "gemini-2.5-flash": {"context_window": 1_048_576, "max_output": 65_536},
+    "gemini-2.5-pro": {"context_window": 2_097_152, "max_output": 65_536},
+    "gemini-2.0-flash": {"context_window": 1_048_576, "max_output": 65_536},
+    "gemini-2.0-pro": {"context_window": 2_097_152, "max_output": 65_536},
+    "gemini-1.5-flash": {"context_window": 1_048_576, "max_output": 65_536},
     "gemini-1.5-pro": {"context_window": 2_097_152, "max_output": 65_536},
+    # Modelos Anthropic
     "claude-sonnet-4-6": {"context_window": 200_000, "max_output": 8_192},
     "claude-opus-4-6": {"context_window": 200_000, "max_output": 8_192},
+    "claude-haiku-4-6": {"context_window": 200_000, "max_output": 8_192},
+    "claude-3-7-sonnet": {"context_window": 200_000, "max_output": 8_192},
     "claude-3-5-sonnet": {"context_window": 200_000, "max_output": 8_192},
+    "claude-3-5-haiku": {"context_window": 200_000, "max_output": 8_192},
+    "claude-3-opus": {"context_window": 200_000, "max_output": 8_192},
+    # Modelos OpenAI
+    "gpt-4o-mini": {"context_window": 128_000, "max_output": 16_384},
+    "gpt-4o": {"context_window": 128_000, "max_output": 16_384},
+    "gpt-4-turbo": {"context_window": 128_000, "max_output": 4_096},
+    "o1-mini": {"context_window": 128_000, "max_output": 65_536},
+    "o1": {"context_window": 200_000, "max_output": 100_000},
+    "o3-mini": {"context_window": 200_000, "max_output": 100_000},
+    # Modelos DeepSeek
+    "deepseek-chat": {"context_window": 128_000, "max_output": 8_192},
+    "deepseek-reasoner": {"context_window": 128_000, "max_output": 8_192},
+    "deepseek-v3": {"context_window": 128_000, "max_output": 8_192},
+    "deepseek-r1": {"context_window": 128_000, "max_output": 8_192},
     "default": {"context_window": 1_000_000, "max_output": 8_192},
 }
+
+MODEL_DISPLAY_NAMES: Dict[str, str] = {
+    "gemini-3.8-flash": "Gemini 3.8 Flash",
+    "gemini-3.8-pro": "Gemini 3.8 Pro",
+    "gemini-3.7-flash": "Gemini 3.7 Flash",
+    "gemini-3.7-pro": "Gemini 3.7 Pro",
+    "gemini-3.6-flash": "Gemini 3.6 Flash",
+    "gemini-3.1-pro": "Gemini 3.1 Pro",
+    "gemini-2.5-flash": "Gemini 2.5 Flash",
+    "gemini-2.5-pro": "Gemini 2.5 Pro",
+    "gemini-2.0-flash": "Gemini 2.0 Flash",
+    "gemini-2.0-pro": "Gemini 2.0 Pro",
+    "gemini-1.5-flash": "Gemini 1.5 Flash",
+    "gemini-1.5-pro": "Gemini 1.5 Pro",
+    "claude-sonnet-4-6": "Claude Sonnet 4.6",
+    "claude-opus-4-6": "Claude Opus 4.6",
+    "claude-haiku-4-6": "Claude Haiku 4.6",
+    "claude-3-7-sonnet": "Claude 3.7 Sonnet",
+    "claude-3-5-sonnet": "Claude 3.5 Sonnet",
+    "claude-3-5-haiku": "Claude 3.5 Haiku",
+    "claude-3-opus": "Claude 3 Opus",
+    "gpt-4o-mini": "GPT-4o Mini",
+    "gpt-4o": "GPT-4o",
+    "gpt-4-turbo": "GPT-4 Turbo",
+    "o1-mini": "o1-mini",
+    "o1": "o1",
+    "o3-mini": "o3-mini",
+    "deepseek-chat": "DeepSeek V3",
+    "deepseek-reasoner": "DeepSeek R1",
+    "deepseek-v3": "DeepSeek V3",
+    "deepseek-r1": "DeepSeek R1",
+}
+
+
+def get_model_display_name(model_name: Optional[str]) -> str:
+    """Retorna uma representação amigável e legível do modelo."""
+    if not model_name:
+        return "Unknown Model"
+    clean_name = model_name.lower().strip()
+    for key, display in MODEL_DISPLAY_NAMES.items():
+        if key in clean_name:
+            return display
+    return model_name
 
 DEFAULT_SYSTEM_PROMPT_BYTES = 85_000
 DEFAULT_LIMIT_5H = 500_000        # Teto padrão de rate limit para janela de 5 horas
@@ -124,6 +190,14 @@ class TokenStats:
     steps_count: int = 0
 
 
+@dataclass
+class TurnStats:
+    user_input_tokens: int = 0
+    tool_tokens: int = 0
+    model_output_tokens: int = 0
+    total_tokens: int = 0
+
+
 def estimate_tokens(text: Optional[str]) -> int:
     """Estima tokens para texto arbitrário via heurística BPE/SentencePiece."""
     if not text:
@@ -140,6 +214,135 @@ def estimate_tokens(text: Optional[str]) -> int:
 def _tokens_from_bytes(byte_count: int, chars_per_token: float) -> int:
     """Converte contagem de bytes para tokens usando ratio específico ao tipo de conteúdo."""
     return max(0, int(byte_count / chars_per_token))
+
+
+def calculate_turn_stats(steps: List[Dict[str, Any]]) -> TurnStats:
+    """Calcula os tokens consumidos exclusivamente no último turno / mensagem.
+
+    Identifica o último USER_INPUT e mede:
+    - Entrada do usuário (input)
+    - Ferramentas executadas nesta resposta (tools)
+    - Resposta e thinking do modelo (output)
+    """
+    if not steps:
+        return TurnStats()
+
+    # Localiza o índice do último USER_INPUT
+    last_user_idx = -1
+    for i in range(len(steps) - 1, -1, -1):
+        if steps[i].get("type") == "USER_INPUT":
+            last_user_idx = i
+            break
+
+    if last_user_idx == -1:
+        last_user_idx = 0
+
+    turn_steps = steps[last_user_idx:]
+    user_bytes = 0
+    tool_bytes = 0
+    model_bytes = 0
+
+    for step in turn_steps:
+        stype = step.get("type", "UNKNOWN")
+        content = step.get("content", "")
+        if not isinstance(content, str):
+            content = json.dumps(content) if content else ""
+        step_len = len(content)
+
+        if stype == "USER_INPUT":
+            user_bytes += step_len
+        elif stype == "PLANNER_RESPONSE":
+            thinking = step.get("thinking", "")
+            if isinstance(thinking, str):
+                step_len += len(thinking)
+            model_bytes += step_len
+        else:
+            tool_bytes += step_len
+
+    user_tokens = _tokens_from_bytes(user_bytes, _CHARS_PER_TOKEN_PROSE)
+    tool_tokens = _tokens_from_bytes(tool_bytes, _CHARS_PER_TOKEN_CODE)
+    model_tokens = _tokens_from_bytes(model_bytes, _CHARS_PER_TOKEN_MIXED)
+    total_tokens = user_tokens + tool_tokens + model_tokens
+
+    return TurnStats(
+        user_input_tokens=user_tokens,
+        tool_tokens=tool_tokens,
+        model_output_tokens=model_tokens,
+        total_tokens=total_tokens,
+    )
+
+
+def detect_model_name_from_steps(steps: List[Dict[str, Any]]) -> Optional[str]:
+    """Detecta se houve alteração ou indicação de modelo nas mensagens mais recentes do transcript."""
+    if not steps:
+        return None
+
+    for step in reversed(steps):
+        if step.get("type") not in ("USER_INPUT", "PLANNER_RESPONSE"):
+            continue
+        content = step.get("content", "")
+        if not isinstance(content, str):
+            content = json.dumps(content) if content else ""
+
+        if "Model Selection" in content:
+            m = re.search(
+                r"Model Selection.*?\bto\s+([A-Za-z0-9\.\-\s]+?)(?:\s*\(|\.\s+[A-Z]|\n|$)",
+                content,
+                re.DOTALL | re.IGNORECASE,
+            )
+            model_str = m.group(1).strip().lower() if m else content.lower()
+
+            # Normalização de modelos Google
+            if "gemini" in model_str:
+                if "3.8" in model_str:
+                    return "gemini-3.8-pro" if "pro" in model_str else "gemini-3.8-flash"
+                if "3.7" in model_str:
+                    return "gemini-3.7-pro" if "pro" in model_str else "gemini-3.7-flash"
+                if "3.6" in model_str:
+                    return "gemini-3.6-flash"
+                if "3.1" in model_str:
+                    return "gemini-3.1-pro"
+                if "2.5" in model_str:
+                    return "gemini-2.5-pro" if "pro" in model_str else "gemini-2.5-flash"
+                if "2.0" in model_str:
+                    return "gemini-2.0-pro" if "pro" in model_str else "gemini-2.0-flash"
+                if "1.5" in model_str:
+                    return "gemini-1.5-pro" if "pro" in model_str else "gemini-1.5-flash"
+                return "gemini-3.8-flash"
+
+            # Normalização de modelos Anthropic Claude
+            if "claude" in model_str or "sonnet" in model_str or "opus" in model_str or "haiku" in model_str:
+                if "4" in model_str or "4.6" in model_str:
+                    if "opus" in model_str:
+                        return "claude-opus-4-6"
+                    if "haiku" in model_str:
+                        return "claude-haiku-4-6"
+                    return "claude-sonnet-4-6"
+                if "3.7" in model_str:
+                    return "claude-3-7-sonnet"
+                if "3.5" in model_str:
+                    if "haiku" in model_str:
+                        return "claude-3-5-haiku"
+                    return "claude-3-5-sonnet"
+                if "opus" in model_str:
+                    return "claude-3-opus"
+                return "claude-sonnet-4-6"
+
+            # Normalização de modelos OpenAI
+            if "gpt-4o" in model_str:
+                return "gpt-4o-mini" if "mini" in model_str else "gpt-4o"
+            if "o1" in model_str:
+                return "o1-mini" if "mini" in model_str else "o1"
+            if "o3" in model_str:
+                return "o3-mini"
+
+            # Normalização DeepSeek
+            if "deepseek" in model_str:
+                if "r1" in model_str or "reasoner" in model_str:
+                    return "deepseek-reasoner"
+                return "deepseek-chat"
+
+    return None
 
 
 def _measure_system_prompt_bytes() -> int:
@@ -399,6 +602,32 @@ def format_badge(stats: TokenStats) -> str:
     )
 
 
+def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
+    """Gera rodapé markdown elegante exibindo o consumo desta mensagem e a telemetria acumulada."""
+    display_model = get_model_display_name(stats.model_name)
+    turn_tot = human_tokens(turn.total_tokens)
+    turn_in = human_tokens(turn.user_input_tokens)
+    turn_tools = human_tokens(turn.tool_tokens)
+    turn_out = human_tokens(turn.model_output_tokens)
+
+    tot_str = human_tokens(stats.total_tokens)
+    win_str = human_tokens(stats.context_window)
+    r5h_used = human_tokens(stats.rolling.tokens_5h)
+    r5h_tot = human_tokens(stats.rolling.limit_5h)
+    r7d_used = human_tokens(stats.rolling.tokens_7d)
+    r7d_tot = human_tokens(stats.rolling.limit_7d)
+
+    return (
+        f"---\n"
+        f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
+        f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
+        f"📊 **Telemetria Acumulada ({display_model}):** "
+        f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
+        f"5h: `{r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) | "
+        f"Semana: `{r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
+    )
+
+
 def format_json_stats(stats: TokenStats) -> str:
     """Exporta as métricas de telemetria em formato JSON estruturado com os tetos <usado>/<total>."""
     payload = {
@@ -640,15 +869,21 @@ def load_transcript(transcript_path: Path) -> List[Dict[str, Any]]:
     return steps
 
 
-def detect_model_name(conversation_id: str) -> str:
-    """Detecta o modelo ativo via: env vars → SQLite → config files → padrão."""
-    # 1. Variáveis de ambiente (maior prioridade — usuário configurou explicitamente)
+def detect_model_name(conversation_id: str, steps: Optional[List[Dict[str, Any]]] = None) -> str:
+    """Detecta o modelo ativo via: steps do transcript → env vars → config files → SQLite → padrão."""
+    # 1. Detecção dinâmica via transcript (prioridade máxima — detecta troca em tempo real)
+    if steps:
+        detected = detect_model_name_from_steps(steps)
+        if detected:
+            return detected
+
+    # 2. Variáveis de ambiente (usuário configurou explicitamente no ambiente)
     for env_key in ("AGY_MODEL", "XP_MODEL", "ANTHROPIC_MODEL", "GEMINI_MODEL"):
         env_val = os.environ.get(env_key, "").strip().lower()
         if env_val:
             return env_val
 
-    # 2. Arquivo de configuração do Antigravity
+    # 3. Arquivo de configuração do Antigravity (IDE ou CLI)
     home = Path.home()
     for cfg_path in [
         home / ".gemini" / "antigravity-ide" / "config.json",
@@ -669,12 +904,7 @@ def detect_model_name(conversation_id: str) -> str:
             except Exception:
                 pass
 
-    # 3. SQLite da conversa
-    KNOWN_MODELS = (
-        "claude-sonnet-4-6", "claude-opus-4-6", "claude-3-5-sonnet",
-        "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-pro",
-        "gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash",
-    )
+    # 4. SQLite da conversa
     for app in ("antigravity-ide", "antigravity-cli"):
         db_path = home / ".gemini" / app / "conversations" / f"{conversation_id}.db"
         if db_path.is_file():
@@ -684,7 +914,9 @@ def detect_model_name(conversation_id: str) -> str:
                 rows = cur.execute("SELECT data FROM gen_metadata ORDER BY idx DESC LIMIT 5").fetchall()
                 for (data,) in rows:
                     payload = data if isinstance(data, bytes) else str(data).encode()
-                    for m in KNOWN_MODELS:
+                    for m in MODEL_LIMITS.keys():
+                        if m == "default":
+                            continue
                         if m.encode() in payload:
                             con.close()
                             return m
@@ -692,7 +924,7 @@ def detect_model_name(conversation_id: str) -> str:
             except Exception:
                 pass
 
-    # 4. Padrão conservador
+    # 5. Padrão conservador
     return "gemini-3.8-flash"
 
 
@@ -799,6 +1031,7 @@ def main():
     parser.add_argument("--limit-5h", help="Teto da janela de 5h (ex: 500k, 300000)")
     parser.add_argument("--limit-weekly", help="Teto da cota semanal (ex: 10M, 15M, 10000000)")
     parser.add_argument("--badge", action="store_true", help="Imprime apenas o badge markdown de telemetria")
+    parser.add_argument("--turn", action="store_true", help="Imprime o rodapé de telemetria da mensagem/turno atual e acumulado")
     parser.add_argument("--json", action="store_true", help="Imprime as estatísticas em formato JSON")
     parser.add_argument("--report", action="store_true", help="Gera e grava o arquivo .agents/memory/TOKEN_TELEMETRY.md")
     parser.add_argument("--check", action="store_true", help="Avalia se os limites estão baixos e emite alerta se necessário")
@@ -832,9 +1065,14 @@ def main():
             continue
 
         steps = load_transcript(transcript_path)
-        model_name = detect_model_name(conv_id)
+        model_name = detect_model_name(conv_id, steps=steps)
         rolling = calculate_rolling_windows(limit_5h=limit_5h, limit_7d=limit_7d)
         stats = parse_transcript_data(conv_id, model_name, steps, rolling=rolling)
+
+        if args.turn:
+            turn = calculate_turn_stats(steps)
+            print(format_message_footer(stats, turn))
+            return
 
         if args.check:
             status, is_low, msg = check_budget_status(stats)

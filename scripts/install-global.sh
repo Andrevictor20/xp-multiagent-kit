@@ -74,6 +74,8 @@ if [ -d "$CLI_DIR" ]; then
   ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
   ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/GEMINI.md"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$CLI_DIR/mcp_config.json"
+  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$CLI_DIR/hooks.json"
+  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$GLOBAL_CONFIG_DIR/hooks.json"
 fi
 
 # 4.3. Garantir paridade com Antigravity IDE
@@ -90,6 +92,7 @@ if [ -d "$IDE_DIR" ]; then
   ln -sfn "$KIT_DIR/AGENTS.md" "$IDE_DIR/AGENTS.md"
   ln -sfn "$KIT_DIR/AGENTS.md" "$IDE_DIR/GEMINI.md"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$IDE_DIR/mcp_config.json"
+  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$IDE_DIR/hooks.json"
   if [ -f "$CLI_DIR/settings.json" ] && [ ! -f "$IDE_DIR/settings.json" ]; then
     cp "$CLI_DIR/settings.json" "$IDE_DIR/settings.json"
   fi

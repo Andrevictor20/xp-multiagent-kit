@@ -49,6 +49,9 @@ xp-tokens --check
 # Monitoramento contínuo em tempo real (para painel split/tmux)
 xp-tokens --watch
 
+# Imprimir rodapé de telemetria da mensagem/turno atual e acumulado (IDE e CLI)
+xp-tokens --turn
+
 # Imprimir badge markdown compacto para chat
 xp-tokens --badge
 

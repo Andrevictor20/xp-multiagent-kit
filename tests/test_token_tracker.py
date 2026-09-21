@@ -14,8 +14,13 @@ from scripts.token_tracker import (
     format_markdown_report,
     check_budget_status,
     audit_token_bottlenecks,
+    calculate_turn_stats,
+    detect_model_name_from_steps,
+    format_message_footer,
+    get_model_display_name,
     TokenStats,
-    RollingWindowStats
+    RollingWindowStats,
+    TurnStats,
 )
 
 class TestTokenTracker(unittest.TestCase):
@@ -227,6 +232,100 @@ class TestTokenTracker(unittest.TestCase):
         self.assertGreaterEqual(len(audit["bottlenecks"]), 1)
         self.assertIn("RUN_COMMAND", audit["bottlenecks"][0]["tool"])
         self.assertIn("recommendation", audit["bottlenecks"][0])
+
+    def test_get_model_limits_expanded_models(self):
+        # Modelos Google
+        self.assertEqual(get_model_limits("gemini-3.8-flash")["context_window"], 1_048_576)
+        self.assertEqual(get_model_limits("gemini-3.7-pro")["context_window"], 2_097_152)
+        self.assertEqual(get_model_limits("gemini-2.5-flash")["context_window"], 1_048_576)
+        self.assertEqual(get_model_limits("gemini-2.0-flash")["context_window"], 1_048_576)
+
+        # Modelos Anthropic
+        self.assertEqual(get_model_limits("claude-sonnet-4-6")["context_window"], 200_000)
+        self.assertEqual(get_model_limits("claude-3-7-sonnet")["context_window"], 200_000)
+        self.assertEqual(get_model_limits("claude-opus-4-6")["context_window"], 200_000)
+
+        # Modelos OpenAI
+        self.assertEqual(get_model_limits("gpt-4o")["context_window"], 128_000)
+        self.assertEqual(get_model_limits("o1")["context_window"], 200_000)
+        self.assertEqual(get_model_limits("o3-mini")["context_window"], 200_000)
+
+        # Modelos DeepSeek
+        self.assertEqual(get_model_limits("deepseek-chat")["context_window"], 128_000)
+        self.assertEqual(get_model_limits("deepseek-reasoner")["context_window"], 128_000)
+
+    def test_get_model_display_name(self):
+        self.assertEqual(get_model_display_name("gemini-3.8-flash"), "Gemini 3.8 Flash")
+        self.assertEqual(get_model_display_name("claude-sonnet-4-6"), "Claude Sonnet 4.6")
+        self.assertEqual(get_model_display_name("gpt-4o"), "GPT-4o")
+        self.assertEqual(get_model_display_name("o3-mini"), "o3-mini")
+        self.assertEqual(get_model_display_name("custom-model"), "custom-model")
+
+    def test_detect_model_name_from_steps(self):
+        steps = [
+            {
+                "type": "USER_INPUT",
+                "content": "Olá\n<USER_SETTINGS_CHANGE>\nThe user changed setting `Model Selection` from None to Claude Sonnet 4.6 (Thinking).\n</USER_SETTINGS_CHANGE>",
+            },
+            {"type": "PLANNER_RESPONSE", "content": "Olá, como posso ajudar?"},
+            {
+                "type": "USER_INPUT",
+                "content": "Mudei de ideia\n<USER_SETTINGS_CHANGE>\nThe user changed setting `Model Selection` from Claude Sonnet 4.6 (Thinking) to Gemini 3.8 Flash (High).\n</USER_SETTINGS_CHANGE>",
+            },
+        ]
+        model = detect_model_name_from_steps(steps)
+        self.assertEqual(model, "gemini-3.8-flash")
+
+    def test_calculate_turn_stats(self):
+        steps = [
+            {"type": "USER_INPUT", "content": "Turno 1: Mensagem inicial com 50 caracteres para teste"},
+            {"type": "PLANNER_RESPONSE", "content": "Resposta 1 do assistente", "thinking": "Pensando na resposta 1"},
+            {"type": "RUN_COMMAND", "content": "Resultado do comando 1"},
+            {"type": "USER_INPUT", "content": "Turno 2: Pergunta específica sobre consumo de tokens"},
+            {"type": "RUN_COMMAND", "content": "Execução da ferramenta do turno 2 com 100 caracteres de saída para testar tokens"},
+            {"type": "PLANNER_RESPONSE", "content": "Resposta final do turno 2", "thinking": "Refletindo profundamente"},
+        ]
+        turn = calculate_turn_stats(steps)
+        self.assertIsInstance(turn, TurnStats)
+        self.assertGreater(turn.user_input_tokens, 5)
+        self.assertGreater(turn.tool_tokens, 10)
+        self.assertGreater(turn.model_output_tokens, 5)
+        self.assertEqual(
+            turn.total_tokens,
+            turn.user_input_tokens + turn.tool_tokens + turn.model_output_tokens,
+        )
+
+    def test_format_message_footer(self):
+        turn = TurnStats(
+            user_input_tokens=320,
+            tool_tokens=450,
+            model_output_tokens=630,
+            total_tokens=1400,
+        )
+        sample_steps = [{"type": "USER_INPUT", "content": "Hello"}]
+        rolling = RollingWindowStats(
+            tokens_5h=30000,
+            limit_5h=500000,
+            tokens_7d=1200000,
+            limit_7d=10000000,
+        )
+        stats = parse_transcript_data(
+            conversation_id="conv-footer",
+            model_name="gemini-3.8-flash",
+            steps=sample_steps,
+            system_prompt_bytes=5000,
+            rolling=rolling,
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("🪙 **Consumo Desta Mensagem:**", footer)
+        self.assertIn("Entrada:", footer)
+        self.assertIn("Ferramentas:", footer)
+        self.assertIn("Resposta:", footer)
+        self.assertIn("📊 **Telemetria Acumulada (Gemini 3.8 Flash):**", footer)
+        self.assertIn("Contexto:", footer)
+        self.assertIn("5h:", footer)
+        self.assertIn("Semana:", footer)
+
 
 if __name__ == "__main__":
     unittest.main()

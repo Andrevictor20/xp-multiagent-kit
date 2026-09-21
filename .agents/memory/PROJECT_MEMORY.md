@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-21 17:00 (Local)  
+> **Última Atualização:** 2026-09-21 19:20 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.13.0 (Global IDE/CLI Enforced Parity, Rule Deduplication & Machine-Wide Git Push CI Watcher)
+> **Versão / Marco Atual:** v2.14.0 (Per-Message Token Telemetry Footer, Multi-Model Dynamic Detection & PostInvocation Hook)
 
 ---
 
@@ -12,9 +12,10 @@
 - **Arquitetura Chave:** Estrutura modular em `.agents/` contendo `agents` (11 especialistas), `skills` (63 capacidades granulares com `ci-auto-heal`), `workflows` (7 esteiras L0-L3 com Passo 0 e Passo Final autônomos), `policies` (9 regras inegociáveis), `templates` (scaffolds) e `memory` (memória viva em 4 tiers, auto-onboarding, recaptura git e arquivo permanente). Suíte global instalada em `~/.local/bin/` (`agy-ci-heal`, `xp-ci-heal`, `agy-tokens`, `xp-tokens`, `agy-sanitize`, `agy-handoff`, `agy-audit`, `agy-fast`, `agy-deep`). Paridade e espelhamento integral em `~/.gemini/antigravity-cli/` e `~/.gemini/antigravity-ide/`.
 - **Comandos Essenciais:**
   - Instalação / Re-sincronização Global: `./scripts/install-global.sh`
+  - Telemetria de Tokens por Mensagem: `agy-tokens --turn` ou `xp-tokens --turn`
+  - Telemetria de Tokens Acumulada: `agy-tokens --badge` ou `agy-tokens --check`
   - CI/CD Auto-Healer: `agy-ci-heal --status` ou `agy-ci-heal --watch --heal --auto-push`
   - Diagnóstico Cirúrgico de CI: `agy-ci-heal --diagnose-run <run-id>`
-  - Telemetria de Tokens: `agy-tokens --badge` ou `agy-tokens --check`
   - Sanitizador Anti-Flood: `agy-sanitize <cmd>` ou `<cmd> | agy-sanitize`
   - Handoff / Reset de Sessão: `agy-handoff --write-file`
   - Auditoria de Configuração: `agy-audit`
@@ -24,8 +25,8 @@
 
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 63 Skills, 7 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
-- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003 e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-GLOBAL-ENFORCE-20260921-02` (29/29 testes unitários aprovados, status HEALTHY no agy-audit com 1 regra global / 63 skills sem inchaço, paridade total ~/.gemini/antigravity-ide/ e Git Hook core.hooksPath ativo)
+- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
+- **Última Execução / Evidência:** `EV-TOKEN-MSG-20260921-01` (34/34 testes unitários aprovados, status HEALTHY no agy-audit com 1 regra global / 63 skills sem inchaço, telemetria multi-modelo ativa para Google/Claude/OpenAI e hook PostInvocation funcional)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
@@ -34,18 +35,16 @@
 
 | Data / Hora | Tipo | Resumo da Alteração | Arquivos Principais | Test Evidence / Status |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-09-21 | `FEAT` | Exibição de Telemetria de Tokens Após Cada Mensagem (Delta + 3 Camadas): suporte universal a modelos Google (Gemini 3.8/3.7/3.1/2.5/2.0/1.5) e demais (Claude 4.6/3.7/3.5, GPT-4o, o1, o3-mini, DeepSeek), detecção dinâmica por transcript, comandos agy-tokens/xp-tokens --turn, hook post-invocation token-badge-hook.py e regra mandatória em AGENTS.md | `scripts/token_tracker.py`, `scripts/hooks/token-badge-hook.py`, `.agents/hooks.json`, `AGENTS.md`, `.agents/skills/token-budget-tracker/SKILL.md`, `scripts/install-global.sh`, `tests/test_token_tracker.py` | `PASS (EV-TOKEN-MSG-20260921-01)` |
 | 2026-09-21 | `FEAT` | Paridade Global IDE & CLI, Desduplicação de Regras e Acoplamento de Git Hooks: remoção de links redundantes em ~/.gemini/, isolamento de 33 skills legadas GCP em plugin, espelhamento total em ~/.gemini/antigravity-ide/, git hook pre-push/post-push e correção de broken symlink em ~/.bashrc | `scripts/install-global.sh`, `scripts/global-token-optimizer/install-shell-aliases.sh`, `scripts/hooks/post-push-watcher.sh`, `scripts/agy-audit-config`, `tests/test_agy_audit_config.py` | `PASS (EV-GLOBAL-ENFORCE-20260921-02)` |
 | 2026-09-21 | `FEAT` | CI/CD Auto-Healer & Loop Autônomo de Autocorreção: ci_healer.py (comandos agy-ci-heal/xp-ci-heal), extração cirúrgica de falhas via gh CLI, salvaguarda de 3 iterações (L-003), skill ci-auto-heal e hook post-push | `scripts/ci_healer.py`, `scripts/hooks/post-push-watcher.sh`, `.agents/skills/ci-auto-heal/SKILL.md`, `AGENTS.md`, `.agents/workflows/release.md`, `tests/test_ci_healer.py` | `PASS (EV-CI-AUTO-HEAL-20260921-01)` |
 | 2026-09-21 | `FEAT` | Suíte Global de Redução de Tokens no Antigravity (IDE & CLI em qualquer projeto): agy-sanitize, agy-handoff, agy-audit, perfis de CLI agy-fast/agy-deep, aliases Fish/Bash, universal.geminiignore e guia prático | `scripts/agy-sanitize`, `scripts/agy-handoff`, `scripts/agy-audit-config`, `scripts/global-token-optimizer/*`, `templates/universal.geminiignore`, `docs/universal-token-reduction-guide.md`, `tests/` | `PASS (EV-GLOBAL-TOKEN-OPT-20260921-01)` |
 | 2026-09-21 | `FEAT` | Implementação dos 4 Pilares de Redução de Tokens: Protocolo Anti-Flood de Ferramentas, sanitize-tool-output.sh, auditoria de gargalos (--audit), Session Reset aos 25 turnos e modulação de reasoning effort | `scripts/token_tracker.py`, `scripts/sanitize-tool-output.sh`, `AGENTS.md`, `.agents/skills/token-budget-tracker/` | `PASS (EV-TOKEN-OPTIMIZE-20260921-02)` |
-| 2026-09-21 | `FEAT` | Telemetria de Tokens em 3 Camadas (Context Window, Janela Móvel de 5 Horas e Cota Semanal), comandos CLI xp-tokens/agy-tokens, skill token-budget-tracker, testes unitários e eliminação de duplicações de regras | `scripts/token_tracker.py`, `tests/test_token_tracker.py`, `.agents/skills/token-budget-tracker/`, `AGENTS.md`, `scripts/install-global.sh` | `PASS (EV-TOKEN-TRACKER-20260921-01)` |
-| 2026-09-05 | `FEAT` | Paridade total Antigravity IDE -> CLI: sincronização de skills, rules, workflows, agents, policies, memory e hooks, configuração nativa de auto-aprovação de edições de arquivo (agentMode=accept-edits, toolPermission=always-proceed, write_file(*)) e aliases Fish/Bash | `~/.gemini/antigravity-cli/settings.json`, `~/.gemini/antigravity-cli/`, `~/.config/fish/config.fish`, `PROJECT_MEMORY.md` | `PASS (EV-CLI-SYNC-20260905-01)` |
-| 2026-08-31 | `PERF` | Otimização drástica do consumo de tokens: remoção de regras redundantes em ~/.gemini/config/, desduplicação de skills e condensação das descrições frontmatter mantendo 100% dos padrões | `AGENTS.md`, `.agents/skills/*/SKILL.md`, `scripts/install-global.sh`, `~/.gemini/config/` | `PASS (EV-TOKEN-OPTIMIZE-20260831-01)` |
-| 2026-08-31 | `FEAT` | Instalação global do kit (~/.gemini/config/), cross-referencing exaustivo no AGENTS.md, script install-global.sh e gate estrito de persistência física de memória | `AGENTS.md`, `.agents/policies/memory.md`, `.agents/workflows/*`, `.agents/agents/archivist/agent.md`, `scripts/install-global.sh` | `PASS (EV-GLOBAL-ENFORCE-20260831-01)` |
 
 ---
 
 ## 4. Active Backlog & Immediate Handoff (Working / Episodic)
+- [x] **[DONE] Exibição de Consumo de Tokens Após Cada Mensagem (IDE & CLI): delta por mensagem (in/tools/out) e acumulado em 3 camadas, suporte multi-modelo com detecção dinâmica e hook PostInvocation (34/34 testes unitários).**
 - [x] **[DONE] CI/CD Auto-Healer: monitoramento autônomo de GitHub Actions (gh run), extração cirúrgica de logs de erro, loop de autocorreção em até 3 tentativas (L-003) e hook post-push.**
 - [x] **[DONE] Suíte Global de Redução de Tokens (IDE & CLI em qualquer projeto): agy-sanitize, agy-handoff, agy-audit, perfis de CLI (fast/deep) e universal.geminiignore com 28/28 testes unitários aprovados.**
 - [x] **[DONE] Otimização de consumo de tokens: orçamento de Rules e Skills < 20% com zero truncamento.**

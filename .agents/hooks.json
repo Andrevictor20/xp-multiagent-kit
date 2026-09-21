@@ -1,0 +1,58 @@
+{
+  "orca-status": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "if [ -f '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -r '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -x '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ]; then ORCA_ANTIGRAVITY_EVENT='PreInvocation' /bin/sh '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh'; else { command -p cat 2>/dev/null || cat; } >/dev/null 2>&1 || :; fi",
+        "timeout": 10
+      }
+    ],
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "if [ -f '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -r '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -x '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ]; then ORCA_ANTIGRAVITY_EVENT='PostInvocation' /bin/sh '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh'; else { command -p cat 2>/dev/null || cat; } >/dev/null 2>&1 || :; fi",
+        "timeout": 10
+      }
+    ],
+    "Stop": [
+      {
+        "type": "command",
+        "command": "if [ -f '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -r '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -x '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ]; then ORCA_ANTIGRAVITY_EVENT='Stop' /bin/sh '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh'; else { command -p cat 2>/dev/null || cat; } >/dev/null 2>&1 || :; fi",
+        "timeout": 10
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -r '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -x '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ]; then ORCA_ANTIGRAVITY_EVENT='PreToolUse' /bin/sh '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh'; else printf '%s\\n' '{\"decision\":\"ask\"}'; { command -p cat 2>/dev/null || cat; } >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -r '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ] && [ -x '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh' ]; then ORCA_ANTIGRAVITY_EVENT='PostToolUse' /bin/sh '/home/andrevmp/.orca/agent-hooks/antigravity-hook.sh'; else { command -p cat 2>/dev/null || cat; } >/dev/null 2>&1 || :; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "token-badge": {
+    "PostInvocation": [
+      {
+        "type": "command",
+        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/token-badge-hook.py",
+        "timeout": 10
+      }
+    ]
+  }
+}
