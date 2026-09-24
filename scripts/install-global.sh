@@ -98,13 +98,10 @@ if [ -d "$IDE_DIR" ]; then
   fi
 fi
 
-# 4.4. Implantar universal .geminiignore
-if [ -f "$KIT_DIR/templates/universal.geminiignore" ]; then
-  echo "📄 Implantando universal.geminiignore..."
-  cp -n "$KIT_DIR/templates/universal.geminiignore" "$GLOBAL_CONFIG_DIR/.geminiignore" 2>/dev/null || true
-  cp -n "$KIT_DIR/templates/universal.geminiignore" "$HOME/.gemini/.geminiignore" 2>/dev/null || true
-  [ -d "$CLI_DIR" ] && cp -n "$KIT_DIR/templates/universal.geminiignore" "$CLI_DIR/.geminiignore" 2>/dev/null || true
-  [ -d "$IDE_DIR" ] && cp -n "$KIT_DIR/templates/universal.geminiignore" "$IDE_DIR/.geminiignore" 2>/dev/null || true
+# 4.4. Implantar universal .geminiignore e .antigravityignore em todos os projetos
+if [ -f "$KIT_DIR/scripts/apply_ignore_rules.py" ]; then
+  echo "📄 Implantando .geminiignore & .antigravityignore em todos os projetos da IDE e CLI..."
+  python3 "$KIT_DIR/scripts/apply_ignore_rules.py" || true
 fi
 
 # 5. Instalar executáveis CLI globais em ~/.local/bin/
@@ -118,12 +115,13 @@ ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/agy-sanitize"
 ln -sf "$KIT_DIR/scripts/agy-handoff" "$HOME/.local/bin/agy-handoff"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit-config"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit"
+ln -sf "$KIT_DIR/scripts/apply_ignore_rules.py" "$HOME/.local/bin/agy-apply-ignore"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-fast"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-deep"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/agy-ci-heal"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/xp-ci-heal"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-ci-heal disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal disponíveis no PATH!"
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."
