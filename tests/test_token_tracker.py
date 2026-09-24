@@ -21,6 +21,9 @@ from scripts.token_tracker import (
     TokenStats,
     RollingWindowStats,
     TurnStats,
+    LiveServerQuota,
+    LiveQuotaBucket,
+    clean_refresh_text,
 )
 
 class TestTokenTracker(unittest.TestCase):
@@ -325,6 +328,53 @@ class TestTokenTracker(unittest.TestCase):
         self.assertIn("Contexto:", footer)
         self.assertIn("5h:", footer)
         self.assertIn("Semana:", footer)
+
+    def test_clean_refresh_text(self):
+        desc1 = "You have used some of your weekly limit, it will fully refresh in 6 days, 23 hours."
+        self.assertEqual(clean_refresh_text(desc1), "renova em 6 d, 23 h")
+        desc2 = "You have used some of your 5-hour limit, it will fully refresh in 4 hours, 49 minutes."
+        self.assertEqual(clean_refresh_text(desc2), "renova em 4 h, 49 m")
+        self.assertEqual(clean_refresh_text(""), "")
+        self.assertEqual(clean_refresh_text(None), "")
+
+    def test_format_message_footer_live_quota(self):
+        turn = TurnStats(user_input_tokens=100, tool_tokens=200, model_output_tokens=300, total_tokens=600)
+        live = LiveServerQuota(
+            is_live=True,
+            gemini_5h=LiveQuotaBucket(window="5h", remaining_fraction=0.884, description="refresh in 4 hours, 49 minutes"),
+            gemini_weekly=LiveQuotaBucket(window="weekly", remaining_fraction=0.975, description="refresh in 6 days, 23 hours"),
+        )
+        stats = parse_transcript_data(
+            conversation_id="c-live",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            live_quota=live,
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("88.4% restante", footer)
+        self.assertIn("97.5% restante", footer)
+        self.assertIn("renova em 4 h, 49 m", footer)
+        self.assertIn("renova em 6 d, 23 h", footer)
+
+    def test_check_budget_status_live_critical_when_weekly_low(self):
+        # Simulates user's screenshot where weekly remaining is only 2%
+        live = LiveServerQuota(
+            is_live=True,
+            gemini_5h=LiveQuotaBucket(window="5h", remaining_fraction=0.51, description="refresh in 3 hours, 43 minutes"),
+            gemini_weekly=LiveQuotaBucket(window="weekly", remaining_fraction=0.02, description="refresh in 2 days, 21 hours"),
+        )
+        stats = parse_transcript_data(
+            conversation_id="c-crit",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            live_quota=live,
+        )
+        status, is_low, msg = check_budget_status(stats)
+        self.assertEqual(status, "CRITICAL")
+        self.assertTrue(is_low)
+        self.assertIn("Cota Semanal (Google): apenas 2.0% restante", msg)
 
 
 if __name__ == "__main__":

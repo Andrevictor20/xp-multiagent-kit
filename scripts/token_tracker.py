@@ -17,8 +17,10 @@ import json
 import os
 import re
 import sqlite3
+import ssl
 import sys
 import time
+import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -143,6 +145,200 @@ def parse_token_limit(val: Any, default: int = 500_000) -> int:
 
 
 @dataclass
+class LiveQuotaBucket:
+    bucket_id: str = ""
+    display_name: str = ""
+    description: str = ""
+    window: str = ""
+    remaining_fraction: float = 1.0
+    reset_time: str = ""
+
+
+@dataclass
+class LiveServerQuota:
+    is_live: bool = False
+    plan_name: str = "Google AI Pro"
+    gemini_5h: Optional[LiveQuotaBucket] = None
+    gemini_weekly: Optional[LiveQuotaBucket] = None
+    claude_5h: Optional[LiveQuotaBucket] = None
+    claude_weekly: Optional[LiveQuotaBucket] = None
+    description: str = ""
+    error: Optional[str] = None
+
+
+_LIVE_QUOTA_CACHE: Dict[str, Any] = {"timestamp": 0.0, "data": None}
+
+
+def clean_refresh_text(desc: Optional[str]) -> str:
+    """Converte frases longas como 'it will fully refresh in 4 hours, 49 minutes.' para formato conciso."""
+    if not desc:
+        return ""
+    m = re.search(r"refresh in\s+([0-9]+\s+[a-z]+(?:,\s+[0-9]+\s+[a-z]+)?)", desc, re.I)
+    if m:
+        t = (
+            m.group(1)
+            .replace("days", "d")
+            .replace("day", "d")
+            .replace("hours", "h")
+            .replace("hour", "h")
+            .replace("minutes", "m")
+            .replace("minute", "m")
+            .replace("seconds", "s")
+            .replace("second", "s")
+        )
+        return "renova em " + re.sub(r"\s+", " ", t).replace(" ,", ",")
+    return desc
+
+
+def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota:
+    """Consulta em tempo real a API oficial de cotas do Language Server do Antigravity IDE."""
+    global _LIVE_QUOTA_CACHE
+    now = time.time()
+    if not force_refresh and _LIVE_QUOTA_CACHE["data"] is not None and (now - _LIVE_QUOTA_CACHE["timestamp"] < 10.0):
+        return _LIVE_QUOTA_CACHE["data"]
+
+    log_dirs = glob.glob(os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main.log"))
+    if not log_dirs:
+        quota = LiveServerQuota(is_live=False, error="Nenhum log do Language Server encontrado")
+        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+        return quota
+
+    latest_log = max(log_dirs, key=os.path.getmtime)
+    csrf_token = None
+    http_port = None
+    https_port = None
+
+    try:
+        with open(latest_log, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if "--csrf_token" in line and not csrf_token:
+                    m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", line)
+                    if m:
+                        csrf_token = m.group(1)
+                if "listening on random port at" in line:
+                    m_http = re.search(r"listening on random port at (\d+) for HTTP\b", line)
+                    if m_http:
+                        http_port = int(m_http.group(1))
+                    m_https = re.search(r"listening on random port at (\d+) for HTTPS", line)
+                    if m_https:
+                        https_port = int(m_https.group(1))
+                if "LS started on port" in line:
+                    m_start = re.search(r"LS started on port (\d+)", line)
+                    if m_start:
+                        https_port = int(m_start.group(1))
+    except Exception as e:
+        quota = LiveServerQuota(is_live=False, error=f"Erro ao ler log do LS: {e}")
+        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+        return quota
+
+    if not csrf_token:
+        try:
+            for pid_dir in glob.glob("/proc/[0-9]*/cmdline"):
+                try:
+                    with open(pid_dir, "rb") as pf:
+                        cmd = pf.read().replace(b"\x00", b" ").decode(errors="ignore")
+                        if "language_server" in cmd and "--csrf_token" in cmd:
+                            m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", cmd)
+                            if m:
+                                csrf_token = m.group(1)
+                                break
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    if not csrf_token:
+        quota = LiveServerQuota(is_live=False, error="CSRF token do Language Server não encontrado")
+        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+        return quota
+
+    ports_to_try = [p for p in [http_port, https_port] if p]
+    if not ports_to_try:
+        ports_to_try = [44351, 39831]
+
+    raw_data = None
+    for port in ports_to_try:
+        scheme = "http" if port == http_port else "https"
+        url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
+        ctx = ssl._create_unverified_context() if scheme == "https" else None
+        req = urllib.request.Request(
+            url,
+            data=b"{}",
+            headers={
+                "Content-Type": "application/json",
+                "x-codeium-csrf-token": csrf_token,
+            },
+        )
+        try:
+            with urllib.request.urlopen(req, context=ctx, timeout=2.5) as resp:
+                raw_data = json.loads(resp.read().decode("utf-8"))
+                if raw_data:
+                    break
+        except Exception:
+            continue
+
+    if not raw_data or "response" not in raw_data:
+        quota = LiveServerQuota(is_live=False, error="Falha ao consultar RetrieveUserQuotaSummary via RPC")
+        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+        return quota
+
+    res = raw_data.get("response", {})
+    gem_5h = None
+    gem_week = None
+    claude_5h = None
+    claude_week = None
+
+    for grp in res.get("groups", []):
+        grp_name = grp.get("displayName", "")
+        buckets = grp.get("buckets", [])
+        if "Gemini" in grp_name:
+            for b in buckets:
+                bid = b.get("bucketId", "")
+                win = b.get("window", "")
+                bucket_obj = LiveQuotaBucket(
+                    bucket_id=bid,
+                    display_name=b.get("displayName", ""),
+                    description=b.get("description", ""),
+                    window=win,
+                    remaining_fraction=float(b.get("remainingFraction", 1.0)),
+                    reset_time=b.get("resetTime", ""),
+                )
+                if win == "5h" or "5h" in bid:
+                    gem_5h = bucket_obj
+                elif win == "weekly" or "weekly" in bid:
+                    gem_week = bucket_obj
+        elif "Claude" in grp_name or "GPT" in grp_name:
+            for b in buckets:
+                bid = b.get("bucketId", "")
+                win = b.get("window", "")
+                bucket_obj = LiveQuotaBucket(
+                    bucket_id=bid,
+                    display_name=b.get("displayName", ""),
+                    description=b.get("description", ""),
+                    window=win,
+                    remaining_fraction=float(b.get("remainingFraction", 1.0)),
+                    reset_time=b.get("resetTime", ""),
+                )
+                if win == "5h" or "5h" in bid:
+                    claude_5h = bucket_obj
+                elif win == "weekly" or "weekly" in bid:
+                    claude_week = bucket_obj
+
+    quota = LiveServerQuota(
+        is_live=True,
+        plan_name="Google AI Pro",
+        gemini_5h=gem_5h,
+        gemini_weekly=gem_week,
+        claude_5h=claude_5h,
+        claude_weekly=claude_week,
+        description=res.get("description", ""),
+        error=None,
+    )
+    _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+    return quota
+
+
+@dataclass
 class RollingWindowStats:
     tokens_5h: int = 0
     conversations_5h: int = 0
@@ -186,6 +382,7 @@ class TokenStats:
     remaining_tokens: int
     percent_used: float
     rolling: RollingWindowStats = field(default_factory=RollingWindowStats)
+    live_quota: LiveServerQuota = field(default_factory=LiveServerQuota)
     top_tools: Dict[str, Dict[str, int]] = field(default_factory=dict)
     steps_count: int = 0
 
@@ -490,6 +687,8 @@ def parse_transcript_data(
     steps: List[Dict[str, Any]],
     system_prompt_bytes: int = 0,
     rolling: Optional[RollingWindowStats] = None,
+    live_quota: Optional[LiveServerQuota] = None,
+    fetch_live: bool = False,
 ) -> TokenStats:
     """Processa steps do transcript e consolida telemetria em 3 camadas.
 
@@ -565,6 +764,11 @@ def parse_transcript_data(
     remaining = max(0, limits["context_window"] - total_tokens)
     pct = (total_tokens / limits["context_window"]) * 100.0 if limits["context_window"] else 0.0
 
+    if live_quota is None and fetch_live:
+        live_quota = fetch_live_antigravity_quota()
+    else:
+        live_quota = live_quota or LiveServerQuota(is_live=False)
+
     return TokenStats(
         conversation_id=conversation_id,
         model_name=model_name,
@@ -582,15 +786,30 @@ def parse_transcript_data(
         remaining_tokens=remaining,
         percent_used=pct,
         rolling=rolling or RollingWindowStats(),
+        live_quota=live_quota,
         top_tools=sorted_tools,
         steps_count=active_steps,
     )
 
 
+
 def format_badge(stats: TokenStats) -> str:
-    """Gera um badge markdown exibindo <usado> / <total> (<%>) para Janela, 5h e Semanal."""
+    """Gera um badge markdown exibindo telemetria para Janela, 5h e Semanal."""
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
+
+    if stats.live_quota and stats.live_quota.is_live:
+        is_gemini = "gemini" in stats.model_name.lower()
+        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+        pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+        pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        return (
+            f"📊 **Token Telemetry ({stats.model_name}):** `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
+            f"| **5h:** `{pct_5h_rem:.1f}% restante` "
+            f"| **Semana:** `{pct_7d_rem:.1f}% restante`"
+        )
+
     r5h_used = human_tokens(stats.rolling.tokens_5h)
     r5h_tot = human_tokens(stats.rolling.limit_5h)
     r7d_used = human_tokens(stats.rolling.tokens_7d)
@@ -612,6 +831,31 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
 
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
+
+    if stats.live_quota and stats.live_quota.is_live:
+        is_gemini = "gemini" in stats.model_name.lower()
+        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+
+        pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+        pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+
+        desc_5h = clean_refresh_text(b_5h.description) if b_5h else ""
+        desc_7d = clean_refresh_text(b_7d.description) if b_7d else ""
+
+        s_5h = f"{pct_5h_rem:.1f}% restante" + (f" ({desc_5h})" if desc_5h else "")
+        s_7d = f"{pct_7d_rem:.1f}% restante" + (f" ({desc_7d})" if desc_7d else "")
+
+        return (
+            f"---\n"
+            f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
+            f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
+            f"📊 **Telemetria Acumulada ({display_model}):** "
+            f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
+            f"5h: `{s_5h}` | "
+            f"Semana: `{s_7d}`"
+        )
+
     r5h_used = human_tokens(stats.rolling.tokens_5h)
     r5h_tot = human_tokens(stats.rolling.limit_5h)
     r7d_used = human_tokens(stats.rolling.tokens_7d)
@@ -639,6 +883,15 @@ def format_json_stats(stats: TokenStats) -> str:
         "remaining_tokens": stats.remaining_tokens,
         "percent_used": round(stats.percent_used, 2),
         "steps_count": stats.steps_count,
+        "live_server_quota": {
+            "is_live": stats.live_quota.is_live,
+            "plan_name": stats.live_quota.plan_name,
+            "gemini_5h_remaining_pct": round(stats.live_quota.gemini_5h.remaining_fraction * 100.0, 2) if stats.live_quota.gemini_5h else None,
+            "gemini_weekly_remaining_pct": round(stats.live_quota.gemini_weekly.remaining_fraction * 100.0, 2) if stats.live_quota.gemini_weekly else None,
+            "claude_5h_remaining_pct": round(stats.live_quota.claude_5h.remaining_fraction * 100.0, 2) if stats.live_quota.claude_5h else None,
+            "claude_weekly_remaining_pct": round(stats.live_quota.claude_weekly.remaining_fraction * 100.0, 2) if stats.live_quota.claude_weekly else None,
+            "error": stats.live_quota.error,
+        },
         "rolling_limits": {
             "tokens_5h": stats.rolling.tokens_5h,
             "limit_5h": stats.rolling.limit_5h,
@@ -745,19 +998,38 @@ def check_budget_status(stats: TokenStats) -> Tuple[str, bool, str]:
     elif stats.percent_used >= 65:
         warnings.append(f"• Contexto da Mensagem em {stats.percent_used:.1f}% ({human_tokens(stats.remaining_tokens)} livres de {human_tokens(stats.context_window)})")
 
-    # 2. Janela de 5 Horas (Rate Limit)
-    if stats.rolling.percent_5h >= 80:
-        is_critical = True
-        warnings.append(f"• Janela Móvel de 5 Horas em {stats.rolling.percent_5h:.1f}% ({human_tokens(stats.rolling.remaining_5h)} livres de {human_tokens(stats.rolling.limit_5h)})")
-    elif stats.rolling.percent_5h >= 65:
-        warnings.append(f"• Janela Móvel de 5 Horas em {stats.rolling.percent_5h:.1f}% ({human_tokens(stats.rolling.remaining_5h)} livres de {human_tokens(stats.rolling.limit_5h)})")
+    # 2 e 3. Cotas de 5h e Semanal (Oficiais da Google ou Heurística Offline)
+    if stats.live_quota and stats.live_quota.is_live:
+        is_gemini = "gemini" in stats.model_name.lower()
+        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
 
-    # 3. Janela Semanal (Quota)
-    if stats.rolling.percent_7d >= 85:
-        is_critical = True
-        warnings.append(f"• Cota Semanal em {stats.rolling.percent_7d:.1f}% ({human_tokens(stats.rolling.remaining_7d)} livres de {human_tokens(stats.rolling.limit_7d)})")
-    elif stats.rolling.percent_7d >= 70:
-        warnings.append(f"• Cota Semanal em {stats.rolling.percent_7d:.1f}% ({human_tokens(stats.rolling.remaining_7d)} livres de {human_tokens(stats.rolling.limit_7d)})")
+        rem_5h = b_5h.remaining_fraction if b_5h else 1.0
+        rem_7d = b_7d.remaining_fraction if b_7d else 1.0
+
+        if rem_5h <= 0.10:
+            is_critical = True
+            warnings.append(f"• Limite Móvel 5 Horas (Google): apenas {rem_5h * 100.0:.1f}% restante ({clean_refresh_text(b_5h.description)})")
+        elif rem_5h <= 0.25:
+            warnings.append(f"• Limite Móvel 5 Horas (Google): {rem_5h * 100.0:.1f}% restante ({clean_refresh_text(b_5h.description)})")
+
+        if rem_7d <= 0.05:
+            is_critical = True
+            warnings.append(f"• Cota Semanal (Google): apenas {rem_7d * 100.0:.1f}% restante ({clean_refresh_text(b_7d.description)})")
+        elif rem_7d <= 0.20:
+            warnings.append(f"• Cota Semanal (Google): {rem_7d * 100.0:.1f}% restante ({clean_refresh_text(b_7d.description)})")
+    else:
+        if stats.rolling.percent_5h >= 80:
+            is_critical = True
+            warnings.append(f"• Janela Móvel de 5 Horas em {stats.rolling.percent_5h:.1f}% ({human_tokens(stats.rolling.remaining_5h)} livres de {human_tokens(stats.rolling.limit_5h)})")
+        elif stats.rolling.percent_5h >= 65:
+            warnings.append(f"• Janela Móvel de 5 Horas em {stats.rolling.percent_5h:.1f}% ({human_tokens(stats.rolling.remaining_5h)} livres de {human_tokens(stats.rolling.limit_5h)})")
+
+        if stats.rolling.percent_7d >= 85:
+            is_critical = True
+            warnings.append(f"• Cota Semanal em {stats.rolling.percent_7d:.1f}% ({human_tokens(stats.rolling.remaining_7d)} livres de {human_tokens(stats.rolling.limit_7d)})")
+        elif stats.rolling.percent_7d >= 70:
+            warnings.append(f"• Cota Semanal em {stats.rolling.percent_7d:.1f}% ({human_tokens(stats.rolling.remaining_7d)} livres de {human_tokens(stats.rolling.limit_7d)})")
 
     if is_critical:
         msg = (
@@ -1067,7 +1339,7 @@ def main():
         steps = load_transcript(transcript_path)
         model_name = detect_model_name(conv_id, steps=steps)
         rolling = calculate_rolling_windows(limit_5h=limit_5h, limit_7d=limit_7d)
-        stats = parse_transcript_data(conv_id, model_name, steps, rolling=rolling)
+        stats = parse_transcript_data(conv_id, model_name, steps, rolling=rolling, fetch_live=True)
 
         if args.turn:
             turn = calculate_turn_stats(steps)
@@ -1111,7 +1383,10 @@ def main():
 
         if args.report:
             report_text = format_markdown_report(stats)
-            report_path = Path(".agents/memory/TOKEN_TELEMETRY.md")
+            if Path.cwd().name == ".agents":
+                report_path = Path.cwd() / "memory" / "TOKEN_TELEMETRY.md"
+            else:
+                report_path = Path.cwd() / ".agents" / "memory" / "TOKEN_TELEMETRY.md"
             report_path.parent.mkdir(parents=True, exist_ok=True)
             report_path.write_text(report_text, encoding="utf-8")
             print(f"Relatório gravado com sucesso em: {report_path.resolve()}")
