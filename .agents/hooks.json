@@ -82,5 +82,14 @@
         ]
       }
     ]
+  },
+  "dynamic-effort-router": {
+    "PreInvocation": [
+      {
+        "type": "command",
+        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/dynamic-effort-hook.py",
+        "timeout": 5
+      }
+    ]
   }
 }
