@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# agy-effort: CLI entrypoint para o Router Inteligente de Reasoning Effort
+# XP Multi-Agent Kit v2
+# ==============================================================================
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROUTER_SCRIPT="$SCRIPT_DIR/agy_effort_router.py"
+
+if [ ! -f "$ROUTER_SCRIPT" ]; then
+  # Fallback se instalado via symlink em ~/.local/bin
+  REAL_PATH="$(realpath "$0")"
+  SCRIPT_DIR="$(cd "$(dirname "$REAL_PATH")" && pwd)"
+  ROUTER_SCRIPT="$SCRIPT_DIR/agy_effort_router.py"
+fi
+
+exec python3 "$ROUTER_SCRIPT" "$@"

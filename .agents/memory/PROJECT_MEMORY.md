@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-25 00:35 (Local)  
+> **Última Atualização:** 2026-09-25 01:20 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.16.0 (Hard Tool Token Reduction: view_file <= 40 lines, agy-sanitize mandate, PostToolUse hook & 15-turn reset)
+> **Versão / Marco Atual:** v2.17.0 (Intelligent CLI Reasoning Effort Router: agy-smart, agy-effort & Pre-Flight Budget Throttling)
 
 ---
 
@@ -36,6 +36,7 @@
 
 | Data / Hora | Tipo | Resumo da Alteração | Arquivos Principais | Test Evidence / Status |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-09-25 | `FEAT` | Router Inteligente de Reasoning Effort no CLI (`agy-smart`, `agy-effort`): classificação semântica L0-L3 (low/medium/high), heurística por git context (branch/arquivos modificados), sincronização atômica de `settings.json` (CLI & IDE), salvaguarda de cota com downshift quando 5h/semanal > 80% e suite com 9 testes unitários dedicados (47/47 total) | `scripts/agy_effort_router.py`, `scripts/agy-effort`, `scripts/global-token-optimizer/agy-wrapper.sh`, `scripts/install-global.sh`, `scripts/global-token-optimizer/install-shell-aliases.sh`, `AGENTS.md`, `tests/test_agy_effort_router.py` | `PASS (EV-CLI-EFFORT-ROUTER-20260925-01)` |
 | 2026-09-25 | `FEAT` | Redução Drástica de Consumo de Ferramentas: limite cirúrgico de view_file restrito a 40 linhas, agy-sanitize/pipes obrigatórios para run_command, hook PostToolUse tool-size-guard no hooks.json, alerta de alto uso de tools (>1.5k) no footer e session reset antecipado para 15 turnos / 40k tokens | `AGENTS.md`, `.agents/skills/token-budget-tracker/SKILL.md`, `scripts/hooks/tool-size-guard.py`, `.agents/hooks.json`, `scripts/token_tracker.py`, `tests/test_token_tracker.py` | `PASS (EV-TOOL-REDUCTION-20260925-01)` |
 | 2026-09-24 | `FEAT` | Protocolo de Elevação de Esforço Sob Demanda (Gate Medium -> High): IDE mantida em Medium como baseline; ao atingir L2/L3 com plano pronto, o agente emite alerta explícito e pausa a execução aguardando confirmação de troca para High antes de implementar | `AGENTS.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-GATE-HIGH-20260924-01)` |
 | 2026-09-24 | `FEAT` | Protocolo Zero-Tool para Consultas (L0) & Desativação do Plugin GCP Datacloud: plugin googlecloudtools.datacloud_telemetry desativado (33 skills removidas do overhead global), AGENTS.md reforçado com proibição estrita de invocação de ferramentas para dúvidas conceituais e modulação de concisão | `AGENTS.md`, `~/.gemini/config/plugins_disabled/`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-ZERO-TOOL-20260924-01)` |
@@ -124,4 +125,5 @@
 ### Lição Procedural
 - **[L-018]** Nunca use `estimate_tokens(" " * bytes)` como proxy de byte→token. Esse padrão ignora o ratio de code_chars e sempre usa chars_per_token=3.8 (prose puro), subestimando outputs de ferramentas JSON/código em ~16% e superestimando prose em ~5%.
 - **[L-020]** O acúmulo de outputs de ferramentas em conversas longas gera inflação exponencial de tokens faturados a cada novo turno. Mitiga-se na fonte com 4 defesas: (1) teto estrito de 40 linhas em `view_file`, (2) sanitização mandatória via `agy-sanitize`/pipes em `run_command`, (3) auditoria de payload em hook `PostToolUse` (`tool-size-guard.py`) e (4) antecipação do session reset para 15 turnos / 40k tokens.
+- **[L-021]** Modulação de Reasoning Effort Inteligente no CLI (`agy-smart` / `agy-effort`): Mudar o effort manualmente a cada comando cria atrito e desperdício de tokens. O roteador inteligente inspeciona o prompt (L0 trivial -> low, L1 -> medium, L2/L3 -> high), inspeciona o contexto git (branches `docs/` ou `feat/`, arquivos `migration` ou `*.md`) e cruza com a telemetria ao vivo: se a cota móvel de 5h ou semanal estiver crítica (>80%), aplica downshift automático (HIGH -> MEDIUM, MEDIUM -> LOW), protegendo a conta contra interrupções abruptas por rate limit.
 

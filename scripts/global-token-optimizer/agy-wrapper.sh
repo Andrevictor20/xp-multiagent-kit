@@ -2,30 +2,37 @@
 # ==============================================================================
 # agy-wrapper.sh: Adaptive Antigravity CLI Execution Wrapper
 # Optimizes reasoning effort (thinking tokens) and checks rate-limit budget.
+# XP Multi-Agent Kit v2
 # ==============================================================================
 set -e
 
-CALL_NAME="$(basename "$0")"
-EFFORT="medium"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+KIT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+ROUTER_SCRIPT="$KIT_DIR/scripts/agy_effort_router.py"
 
+CALL_NAME="$(basename "$0")"
+
+# 1. Se o roteador inteligente estiver disponível, delegar com o perfil adequado
+if [ -f "$ROUTER_SCRIPT" ]; then
+  if [ "$CALL_NAME" = "agy-fast" ]; then
+    exec python3 "$ROUTER_SCRIPT" --effort low "$@"
+  elif [ "$CALL_NAME" = "agy-deep" ]; then
+    exec python3 "$ROUTER_SCRIPT" --effort high "$@"
+  else
+    # Chamada inteligente padrão (agy-smart, agy ou execução direta)
+    exec python3 "$ROUTER_SCRIPT" "$@"
+  fi
+fi
+
+# 2. Fallback resiliente caso o script python não seja encontrado
+EFFORT="medium"
 if [ "$CALL_NAME" = "agy-fast" ]; then
   EFFORT="low"
 elif [ "$CALL_NAME" = "agy-deep" ]; then
   EFFORT="high"
 fi
 
-# Optional pre-flight budget warning
-if command -v agy-tokens >/dev/null 2>&1; then
-  CHECK_OUT="$(agy-tokens --check 2>&1 || true)"
-  if echo "$CHECK_OUT" | grep -qi "ALERTA CRÍTICO"; then
-    echo "⚠️ [AGY-BUDGET ALERT] Cota de tokens em nível crítico (>80%)!" >&2
-    echo "$CHECK_OUT" >&2
-    echo "💡 Dica: Use modo cirúrgico atômico ou 'agy-fast' para economizar tokens." >&2
-    echo "------------------------------------------------------------------" >&2
-  fi
-fi
-
-# Locate underlying antigravity / agy binary (avoiding infinite self recursion)
+# Locate underlying antigravity / agy binary
 REAL_BIN=""
 IFS=':' read -ra ADDR <<< "$PATH"
 for p in "${ADDR[@]}"; do
@@ -44,5 +51,4 @@ if [ -z "$REAL_BIN" ]; then
   exit 0
 fi
 
-# Execute with calibrated effort
 exec "$REAL_BIN" --effort "$EFFORT" "$@"
