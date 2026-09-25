@@ -7,7 +7,7 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
 ## 1. Estratégia de Execução & Roteamento por Risco (Regra de Ouro)
 - **Regra de Ouro:** Use SEMPRE o menor número de agentes, skills e etapas para produzir uma alteração correta, testada, segura, acessível, observável e sustentável.
 - **Roteamento Automático (Zero-Prompt):** Infira automaticamente o nível de risco e execute o fluxo correspondente sem esperar comandos do usuário:
-  - **L0 (Trivial):** Typos, docs, CSS menor → `builder` → validação estática → `archivist` ([trivial.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/trivial.md)).
+  - **L0 (Trivial):** Typos, docs, CSS menor → `builder` → validação estática → `archivist` ([trivial.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/trivial.md)). **Fast-Path L0 & Isenção de Testes de Código:** Se o escopo da tarefa ou o `git diff` contiver apenas arquivos de documentação (`.md`, `.txt`, `.rst`, docstrings, comentários, `.gitignore`), a execução de suítes de testes de compilação/testes unitários de código de produção é FORMALMENTE DISPENSADA. Validação estática (markdown lint, formatação, git status) é suficiente, economizando de 5.000 a 15.000 tokens desnecessários.
   - **L1 (Small):** Ajustes e refatorações isoladas → `navigator` → `test-guardian` (RED) → `builder` (GREEN) → `archivist` → `release-gatekeeper` ([small.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/small.md)).
   - **L2 (Feature):** Novas funcionalidades/APIs → `navigator` + `designer`/`sentinel` → TDD Matriz → `builder` → `refactor-warden` → `archivist` → `release-gatekeeper` ([feature.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/feature.md)).
   - **L3 (Critical):** Auth, Pagamentos, Migrações estruturais → Threat Modeling (`sentinel`) → TDD + Segurança → `builder` → Zero-Downtime Plan → `archivist` → `shipper` ([critical.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/critical.md)).
@@ -15,6 +15,11 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
   - **Incident / Release:** Mitigação rápida e rollback ([incident.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/incident.md)) ou CI Gate rigoroso com Zero-Downtime Canary/Blue-Green ([release.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/release.md)).
 - Toda resposta inicial deve declarar brevemente o **Nível de Risco** e o **Workflow** escolhido antes de iniciar a execução.
 - **Modulação Adaptativa de Raciocínio & Gate Medium -> High (Regra [L-019]):** Para tarefas mecânicas ou conceituais L0/L1 (dúvidas, docs, CSS, refatoração isolada), responda de forma direta e concisa. No CLI, use o roteador inteligente (`agy-smart` ou `agy-effort`) ou perfis com reasoning effort reduzido (`agy-fast` com `--effort low` para economizar 3.000 a 8.000 tokens de raciocínio, `agy-deep` com `--effort high` para criticidade e salvaguarda de cota >80%). Na IDE, mantenha o seletor padrão sempre em `Medium`. Para tarefas de risco L2 (Feature) ou L3 (Crítico/Segurança/Arquitetura), o agente DEVE elaborar o plano de implementação em `Medium`, emitir obrigatoriamente um alerta explícito (Stop Gate) solicitando a elevação do modelo para `High` (ou `/effort high`) e PAUSAR a execução, iniciando a implementação estritamente após a confirmação do usuário.
+- **Matriz Canônica de Modelo & Reasoning Effort:**
+  - **L0 (Docs/Typos/CSS/Explicações):** `Gemini 3.8 Flash` com reasoning effort `low` (fast-path ativo, zero-tool para consultas conceituais).
+  - **L1 (Small Refactor/Bugfix pontual):** `Gemini 3.8 Flash` com reasoning effort `medium` (testes direcionados ao módulo afetado, sem suíte completa).
+  - **L2 (Features/APIs/Frontend):** `Gemini 3.8 Flash` (com effort `high`) ou `Gemini Pro` (com effort `medium`).
+  - **L3 (Critical/Security/Payments/Auth):** `Gemini Pro` com reasoning effort `high` (Threat Modeling STRIDE e salvaguarda de cota pré-flight).
 
 
 ---
@@ -23,6 +28,7 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
 - **Ciclo ESTRITO:** RED -> GREEN -> REFACTOR ([tdd.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/policies/tdd.md)). Nenhum código de produção sem teste prévio falhando.
 - **Matriz de Testes Multi-Camadas:** Unitários (lógica pura), Integração (DB, filas, HTTP), Contrato (schemas API), Regressão (bugs reproduzidos), E2E, Fuzzing e Segurança (SAST/DAST).
 - **Anti-Test-Bypass (Tolerância Zero):**
+  - **Isenção de Escopo em L0:** A obrigatoriedade de suíte de testes de backend aplica-se a código de produção (código-fonte executável). Alterações estritamente documentais e de estilo cosmético não exigem suíte completa de testes.
   - **Zero Mocks Cegos:** Permitido mocar apenas I/O externo de terceiros; nunca mocar lógica interna para forçar passagem de teste.
   - **Zero Asserções Vazias:** Proibido testes sem `assert` ou com `assert(true)`.
   - **Zero Skips:** Proibido `.skip`, `xit`, `@pytest.mark.skip` ou flags como `--passWithNoTests`.
@@ -71,6 +77,7 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
     - **Filtro de Ruído em `grep_search`:** Injeta automaticamente exclusões de diretórios ruidosos (`node_modules`, `.git`, `dist`, `__pycache__`, etc.) quando `Includes` estiver vazio.
     - **Clamp Cirúrgico em `view_file`:** Teto estrito de **máximo 40 linhas por leitura** (`EndLine - StartLine <= 40`).
     - **Sanitização Mandatória de `run_command`:** Injeção automática de `agy-sanitize` em comandos verbosos sem limitador.
+    - **Bloqueio Ativo de `write_to_file` em Arquivos Existentes (>40 linhas):** Bloqueio com `deny` no hook PreToolUse forçando o uso obrigatório de `replace_file_content` com blocos atômicos (< 20 linhas), eliminando reenvios redundantes de arquivos completos no payload.
   - **Repo Map Atômico (Passo 0 anti-exploração cega):** O agente DEVE consultar `.agents/memory/REPO_MAP.md` (gerado/atualizado via `agy-repo-map`) para saber os arquivos e símbolos existentes, eliminando cadeias exploratórias de busca.
   - **Proibição de `write_to_file` em Arquivos Existentes:** Sempre use `replace_file_content` com chunks atômicos (< 20 linhas) para evitar reenviar o arquivo completo no payload de contexto.
 - **Saídas Efêmeras & Auto-Compact (15 Turnos / 40k Tokens):** O histórico de saídas de ferramentas antigas acumula e encarece exponencialmente a conversa. Ao atingir 15 turnos ou 40k tokens na sessão ativa, execute obrigatoriamente o checkpoint no [PROJECT_MEMORY.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/memory/PROJECT_MEMORY.md) e instrua a abertura de um chat limpo via Fast Bootstrap (Passo 0), eliminando até 75% do desperdício de tokens acumulados.

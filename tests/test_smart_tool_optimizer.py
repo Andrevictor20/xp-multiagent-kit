@@ -266,6 +266,39 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(decision, "allow")
         self.assertIsNone(overwrite)
 
+    def test_optimize_write_to_file_allows_new_file(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_write_to_file
+        new_file = self.temp_path / "non_existent.txt"
+        args = {"TargetFile": str(new_file), "CodeContent": "hello world"}
+        decision, reason, overwrite = optimize_write_to_file(args)
+        self.assertEqual(decision, "allow")
+        self.assertIsNone(overwrite)
+
+    def test_optimize_write_to_file_allows_small_file(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_write_to_file
+        args = {"TargetFile": str(self.small_file), "CodeContent": "new content"}
+        decision, reason, overwrite = optimize_write_to_file(args)
+        self.assertEqual(decision, "allow")
+
+    def test_optimize_write_to_file_blocks_large_existing_file(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_write_to_file
+        args = {"TargetFile": str(self.large_file), "CodeContent": "new content"}
+        decision, reason, overwrite = optimize_write_to_file(args)
+        self.assertEqual(decision, "deny")
+        self.assertIn("replace_file_content", reason)
+        self.assertIn("100 linhas", reason)
+
+    def test_optimize_write_to_file_allows_artifacts(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_write_to_file
+        args = {
+            "TargetFile": str(self.large_file),
+            "CodeContent": "new content",
+            "ArtifactMetadata": {"Summary": "summary", "UserFacing": True, "RequestFeedback": False},
+        }
+        decision, reason, overwrite = optimize_write_to_file(args)
+        self.assertEqual(decision, "allow")
+
 
 if __name__ == "__main__":
     unittest.main()
+

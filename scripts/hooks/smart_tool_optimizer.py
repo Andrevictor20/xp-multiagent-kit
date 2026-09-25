@@ -364,6 +364,39 @@ def optimize_grep_search(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[
     return "allow", "", None
 
 
+def optimize_write_to_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[str, Any]]]:
+    """
+    Bloqueia write_to_file em arquivos existentes com mais de MAX_VIEW_LINES linhas,
+    forçando o uso de replace_file_content com blocos atômicos para evitar consumo massivo de tokens.
+    Permite criação de novos arquivos, arquivos pequenos ou artefatos.
+    """
+    if args.get("ArtifactMetadata"):
+        return "allow", "", None
+
+    target_file = args.get("TargetFile")
+    if not target_file:
+        return "allow", "", None
+
+    target_path = Path(target_file)
+    if not target_path.exists() or not target_path.is_file():
+        return "allow", "", None
+
+    line_count = count_file_lines(target_path, max_check=MAX_VIEW_LINES + 5)
+    if line_count > MAX_VIEW_LINES:
+        try:
+            total = len(target_path.read_text(encoding="utf-8", errors="ignore").splitlines())
+        except Exception:
+            total = line_count
+        return (
+            "deny",
+            f"🚨 write_to_file bloqueado em arquivo existente com mais de {MAX_VIEW_LINES} linhas ({total} linhas). "
+            f"Use 'replace_file_content' com blocos atômicos (< 20 linhas) para editar trechos específicos sem reenviar o arquivo inteiro, economizando milhares de tokens.",
+            None,
+        )
+
+    return "allow", "", None
+
+
 def optimize_tool_call(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Ponto de entrada para processamento do payload PreToolUse."""
     tool_call = payload.get("toolCall")
@@ -393,6 +426,8 @@ def optimize_tool_call(payload: Dict[str, Any]) -> Dict[str, Any]:
         decision, reason, overwrite = optimize_list_dir(args)
     elif tool_name == "grep_search":
         decision, reason, overwrite = optimize_grep_search(args)
+    elif tool_name == "write_to_file":
+        decision, reason, overwrite = optimize_write_to_file(args)
 
     result: Dict[str, Any] = {"decision": decision}
     if reason:

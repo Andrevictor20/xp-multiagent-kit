@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-25 18:18 (Local)  
+> **Última Atualização:** 2026-09-25 18:38 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.23.0 (Docs Sync: Full Alignment of README.md with Quadruple Tool Governance, Effort Router & AST Repo Map)
+> **Versão / Marco Atual:** v2.24.0 (Autonomous Token Reduction: Fast-Path L0 Test Exemption, Active write_to_file Block in Smart Tool Optimizer & Canonical Model/Effort Matrix)
 
 ---
 
@@ -34,6 +34,7 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-09-25 | `FEAT` | Otimização Autônoma de Consumo de Tokens: (1) Fast-Path L0 no AGENTS.md e trivial.md isentando formalmente alterações puramente documentais (.md, .txt, docstrings) de rodar suítes de testes de código de produção, (2) Bloqueio ativo no Smart Tool Optimizer (PreToolUse) contra write_to_file em arquivos existentes com mais de 40 linhas forçando uso de replace_file_content atômico, (3) Matriz canônica de Modelo × Reasoning Effort por nível de risco (L0-L3), e (4) 4 novos testes unitários adicionados com 100% de aprovação (96/96 testes total) | `AGENTS.md`, `.agents/workflows/trivial.md`, `scripts/hooks/smart_tool_optimizer.py`, `tests/test_smart_tool_optimizer.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-AUTONOMOUS-TOKEN-REDUCTION-20260925-01)` |
 | 2026-09-25 | `DOCS` | Sincronização do README.md com o estado real do repositório: documentação completa dos 63 skills, governança quádrupla de ferramentas (Smart Tool Optimizer, Tool Size Guard, Token Badge, Dynamic Effort Router), roteamento inteligente de reasoning effort (agy-smart, agy-effort, agy-fast, agy-deep), AST Repo Map (REPO_MAP.md), telemetria de tokens em 3 camadas, CI/CD auto-healer e guia de instalação global | `README.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-DOCS-README-SYNC-20260925-01)` |
 | 2026-09-25 | `FEAT` | Governança Quádrupla de Ferramentas e Otimização Inteligente de Tokens: (1) Loop Detection no hook smart_tool_optimizer.py (bloqueio automático de 3 chamadas repetidas com os mesmos argumentos via hash sha256), (2) Clamp de list_dir na raiz do workspace e injeção automática de filtros de ruído em grep_search, (3) Repo Map Atômico (< 80 linhas / ~1.2k tokens) via scripts/repo_map.py e comando global agy-repo-map, (4) Atualização de AGENTS.md e project-memory skill com Passo 0 e Auto-Compact | `scripts/hooks/smart_tool_optimizer.py`, `scripts/repo_map.py`, `scripts/agy-repo-map`, `scripts/install-global.sh`, `AGENTS.md`, `.agents/skills/project-memory/SKILL.md`, `tests/test_smart_tool_optimizer.py`, `tests/test_repo_map.py` | `PASS (EV-QUADRUPLE-TOOL-GOV-20260925-01)` |
 | 2026-09-25 | `FEAT` | Auto-Sanitização Universal no Smart Tool Optimizer (PreToolUse Hook): expansão de cobertura para 100% dos comandos ruidosos e pipelines desprotegidos (test runners, linters, builds, package managers, git inspection, container logs e discovery), suporte a comandos prefixados por variáveis de ambiente, subshell para comandos encadeados (&&, ;, ||), preservação estrita do exit code de comandos falhos via `set -o pipefail` e 6 novos testes unitários dedicados (83/83 testes passando no total) | `scripts/hooks/smart_tool_optimizer.py`, `tests/test_smart_tool_optimizer.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-UNIVERSAL-AUTO-SANITIZE-20260925-01)` |
