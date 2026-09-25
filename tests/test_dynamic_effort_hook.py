@@ -81,6 +81,76 @@ class TestDynamicEffortHook(unittest.TestCase):
         res = handle_pre_invocation(payload)
         self.assertIn("injectSteps", res)
 
+    def test_handle_pre_invocation_multi_turn_with_stop_gate_and_directive(self):
+        # Scenario matching user screenshot: Turn 1 is feature/auth, Turn 2 is Stop Gate, Turn 3 is "Mude para o effort high e continue"
+        multi_transcript = self.temp_path / "transcript_multi.jsonl"
+        steps = [
+            {
+                "step_index": 1,
+                "type": "USER_INPUT",
+                "content": "<USER_REQUEST>\nQuero criar plano robusto para visualização mobile e controle de containers com autenticação 2FA\n</USER_REQUEST>"
+            },
+            {
+                "step_index": 2,
+                "type": "PLANNER_RESPONSE",
+                "content": "### Stop Gate de Governança (Regra de Ouro & Regra [L-019])\nComo esta tarefa possui classificação de risco L3 (Critical), o plano de implementação foi detalhado. Por favor confirme para iniciarmos a implementação na prática com o modelo em High (ou /effort high)."
+            },
+            {
+                "step_index": 3,
+                "type": "USER_INPUT",
+                "content": "<USER_REQUEST>\nMude para o effort high e continue\n</USER_REQUEST>"
+            }
+        ]
+        with open(multi_transcript, "w", encoding="utf-8") as f:
+            for s in steps:
+                f.write(json.dumps(s) + "\n")
+
+        payload = {
+            "invocationNum": 3,
+            "transcriptPath": str(multi_transcript),
+            "conversationId": "test-multi-turn",
+        }
+        res = handle_pre_invocation(payload)
+        self.assertIn("injectSteps", res)
+        msg = res["injectSteps"][0]["ephemeralMessage"]
+        self.assertIn("HIGH", msg.upper())
+        self.assertIn("L3", msg.upper())
+
+    def test_handle_pre_invocation_multi_turn_simple_continue(self):
+        # Scenario: User simply types "continue" after L3 Stop Gate
+        cont_transcript = self.temp_path / "transcript_cont.jsonl"
+        steps = [
+            {
+                "step_index": 1,
+                "type": "USER_INPUT",
+                "content": "Implementar módulo de pagamentos stripe e faturamento"
+            },
+            {
+                "step_index": 2,
+                "type": "PLANNER_RESPONSE",
+                "content": "Stop Gate de Governança: Risco L3 (Critical). Confirme para executar."
+            },
+            {
+                "step_index": 3,
+                "type": "USER_INPUT",
+                "content": "continue"
+            }
+        ]
+        with open(cont_transcript, "w", encoding="utf-8") as f:
+            for s in steps:
+                f.write(json.dumps(s) + "\n")
+
+        payload = {
+            "invocationNum": 3,
+            "transcriptPath": str(cont_transcript),
+            "conversationId": "test-cont-123",
+        }
+        res = handle_pre_invocation(payload)
+        self.assertIn("injectSteps", res)
+        msg = res["injectSteps"][0]["ephemeralMessage"]
+        self.assertIn("HIGH", msg.upper())
+        self.assertIn("L3", msg.upper())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -131,6 +131,50 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(res.get("decision"), "allow")
         self.assertNotIn("overwrite", res)
 
+    def test_run_command_unittest_is_sanitized(self):
+        cmd = "python3 -m unittest discover tests/"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
+    def test_run_command_with_env_vars_is_sanitized(self):
+        cmd = "CI=1 pytest tests/ -v"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
+    def test_run_command_chained_commands_are_sanitized(self):
+        cmd = "cd /tmp && pytest"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
+    def test_run_command_pipeline_without_limiter_is_sanitized(self):
+        cmd = "cat log.txt | grep ERROR"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
+    def test_run_command_linters_and_tools_are_sanitized(self):
+        cmds = ["mypy src/", "flake8 .", "ruff check", "eslint .", "npm run lint", "cargo clippy"]
+        for cmd in cmds:
+            decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+            self.assertEqual(decision, "allow")
+            self.assertIsNotNone(overwrite, f"Expected sanitization for: {cmd}")
+            self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
+    def test_run_command_preserves_exit_code_pipefail(self):
+        cmd = "pytest tests/"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        new_cmd = overwrite.get("CommandLine", "")
+        self.assertIn("pipefail", new_cmd)
+
     def test_hook_cli_subprocess_contract(self):
         script_path = ROOT_DIR / "scripts" / "hooks" / "smart-tool-optimizer.py"
         payload = {
@@ -154,6 +198,73 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(output_data.get("decision"), "allow")
         self.assertIn("overwrite", output_data)
         self.assertEqual(output_data["overwrite"].get("EndLine"), MAX_VIEW_LINES)
+
+
+    def test_loop_detection_allows_first_and_second_call_then_blocks_third(self):
+        from scripts.hooks.smart_tool_optimizer import check_tool_loop, reset_tool_loop_history
+        history_file = self.temp_path / "tool_history.json"
+        reset_tool_loop_history(history_file)
+
+        tool = "view_file"
+        args = {"AbsolutePath": "/some/file.py", "StartLine": 1, "EndLine": 40}
+
+        # 1st call: OK
+        is_loop, msg = check_tool_loop(tool, args, history_file=history_file, max_repeats=3)
+        self.assertFalse(is_loop)
+
+        # 2nd call: OK
+        is_loop, msg = check_tool_loop(tool, args, history_file=history_file, max_repeats=3)
+        self.assertFalse(is_loop)
+
+        # 3rd call: BLOCKED
+        is_loop, msg = check_tool_loop(tool, args, history_file=history_file, max_repeats=3)
+        self.assertTrue(is_loop)
+        self.assertIn("Loop", msg)
+
+    def test_loop_detection_resets_on_different_args(self):
+        from scripts.hooks.smart_tool_optimizer import check_tool_loop, reset_tool_loop_history
+        history_file = self.temp_path / "tool_history.json"
+        reset_tool_loop_history(history_file)
+
+        tool = "view_file"
+        # 2 calls with args1
+        check_tool_loop(tool, {"StartLine": 1}, history_file=history_file, max_repeats=3)
+        check_tool_loop(tool, {"StartLine": 1}, history_file=history_file, max_repeats=3)
+
+        # Call with different args: should NOT trigger loop
+        is_loop, _ = check_tool_loop(tool, {"StartLine": 41}, history_file=history_file, max_repeats=3)
+        self.assertFalse(is_loop)
+
+    def test_optimize_list_dir_blocks_workspace_root_direct_scan(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_list_dir
+        ws_root = str(ROOT_DIR)
+        decision, reason, overwrite = optimize_list_dir({"DirectoryPath": ws_root}, workspace_root=ws_root)
+        self.assertEqual(decision, "deny")
+        self.assertIn("REPO_MAP.md", reason)
+
+    def test_optimize_list_dir_allows_subdirectories(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_list_dir
+        ws_root = str(ROOT_DIR)
+        sub_dir = str(ROOT_DIR / "scripts")
+        decision, reason, overwrite = optimize_list_dir({"DirectoryPath": sub_dir}, workspace_root=ws_root)
+        self.assertEqual(decision, "allow")
+
+    def test_optimize_grep_search_injects_noise_filters_when_includes_empty(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_grep_search
+        args = {"SearchPath": str(ROOT_DIR), "Query": "test"}
+        decision, reason, overwrite = optimize_grep_search(args)
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        includes = overwrite.get("Includes", [])
+        self.assertTrue(any("node_modules" in inc for inc in includes))
+        self.assertTrue(any(".git" in inc for inc in includes))
+
+    def test_optimize_grep_search_preserves_custom_includes(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_grep_search
+        args = {"SearchPath": str(ROOT_DIR), "Query": "test", "Includes": ["*.py"]}
+        decision, reason, overwrite = optimize_grep_search(args)
+        self.assertEqual(decision, "allow")
+        self.assertIsNone(overwrite)
 
 
 if __name__ == "__main__":

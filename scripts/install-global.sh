@@ -128,8 +128,9 @@ ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bi
 ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/agy-effort"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/agy-ci-heal"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/xp-ci-heal"
+ln -sf "$KIT_DIR/scripts/agy-repo-map" "$HOME/.local/bin/agy-repo-map"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map disponíveis no PATH!"
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."

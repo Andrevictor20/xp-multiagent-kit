@@ -222,6 +222,80 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertIn("--mode", pass_through)
         self.assertIn("accept-edits", pass_through)
 
+    def test_explicit_effort_directives_in_prompt_natural_language(self):
+        prompts_high = [
+            "Mude para o effort high e continue",
+            "mude para high",
+            "coloque em high",
+            "use o modelo em high",
+            "troque para effort high",
+            "set effort to high",
+            "/effort high",
+            "por favor configure o effort para high e continue",
+        ]
+        for p in prompts_high:
+            decision = classify_task_effort(prompt=p)
+            self.assertEqual(
+                decision.effort,
+                EFFORT_HIGH,
+                f"Prompt '{p}' deveria ser classificado como HIGH, mas foi {decision.effort}"
+            )
+            self.assertTrue(decision.override)
+
+        prompts_low = [
+            "Mude para o effort low",
+            "coloque em low",
+            "use low effort",
+            "/effort low",
+            "troque para modo rapido",
+        ]
+        for p in prompts_low:
+            decision = classify_task_effort(prompt=p)
+            self.assertEqual(
+                decision.effort,
+                EFFORT_LOW,
+                f"Prompt '{p}' deveria ser classificado como LOW, mas foi {decision.effort}"
+            )
+            self.assertTrue(decision.override)
+
+    def test_continuation_preserves_active_task_risk(self):
+        # When user confirms continuation of an L3 or L2 task
+        ctx_l3 = {
+            "is_continuation": True,
+            "active_risk": LEVEL_L3_CRITICAL,
+            "cumulative_text": "Crie um sistema de autenticação 2FA e endpoints de login",
+        }
+        continuation_prompts = [
+            "continue",
+            "prossiga",
+            "pode continuar",
+            "sim",
+            "ok",
+            "vai em frente",
+            "manda bala",
+            "avançar com o plano",
+        ]
+        for p in continuation_prompts:
+            decision = classify_task_effort(prompt=p, conversation_context=ctx_l3)
+            self.assertEqual(
+                decision.effort,
+                EFFORT_HIGH,
+                f"Continuação '{p}' com contexto L3 deveria ser HIGH, mas foi {decision.effort}"
+            )
+            self.assertEqual(decision.risk_level, LEVEL_L3_CRITICAL)
+
+    def test_interactive_empty_prompt_preserves_existing_high_settings(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cli_settings = Path(tmpdir) / "settings.json"
+            cli_settings.write_text(json.dumps({
+                "model": "Gemini 3.8 Flash (High)",
+                "reasoningEffort": "high"
+            }))
+            with patch("scripts.agy_effort_router.get_cli_settings_path", return_value=cli_settings):
+                decision = classify_task_effort(prompt="")
+                self.assertEqual(decision.effort, EFFORT_HIGH)
+                self.assertIn("Preservada", decision.reason)
+
 
 if __name__ == "__main__":
     unittest.main()

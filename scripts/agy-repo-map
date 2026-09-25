@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# scripts/agy-repo-map
+# Atalho CLI para gerar ou atualizar o REPO_MAP.md ultracompacto (< 80 linhas)
+set -euo pipefail
+
+REAL_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_PATH}")" && pwd)"
+WORKSPACE_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+
+python3 "${SCRIPT_DIR}/repo_map.py" "${WORKSPACE_ROOT}"

@@ -90,8 +90,8 @@ Se o projeto já possui histórico no Git, o agente executa a **Recaptura Retroa
 ```
 
 ### Fase 1: Fast Context Bootstrap no Início (Passo 0)
-- Todo prompt ou tarefa inicia consultando `.agents/memory/PROJECT_MEMORY.md`.
-- Carrega instantaneamente a arquitetura, comandos de teste, últimas alterações e armadilhas conhecidas, economizando dezenas de tool calls e milhares de tokens.
+- Todo prompt ou tarefa inicia consultando `.agents/memory/PROJECT_MEMORY.md` e `.agents/memory/REPO_MAP.md`.
+- Carrega instantaneamente a arquitetura, comandos de teste, últimas alterações, armadilhas conhecidas e mapa de símbolos AST, eliminando dezenas de tool calls exploratórias (`list_dir`, `grep_search`, `find`) e milhares de tokens.
 
 ### Fase 2: Aplicação Procedural Durante a Execução
 - Durante o desenvolvimento, o agente verifica as armadilhas listadas em **Gotchas & Learned Playbooks** para garantir que soluções incompatíveis não sejam repetidas.

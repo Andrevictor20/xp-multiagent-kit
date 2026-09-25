@@ -72,7 +72,7 @@
   "smart-tool-optimizer": {
     "PreToolUse": [
       {
-        "matcher": "run_command|view_file",
+        "matcher": "*",
         "hooks": [
           {
             "type": "command",

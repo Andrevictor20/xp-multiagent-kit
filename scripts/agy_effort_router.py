@@ -56,7 +56,8 @@ L3_KEYWORDS = [
     r"\bauth\b", r"\bautentica[çc][ãa]o\b", r"\blogin\b", r"\bjwt\b", r"\boauth\b",
     r"\b(?:jwt|auth|bearer|csrf|session|access|refresh)[_-]?tokens?\b",
     r"\btokens?\s+(?:de\s+)?(?:acesso|jwt|auth|api|sess[ãa]o|bearer)\b",
-    r"\bmfa\b", r"\bsenha\b", r"\bpassword\b", r"\bpermiss[ãa]o\b",
+    r"\bmfa\b", r"\b2fa\b", r"\bdois fatores\b", r"\bmulti-factor\b",
+    r"\bsenha\b", r"\bpassword\b", r"\bpermiss[ãa]o\b", r"\bcredenciais?\b",
     r"\brbac\b", r"\bidor\b", r"\bcrypto\b", r"\bcriptografia\b", r"\bsecret\b",
     r"\bvulnerabilidade\b", r"\bcve\b", r"\bthreat modeling\b", r"\bstride\b",
     r"\bpagamento\b", r"\bpayment\b", r"\bstripe\b", r"\bbilling\b", r"\bcheckout\b",
@@ -66,7 +67,8 @@ L3_KEYWORDS = [
     r"\bdeadlock\b", r"\bconcorr[êe]ncia\b", r"\bmutex\b", r"\bgoroutine\b",
     r"\bthread safety\b", r"\bzero-downtime\b", r"\bblue-green\b", r"\bcanary\b",
     r"\brollback\b", r"\bkernel panic\b", r"\bcrash\b", r"\bmemory leak\b",
-    r"\bcausa raiz\b", r"\broot cause\b", r"\bflaky test\b",
+    r"\bcausa raiz\b", r"\broot cause\b", r"\bflaky test\b", r"\bstop gate\b",
+    r"\brisco l3\b",
 ]
 
 L2_KEYWORDS = [
@@ -75,12 +77,52 @@ L2_KEYWORDS = [
     r"\brefatora[çc][ãa]o estrutural\b", r"\bredesign\b", r"\bimplemente\b",
     r"\bconstrua\b", r"\bmonte\b", r"\bcrie\b", r"\bexporta[çc][ãa]o\b",
     r"\bworkflows?\b", r"\bapi\b",
+    r"\bdispositivos m[óo]veis\b", r"\bmobile\b", r"\bresponsiv(?:o|a|idade)\b",
+    r"\bvisualiza[çc][ãa]o\b", r"\binterface\b", r"\btelas?\b", r"\bcontainers?\b",
+    r"\bmonitoramento\b", r"\bdetec[çc][ãa]o autom[áa]tica\b",
+    r"\bcorrija esse comportamento\b", r"\bcomportamento incorreto\b",
+    r"\brisco l2\b",
 ]
 
 L1_KEYWORDS = [
     r"\bpequeno ajuste\b", r"\brefatore\b", r"\brefatora[çc][ãa]o isolada\b",
     r"\bteste unit[áa]rio\b", r"\badicione um teste\b", r"\bpequeno bug\b",
     r"\bajuste\b", r"\brenomeie\b", r"\bmover\b", r"\blint fix\b",
+]
+
+# Diretrizes explícitas de esforço em linguagem natural ou comandos
+DIRECTIVE_HIGH_PATTERNS = [
+    r"\b(?:mude|mudar|coloque|colocar|altere|alterar|troque|trocar|set|setar|muda|use|usar|coloquem?|troquem?)\s+(?:para\s+|em\s+|no\s+|pro\s+|o\s+|o\s+modelo\s+em\s+|o\s+modo\s+)?(?:effort\s+)?(?:to\s+)?high\b",
+    r"\b(?:effort|racioc[íi]nio|reasoning|modo)\s+(?:em\s+|para\s+|no\s+|to\s+)?high\b",
+    r"\bset\s+effort\s+(?:to\s+)?high\b",
+    r"\bhigh\s+(?:effort|reasoning|mode)\b",
+    r"\b/effort\s+high\b",
+    r"\b(?:deep|m[áa]ximo)\s+effort\b",
+    r"\b(?:modo|effort)\s+profundo\b",
+]
+
+DIRECTIVE_LOW_PATTERNS = [
+    r"\b(?:mude|mudar|coloque|colocar|altere|alterar|troque|trocar|set|setar|muda|use|usar)\s+(?:para\s+|em\s+|no\s+|pro\s+|o\s+|o\s+modelo\s+em\s+|o\s+modo\s+)?(?:effort\s+)?(?:to\s+)?low\b",
+    r"\b(?:effort|racioc[íi]nio|reasoning|modo)\s+(?:em\s+|para\s+|no\s+|to\s+)?low\b",
+    r"\bset\s+effort\s+(?:to\s+)?low\b",
+    r"\blow\s+(?:effort|reasoning|mode)\b",
+    r"\b/effort\s+low\b",
+    r"\bfast\s+effort\b",
+    r"\b(?:modo|effort)\s+r[áa]pido\b",
+]
+
+DIRECTIVE_MEDIUM_PATTERNS = [
+    r"\b(?:mude|mudar|coloque|colocar|altere|alterar|troque|trocar|set|setar|muda|use|usar)\s+(?:para\s+|em\s+|no\s+|pro\s+|o\s+|o\s+modelo\s+em\s+|o\s+modo\s+)?(?:effort\s+)?(?:to\s+)?medium\b",
+    r"\b(?:effort|racioc[íi]nio|reasoning|modo)\s+(?:em\s+|para\s+|no\s+|to\s+)?medium\b",
+    r"\bset\s+effort\s+(?:to\s+)?medium\b",
+    r"\bmedium\s+(?:effort|reasoning|mode)\b",
+    r"\b/effort\s+medium\b",
+    r"\b(?:modo|effort)\s+equilibrado\b",
+]
+
+CONTINUATION_PATTERNS = [
+    r"^\s*(?:continue|prossiga|pode continuar|pode fazer|vai|vai em frente|manda bala|sim|ok|aprovado|confirmado|executar|implementar|avançar|prosseguir|go ahead|proceed|yes|done)\b",
+    r"\b(?:continue|prossiga|avançar|vai em frente|pode fazer)\b",
 ]
 
 
@@ -93,6 +135,36 @@ class EffortDecision:
     throttled: bool = False
     override: bool = False
     details: Dict[str, Any] = field(default_factory=dict)
+
+
+def get_cli_settings_path() -> Path:
+    """Retorna o caminho do settings.json do CLI."""
+    return Path.home() / ".gemini" / "antigravity-cli" / "settings.json"
+
+
+def get_current_settings_effort() -> Optional[str]:
+    """Lê o effort atualmente configurado nos settings da CLI ou IDE."""
+    for p in (
+        get_cli_settings_path(),
+        Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
+        Path.home() / ".gemini" / "settings.json",
+    ):
+        if p.is_file():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                effort = data.get("reasoningEffort")
+                if effort and str(effort).lower() in (EFFORT_LOW, EFFORT_MEDIUM, EFFORT_HIGH):
+                    return str(effort).lower()
+                model = data.get("model", "")
+                if "high" in model.lower():
+                    return EFFORT_HIGH
+                if "low" in model.lower():
+                    return EFFORT_LOW
+                if "medium" in model.lower():
+                    return EFFORT_MEDIUM
+            except Exception:
+                continue
+    return None
 
 
 def detect_git_context(repo_path: Optional[Path] = None) -> Dict[str, Any]:
@@ -158,9 +230,12 @@ def classify_task_effort(
     git_context: Optional[Dict[str, Any]] = None,
     token_budget: Optional[Dict[str, float]] = None,
     explicit_effort: Optional[str] = None,
+    conversation_context: Optional[Dict[str, Any]] = None,
 ) -> EffortDecision:
-    """Classifica o esforço ideal de raciocínio de forma inteligente."""
-    # 1. Override explícito do usuário
+    """Classifica o esforço ideal de raciocínio de forma inteligente e contextual."""
+    conv_ctx = conversation_context or {}
+
+    # 1. Override explícito do usuário via flag CLI
     if explicit_effort:
         norm_effort = explicit_effort.lower().strip()
         if norm_effort in (EFFORT_LOW, EFFORT_MEDIUM, EFFORT_HIGH):
@@ -175,26 +250,92 @@ def classify_task_effort(
     git_ctx = git_context or {}
     budget = token_budget or {}
 
+    # 2. Diretriz explícita em linguagem natural no prompt
+    for pat in DIRECTIVE_HIGH_PATTERNS:
+        if re.search(pat, p_lower):
+            return EffortDecision(
+                effort=EFFORT_HIGH,
+                risk_level=conv_ctx.get("active_risk") or LEVEL_L3_CRITICAL,
+                reason="Diretriz explícita detectada no prompt para modo HIGH",
+                override=True,
+            )
+
+    for pat in DIRECTIVE_LOW_PATTERNS:
+        if re.search(pat, p_lower):
+            return EffortDecision(
+                effort=EFFORT_LOW,
+                risk_level=LEVEL_L0_TRIVIAL,
+                reason="Diretriz explícita detectada no prompt para modo LOW",
+                override=True,
+                estimated_token_savings=5000,
+            )
+
+    for pat in DIRECTIVE_MEDIUM_PATTERNS:
+        if re.search(pat, p_lower):
+            return EffortDecision(
+                effort=EFFORT_MEDIUM,
+                risk_level=LEVEL_L1_SMALL,
+                reason="Diretriz explícita detectada no prompt para modo MEDIUM",
+                override=True,
+            )
+
+    # 3. Continuação de tarefa ativa (Stop Gate / confirmação de plano / avanço)
+    is_cont = conv_ctx.get("is_continuation", False) or any(re.search(pat, p_lower) for pat in CONTINUATION_PATTERNS)
+    active_risk = conv_ctx.get("active_risk", "")
+    cumulative_text = conv_ctx.get("cumulative_text", "").lower()
+
+    if is_cont:
+        if active_risk in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE):
+            return EffortDecision(
+                effort=EFFORT_HIGH,
+                risk_level=active_risk,
+                reason=f"Continuação de tarefa {active_risk} confirmada pelo usuário",
+            )
+        elif cumulative_text and any(re.search(kw, cumulative_text) for kw in L3_KEYWORDS):
+            matched_l3_cum = [kw for kw in L3_KEYWORDS if re.search(kw, cumulative_text)]
+            return EffortDecision(
+                effort=EFFORT_HIGH,
+                risk_level=LEVEL_L3_CRITICAL,
+                reason=f"Continuação com contexto acumulado L3 (Critical): {', '.join(matched_l3_cum[:2])}",
+            )
+        elif cumulative_text and any(re.search(kw, cumulative_text) for kw in L2_KEYWORDS):
+            matched_l2_cum = [kw for kw in L2_KEYWORDS if re.search(kw, cumulative_text)]
+            return EffortDecision(
+                effort=EFFORT_HIGH,
+                risk_level=LEVEL_L2_FEATURE,
+                reason=f"Continuação com contexto acumulado L2 (Feature): {', '.join(matched_l2_cum[:2])}",
+            )
+
     raw_effort = EFFORT_MEDIUM
     risk_level = LEVEL_L1_SMALL
     reason = "Tarefa padrão de complexidade moderada"
     savings = 0
 
-    # 2. Avaliação de L3 (Crítico / Segurança / DB / Auth / Pagamentos)
+    # 4. Avaliação de L3 (Crítico / Segurança / DB / Auth / Pagamentos)
     matched_l3 = [kw for kw in L3_KEYWORDS if re.search(kw, p_lower)]
     if matched_l3:
         raw_effort = EFFORT_HIGH
         risk_level = LEVEL_L3_CRITICAL
         reason = f"Detectado risco L3 por palavras-chave críticas: {', '.join(matched_l3[:3])}"
+    elif cumulative_text and any(re.search(kw, cumulative_text) for kw in L3_KEYWORDS):
+        matched_l3_cum = [kw for kw in L3_KEYWORDS if re.search(kw, cumulative_text)]
+        raw_effort = EFFORT_HIGH
+        risk_level = LEVEL_L3_CRITICAL
+        reason = f"Detectado risco L3 pelo histórico acumulado: {', '.join(matched_l3_cum[:3])}"
 
-    # 3. Avaliação de L2 (Feature / Novas APIs / Componentes)
+    # 5. Avaliação de L2 (Feature / Novas APIs / Componentes)
     elif any(re.search(kw, p_lower) for kw in L2_KEYWORDS):
         matched_l2 = [kw for kw in L2_KEYWORDS if re.search(kw, p_lower)]
         raw_effort = EFFORT_HIGH
         risk_level = LEVEL_L2_FEATURE
         reason = f"Detectado risco L2 por termos de feature/construção: {', '.join(matched_l2[:3])}"
+    elif cumulative_text and any(re.search(kw, cumulative_text) for kw in L2_KEYWORDS):
+        matched_l2_cum = [kw for kw in L2_KEYWORDS if re.search(kw, cumulative_text)]
+        raw_effort = EFFORT_HIGH
+        risk_level = LEVEL_L2_FEATURE
+        reason = f"Detectado risco L2 pelo histórico acumulado: {', '.join(matched_l2_cum[:3])}"
 
-    # 4. Avaliação de L0 (Trivial / Docs / CSS / Typo)
+    # 6. Avaliação de L0 (Trivial / Docs / CSS / Typo)
     elif any(re.search(kw, p_lower) for kw in L0_KEYWORDS):
         matched_l0 = [kw for kw in L0_KEYWORDS if re.search(kw, p_lower)]
         raw_effort = EFFORT_LOW
@@ -202,14 +343,14 @@ def classify_task_effort(
         savings = 5000
         reason = f"Detectado risco L0 (Trivial/Docs/CSS) por: {', '.join(matched_l0[:3])}"
 
-    # 5. Avaliação de L1 (Pequeno ajuste / Refatoração isolada)
+    # 7. Avaliação de L1 (Pequeno ajuste / Refatoração isolada)
     elif any(re.search(kw, p_lower) for kw in L1_KEYWORDS):
         matched_l1 = [kw for kw in L1_KEYWORDS if re.search(kw, p_lower)]
         raw_effort = EFFORT_MEDIUM
         risk_level = LEVEL_L1_SMALL
         reason = f"Detectado risco L1 por: {', '.join(matched_l1[:3])}"
 
-    # 6. Heurística via Git Context se o prompt for vazio
+    # 8. Heurística via Git Context e Settings se o prompt for vazio
     elif not p_lower:
         branch = git_ctx.get("branch", "").lower()
         files = git_ctx.get("changed_files", [])
@@ -236,12 +377,22 @@ def classify_task_effort(
             raw_effort = EFFORT_HIGH
             risk_level = LEVEL_L3_CRITICAL
             reason = "Arquivos modificados envolvem migrações ou autenticação"
+        elif files and any(f.endswith((".py", ".ts", ".tsx", ".js", ".go", ".rs", ".java")) for f in files):
+            raw_effort = EFFORT_HIGH
+            risk_level = LEVEL_L2_FEATURE
+            reason = "Alterações ativas em arquivos de código de produção detectadas"
         else:
-            raw_effort = EFFORT_MEDIUM
-            risk_level = LEVEL_L1_SMALL
-            reason = "Sessão interativa sem prompt inicial (baseline medium)"
+            current_saved = get_current_settings_effort()
+            if current_saved == EFFORT_HIGH:
+                raw_effort = EFFORT_HIGH
+                risk_level = LEVEL_L2_FEATURE
+                reason = "Preservada configuração ativa em settings.json (modo HIGH)"
+            else:
+                raw_effort = EFFORT_MEDIUM
+                risk_level = LEVEL_L1_SMALL
+                reason = "Sessão interativa sem prompt inicial (baseline medium)"
 
-    # 7. Pre-Flight Token Budget Throttle (Salvaguarda de Cota Crítica >80%)
+    # 9. Pre-Flight Token Budget Throttle (Salvaguarda de Cota Crítica >80%)
     throttled = False
     rolling_5h = budget.get("rolling_5h_percent", 0.0)
     weekly = budget.get("weekly_percent", 0.0)
@@ -302,9 +453,9 @@ def update_settings_effort(settings_path: Path, target_effort: str) -> Tuple[boo
 
     try:
         content = settings_path.read_text(encoding="utf-8")
-        data = json.loads(content)
+        data = json.loads(content) if content.strip() else {}
         old_model = data.get("model", "")
-        new_model = map_model_to_effort(old_model, target_effort)
+        new_model = map_model_to_effort(old_model or "Gemini 3.8 Flash", target_effort)
 
         data["model"] = new_model
         data["reasoningEffort"] = target_effort.lower()
@@ -318,10 +469,14 @@ def update_settings_effort(settings_path: Path, target_effort: str) -> Tuple[boo
 def sync_global_settings(target_effort: str) -> List[str]:
     """Sincroniza os arquivos de settings da CLI e da IDE."""
     updated = []
-    cli_settings = Path.home() / ".gemini" / "antigravity-cli" / "settings.json"
-    ide_settings = Path.home() / ".gemini" / "antigravity-ide" / "settings.json"
+    settings_paths = (
+        Path.home() / ".gemini" / "antigravity-cli" / "settings.json",
+        Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
+        Path.home() / ".gemini" / "settings.json",
+        Path.home() / ".gemini" / "config" / "settings.json",
+    )
 
-    for p in (cli_settings, ide_settings):
+    for p in settings_paths:
         if p.is_file():
             success, old_m, new_m = update_settings_effort(p, target_effort)
             if success:
