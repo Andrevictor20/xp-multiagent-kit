@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-25 18:05 (Local)  
+> **Última Atualização:** 2026-09-25 18:18 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.22.0 (Quadruple Tool Governance: Loop Detection, AST Repo Map, Extended Clamps & Zero-Tool Gate)
+> **Versão / Marco Atual:** v2.23.0 (Docs Sync: Full Alignment of README.md with Quadruple Tool Governance, Effort Router & AST Repo Map)
 
 ---
 
@@ -27,13 +27,14 @@
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 63 Skills, 7 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-UNIVERSAL-AUTO-SANITIZE-20260925-01` (83/83 testes unitários aprovados em tests/, auto-sanitização universal e automática de comandos no Smart Tool Optimizer via PreToolUse overwrite, suporte a múltiplos segmentos encadeados, strip de variáveis de ambiente, detecção de pipelines desprotegidos e preservação de códigos de saída via set -o pipefail)
+- **Última Execução / Evidência:** `EV-DOCS-README-SYNC-20260925-01` (Sincronização integral do README.md e PROJECT_MEMORY.md com as novas ferramentas, hooks, esforço dinâmico e skills)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-09-25 | `DOCS` | Sincronização do README.md com o estado real do repositório: documentação completa dos 63 skills, governança quádrupla de ferramentas (Smart Tool Optimizer, Tool Size Guard, Token Badge, Dynamic Effort Router), roteamento inteligente de reasoning effort (agy-smart, agy-effort, agy-fast, agy-deep), AST Repo Map (REPO_MAP.md), telemetria de tokens em 3 camadas, CI/CD auto-healer e guia de instalação global | `README.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-DOCS-README-SYNC-20260925-01)` |
 | 2026-09-25 | `FEAT` | Governança Quádrupla de Ferramentas e Otimização Inteligente de Tokens: (1) Loop Detection no hook smart_tool_optimizer.py (bloqueio automático de 3 chamadas repetidas com os mesmos argumentos via hash sha256), (2) Clamp de list_dir na raiz do workspace e injeção automática de filtros de ruído em grep_search, (3) Repo Map Atômico (< 80 linhas / ~1.2k tokens) via scripts/repo_map.py e comando global agy-repo-map, (4) Atualização de AGENTS.md e project-memory skill com Passo 0 e Auto-Compact | `scripts/hooks/smart_tool_optimizer.py`, `scripts/repo_map.py`, `scripts/agy-repo-map`, `scripts/install-global.sh`, `AGENTS.md`, `.agents/skills/project-memory/SKILL.md`, `tests/test_smart_tool_optimizer.py`, `tests/test_repo_map.py` | `PASS (EV-QUADRUPLE-TOOL-GOV-20260925-01)` |
 | 2026-09-25 | `FEAT` | Auto-Sanitização Universal no Smart Tool Optimizer (PreToolUse Hook): expansão de cobertura para 100% dos comandos ruidosos e pipelines desprotegidos (test runners, linters, builds, package managers, git inspection, container logs e discovery), suporte a comandos prefixados por variáveis de ambiente, subshell para comandos encadeados (&&, ;, ||), preservação estrita do exit code de comandos falhos via `set -o pipefail` e 6 novos testes unitários dedicados (83/83 testes passando no total) | `scripts/hooks/smart_tool_optimizer.py`, `tests/test_smart_tool_optimizer.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-UNIVERSAL-AUTO-SANITIZE-20260925-01)` |
 | 2026-09-25 | `FEAT` | Modulação Automática e Contextual de Reasoning Effort no CLI & IDE: correção do router e hook PreInvocation para analisar o histórico acumulado do transcript (multi-turn), detecção robusta de diretrizes explícitas em linguagem natural ("Mude para o effort high", "coloque em high", "/effort high"), herança automática do risco ativo (L2/L3) em prompts de continuação pós Stop Gate ("continue", "prossiga", "pode fazer"), preservação do modo HIGH configurado no startup interativo do agy, sincronização global em 4 settings.json (CLI, IDE, global e config), desduplicação cross-process via hash MD5 e 5 novos testes unitários (77/77 total) | `scripts/agy_effort_router.py`, `scripts/hooks/dynamic_effort_hook.py`, `tests/test_agy_effort_router.py`, `tests/test_dynamic_effort_hook.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-CONTEXT-DYNAMIC-EFFORT-20260925-01)` |
