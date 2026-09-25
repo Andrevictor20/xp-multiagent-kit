@@ -112,7 +112,7 @@ def get_model_display_name(model_name: Optional[str]) -> str:
     return model_name
 
 DEFAULT_SYSTEM_PROMPT_BYTES = 85_000
-DEFAULT_LIMIT_5H = 500_000        # Teto padrão de rate limit para janela de 5 horas
+DEFAULT_LIMIT_5H = 800_000        # Teto padrão oficial para Gemini Flash na janela de 5 horas
 DEFAULT_LIMIT_WEEKLY = 10_000_000  # Teto padrão de cota semanal da conta
 
 # Chars/token por tipo de conteúdo (BPE empirico)
@@ -122,7 +122,15 @@ _CHARS_PER_TOKEN_MIXED = 3.5   # Misto: respostas do modelo (texto + código)
 _CHARS_PER_TOKEN_CONFIG = 3.3  # Regras / schemas / markdown de configuração
 
 
-def parse_token_limit(val: Any, default: int = 500_000) -> int:
+def make_progress_bar(percent_used: float, width: int = 10) -> str:
+    """Gera uma mini-barra visual moderna em blocos Unicode (ex: ▰▰▰▰▱▱▱▱▱▱)."""
+    p = max(0.0, min(100.0, percent_used))
+    filled = int(round((p / 100.0) * width))
+    empty = max(0, width - filled)
+    return "▰" * filled + "▱" * empty
+
+
+def parse_token_limit(val: Any, default: int = 800_000) -> int:
     """Converte valores com sufixos k, M para inteiros (ex: '500k' -> 500000, '10M' -> 10000000)."""
     if val is None:
         return default
@@ -237,51 +245,65 @@ def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota
         _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
         return quota
 
-    if not csrf_token:
+    # Descoberta resiliente de processos ativos e portas do Language Server
+    candidates = []
+    for cmd_path in glob.glob("/proc/[0-9]*/cmdline"):
         try:
-            for pid_dir in glob.glob("/proc/[0-9]*/cmdline"):
-                try:
-                    with open(pid_dir, "rb") as pf:
-                        cmd = pf.read().replace(b"\x00", b" ").decode(errors="ignore")
-                        if "language_server" in cmd and "--csrf_token" in cmd:
-                            m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", cmd)
-                            if m:
-                                csrf_token = m.group(1)
-                                break
-                except Exception:
-                    continue
+            with open(cmd_path, "rb") as f:
+                parts = f.read().split(b"\x00")
+                if any(b"language_server" in p for p in parts) and b"--csrf_token" in parts:
+                    pid = os.path.basename(os.path.dirname(cmd_path))
+                    idx = parts.index(b"--csrf_token")
+                    token = parts[idx + 1].decode("utf-8", errors="ignore")
+                    candidates.append((pid, token))
         except Exception:
             pass
 
-    if not csrf_token:
-        quota = LiveServerQuota(is_live=False, error="CSRF token do Language Server não encontrado")
+    ports_to_try = []
+    if candidates:
+        try:
+            import subprocess
+            out = subprocess.check_output(["ss", "-tulpn"], text=True, stderr=subprocess.DEVNULL)
+            for pid, token in candidates:
+                for line in out.splitlines():
+                    if f"pid={pid}," in line:
+                        m_port = re.search(r"127\.0\.0\.1:(\d+)", line)
+                        if m_port:
+                            ports_to_try.append((int(m_port.group(1)), token))
+        except Exception:
+            pass
+
+    if not ports_to_try and csrf_token:
+        for p in [p for p in [http_port, https_port, 44351, 39831, 36977, 43923] if p]:
+            ports_to_try.append((p, csrf_token))
+
+    if not ports_to_try:
+        quota = LiveServerQuota(is_live=False, error="Nenhuma porta ativa do Language Server encontrada")
         _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
         return quota
 
-    ports_to_try = [p for p in [http_port, https_port] if p]
-    if not ports_to_try:
-        ports_to_try = [44351, 39831]
-
     raw_data = None
-    for port in ports_to_try:
-        scheme = "http" if port == http_port else "https"
-        url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
-        ctx = ssl._create_unverified_context() if scheme == "https" else None
-        req = urllib.request.Request(
-            url,
-            data=b"{}",
-            headers={
-                "Content-Type": "application/json",
-                "x-codeium-csrf-token": csrf_token,
-            },
-        )
-        try:
-            with urllib.request.urlopen(req, context=ctx, timeout=2.5) as resp:
-                raw_data = json.loads(resp.read().decode("utf-8"))
-                if raw_data:
-                    break
-        except Exception:
-            continue
+    for port, token in ports_to_try:
+        for scheme in ["https", "http"]:
+            url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
+            ctx = ssl._create_unverified_context() if scheme == "https" else None
+            req = urllib.request.Request(
+                url,
+                data=b"{}",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-codeium-csrf-token": token,
+                },
+            )
+            try:
+                with urllib.request.urlopen(req, context=ctx, timeout=1.0) as resp:
+                    raw_data = json.loads(resp.read().decode("utf-8"))
+                    if raw_data and "response" in raw_data:
+                        break
+            except Exception:
+                continue
+        if raw_data and "response" in raw_data:
+            break
 
     if not raw_data or "response" not in raw_data:
         quota = LiveServerQuota(is_live=False, error="Falha ao consultar RetrieveUserQuotaSummary via RPC")
@@ -868,9 +890,10 @@ def parse_transcript_data(
 
 
 def format_badge(stats: TokenStats) -> str:
-    """Gera um badge markdown exibindo telemetria para Janela, 5h e Semanal."""
+    """Gera um badge markdown exibindo telemetria para Janela, 5h e Semanal com barras de progresso."""
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
+    bar_ctx = make_progress_bar(stats.percent_used, 8)
 
     if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
@@ -878,37 +901,45 @@ def format_badge(stats: TokenStats) -> str:
         b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
         pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
         pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        bar_5h = make_progress_bar(100.0 - pct_5h_rem, 8)
+        bar_7d = make_progress_bar(100.0 - pct_7d_rem, 8)
         return (
-            f"📊 **Token Telemetry ({stats.model_name}):** `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
-            f"| **5h:** `{pct_5h_rem:.1f}% restante` "
-            f"| **Semana:** `{pct_7d_rem:.1f}% restante`"
+            f"📊 **Token Telemetry ({stats.model_name}):** "
+            f"`[{bar_ctx}] {tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
+            f"| **5h:** `[{bar_5h}] {pct_5h_rem:.1f}% restante` "
+            f"| **Semana:** `[{bar_7d}] {pct_7d_rem:.1f}% restante`"
         )
 
     r5h_used = human_tokens(stats.rolling.tokens_5h)
     r5h_tot = human_tokens(stats.rolling.limit_5h)
     r7d_used = human_tokens(stats.rolling.tokens_7d)
     r7d_tot = human_tokens(stats.rolling.limit_7d)
+    bar_5h = make_progress_bar(stats.rolling.percent_5h, 8)
+    bar_7d = make_progress_bar(stats.rolling.percent_7d, 8)
     return (
-        f"📊 **Token Telemetry ({stats.model_name}):** `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
-        f"| **5h:** `{r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) "
-        f"| **Semana:** `{r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
+        f"📊 **Token Telemetry ({stats.model_name}):** "
+        f"`[{bar_ctx}] {tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
+        f"| **5h:** `[{bar_5h}] {r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) "
+        f"| **Semana:** `[{bar_7d}] {r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
     )
 
 
 def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
-    """Gera rodapé markdown elegante exibindo o consumo desta mensagem e a telemetria acumulada."""
+    """Gera rodapé markdown elegante e padronizado com ferramentas de ponta (Cursor, Claude Code, AGY)."""
     display_model = get_model_display_name(stats.model_name)
     turn_tot = human_tokens(turn.total_tokens)
     turn_in = human_tokens(turn.user_input_tokens)
     turn_tools = human_tokens(turn.tool_tokens)
     turn_out = human_tokens(turn.model_output_tokens)
-    tool_warn = " ⚠️ [Alto Uso de Ferramentas: use agy-sanitize/fatiamento]" if turn.tool_tokens > 1500 else ""
+    tool_warn = " ⚠️ [Alto Uso de Ferramentas: Auto-Sanitizado e Compactado pelo Kit]" if turn.tool_tokens > 2000 else ""
 
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
+    rem_ctx_str = human_tokens(stats.remaining_tokens)
     max_out_str = human_tokens(stats.max_output)
 
     effort_tag = f" (Effort: `{stats.effort}`)" if stats.effort else ""
+    bar_ctx = make_progress_bar(stats.percent_used, 10)
 
     if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
@@ -917,37 +948,69 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
 
         pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
         pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        pct_5h_used = max(0.0, 100.0 - pct_5h_rem)
+        pct_7d_used = max(0.0, 100.0 - pct_7d_rem)
 
         desc_5h = clean_refresh_text(b_5h.description) if b_5h else ""
         desc_7d = clean_refresh_text(b_7d.description) if b_7d else ""
 
-        s_5h = f"{pct_5h_rem:.1f}% restante" + (f" ({desc_5h})" if desc_5h else "")
-        s_7d = f"{pct_7d_rem:.1f}% restante" + (f" ({desc_7d})" if desc_7d else "")
+        limit_5h = stats.rolling.limit_5h or 800_000
+        limit_7d = stats.rolling.limit_7d or 10_000_000
+
+        tok_5h_rem = human_tokens(int(limit_5h * (pct_5h_rem / 100.0)))
+        tok_5h_used = human_tokens(int(limit_5h * (pct_5h_used / 100.0)))
+        tok_5h_tot = human_tokens(limit_5h)
+
+        tok_7d_rem = human_tokens(int(limit_7d * (pct_7d_rem / 100.0)))
+        tok_7d_used = human_tokens(int(limit_7d * (pct_7d_used / 100.0)))
+        tok_7d_tot = human_tokens(limit_7d)
+
+        pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
+
+        bar_5h = make_progress_bar(pct_5h_used, 10)
+        bar_7d = make_progress_bar(pct_7d_used, 10)
+
+        s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
+        s_5h = f"`[{bar_5h}]` {pct_5h_used:.1f}% usado (~`{tok_5h_used}`) • **{pct_5h_rem:.1f}% restante (~`{tok_5h_rem}`)** de `{tok_5h_tot}`" + (f" ({desc_5h})" if desc_5h else "")
+        s_7d = f"`[{bar_7d}]` {pct_7d_used:.1f}% usado (~`{tok_7d_used}`) • **{pct_7d_rem:.1f}% restante (~`{tok_7d_rem}`)** de `{tok_7d_tot}`" + (f" ({desc_7d})" if desc_7d else "")
 
         return (
             f"---\n"
             f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
             f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
-            f"📊 **Telemetria Acumulada ({display_model}):** "
-            f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
-            f"5h: `{s_5h}` | "
-            f"Semana: `{s_7d}`\n"
+            f"📊 **Telemetria Acumulada ({display_model}):**\n"
+            f"  • **Contexto:** {s_ctx}\n"
+            f"  • **5h:**       {s_5h}\n"
+            f"  • **Semana:**   {s_7d}\n"
             f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
         )
 
     r5h_used = human_tokens(stats.rolling.tokens_5h)
     r5h_tot = human_tokens(stats.rolling.limit_5h)
+    r5h_rem = human_tokens(stats.rolling.remaining_5h)
     r7d_used = human_tokens(stats.rolling.tokens_7d)
     r7d_tot = human_tokens(stats.rolling.limit_7d)
+    r7d_rem = human_tokens(stats.rolling.remaining_7d)
+
+    pct_5h_rem = max(0.0, 100.0 - stats.rolling.percent_5h)
+    pct_7d_rem = max(0.0, 100.0 - stats.rolling.percent_7d)
+    pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
+
+    bar_5h = make_progress_bar(stats.rolling.percent_5h, 10)
+    bar_7d = make_progress_bar(stats.rolling.percent_7d, 10)
+
+    s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
+    s_5h = f"`[{bar_5h}]` {stats.rolling.percent_5h:.1f}% usado (`{r5h_used}`) • **{pct_5h_rem:.1f}% restante (`{r5h_rem}`)** de `{r5h_tot}` [Estimado]"
+    s_7d = f"`[{bar_7d}]` {stats.rolling.percent_7d:.1f}% usado (`{r7d_used}`) • **{pct_7d_rem:.1f}% restante (`{r7d_rem}`)** de `{r7d_tot}` [Estimado]"
 
     return (
         f"---\n"
         f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
         f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
-        f"📊 **Telemetria Acumulada ({display_model}):** "
-        f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
-        f"5h: `{r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) | "
-        f"Semana: `{r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)\n"
+        f"📊 **Telemetria Acumulada ({display_model}):**\n"
+        f"  • **Contexto:** {s_ctx}\n"
+        f"  • **5h:**       {s_5h}\n"
+        f"  • **Semana:**   {s_7d}\n"
         f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
     )
 

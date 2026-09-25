@@ -31,7 +31,7 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │
 ├── hooks.json              # Configuração nativa de hooks do ciclo de vida
 │
-├── skills/                 # Capabilities granulares que os agentes utilizam (63 Skills)
+├── skills/                 # Capabilities granulares que os agentes utilizam (71 Skills)
 │   ├── tdd-safety-net                  # Matriz de testes (Unit, Integration, Contract, E2E, Fuzzing) e Anti-Test-Bypass
 │   ├── test-evidence-walkthrough       # Exigência de evidências reais L0 a L4
 │   ├── integration-testing             # Testes de integração em fronteiras de dados e APIs
@@ -68,6 +68,7 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │   ├── agy-repo-map        # Gerador do AST Repo Map compacto anti-busca cega
 │   ├── agy-tokens          # Telemetria de tokens em 3 camadas e auditoria de cota
 │   ├── agy-ci-heal         # CI/CD Auto-Healer autônomo (máx 3 tentativas)
+│   ├── agy-worktree        # Gerenciador de Git Worktrees para isolamento de subagentes
 │   ├── agy-sanitize        # Sanitizador de saídas verbosas para redução de payload
 │   ├── agy-handoff         # Gerador de handoff packets estruturados entre sessões/agentes
 │   ├── install-global.sh   # Instalador e sincronizador de comandos e hooks globais
@@ -78,6 +79,9 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │   ├── small.md            # L1: Alterações simples. Foco no TDD básico.
 │   ├── feature.md          # L2: Funcionalidade média. Avaliações de design e segurança condicionais.
 │   ├── critical.md         # L3: Auth, Dados, Pagamentos. Threat model e gates rigorosos.
+│   ├── spec-driven.md      # SDD: Especificação executável formal (Gherkin BDD) como fonte da verdade.
+│   ├── migration.md        # Migração estrutural segura com Expand-and-Contract e Zero Downtime.
+│   ├── performance-benchmark.md # Otimização de performance com profiling e baseline de SLOs.
 │   ├── bugfix.md           # Debugging sistemático, no-workarounds e regressão provada antes de corrigir.
 │   ├── incident.md         # Mitigação rápida em produção.
 │   └── release.md          # Conexão CI/CD com zero-downtime, telemetria e rollback automatizado.

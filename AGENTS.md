@@ -102,7 +102,7 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
 
 ## 🗺️ Mapa de Diretórios e Recursos do Kit
 - **Agentes (`.agents/agents/`):** `orchestrator`, `navigator`, `designer`, `sentinel`, `test-guardian`, `builder`, `refactor-warden`, `archivist`, `release-gatekeeper`, `shipper`, `genesis`.
-- **Workflows (`.agents/workflows/`):** `trivial.md` (L0), `small.md` (L1), `feature.md` (L2), `critical.md` (L3), `bugfix.md`, `incident.md`, `release.md`.
+- **Workflows (`.agents/workflows/`):** `trivial.md` (L0), `small.md` (L1), `feature.md` (L2), `critical.md` (L3), `spec-driven.md` (SDD), `migration.md`, `performance-benchmark.md`, `bugfix.md`, `incident.md`, `release.md`.
 - **Políticas (`.agents/policies/`):** `tdd.md`, `release.md`, `memory.md`, `frontend.md`, `design-system.md`, `security.md`, `database.md`, `evidence.md`, `agent-handoff.md`.
 - **Memória (`.agents/memory/`):** `PROJECT_MEMORY.md`, `archive/HISTORY.md`, `TOKEN_TELEMETRY.md`.
-- **Skills (`.agents/skills/`):** 63 skills especializadas carregadas sob demanda.
+- **Skills (`.agents/skills/`):** 71 skills especializadas carregadas sob demanda.

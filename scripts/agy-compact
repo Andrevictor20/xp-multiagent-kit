@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Wrapper executável para o compactador de contexto e mensagens do XP Kit
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+python3 "${SCRIPT_DIR}/context_compactor.py" "$@"

@@ -30,7 +30,14 @@ def main() -> int:
                 log_file = scratch_dir / "tool_warnings.log"
                 with log_file.open("a", encoding="utf-8") as f:
                     tool_name = data.get("tool_name", "unknown") if isinstance(data, dict) else "unknown"
-                    f.write(f"⚠️ [TOOL FLOOD WARNING] {tool_name}: {char_count} chars, {line_count} linhas. Considere usar agy-sanitize ou fatiamento.\n")
+                    f.write(f"⚠️ [TOOL FLOOD WARNING] {tool_name}: {char_count} chars, {line_count} linhas. Considere usar agy-sanitize ou agy-compact.\n")
+                
+                # Salva snapshot compactado no CCR cache para economia de tokens
+                try:
+                    from scripts.context_compactor import compact_payload
+                    compact_payload(content, source_name=f"post_tool_{tool_name}", max_inline_chars=2000)
+                except Exception:
+                    pass
     except Exception:
         pass
 
