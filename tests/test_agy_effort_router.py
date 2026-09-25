@@ -164,8 +164,25 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertEqual(map_model_to_effort("Gemini 3.8 Flash (Low)", EFFORT_HIGH), "Gemini 3.8 Flash (High)")
         self.assertEqual(map_model_to_effort("gemini-3.8-flash-high", EFFORT_LOW), "gemini-3.8-flash-low")
         self.assertEqual(map_model_to_effort("gemini-3.7-flash-medium", EFFORT_HIGH), "gemini-3.7-flash-high")
-        # For models without effort suffix, append or keep
+        # Pro model is automatically downgraded to Gemini 3.8 Flash for code implementation
+        self.assertEqual(map_model_to_effort("Gemini Pro (High)", EFFORT_HIGH), "Gemini 3.8 Flash (High)")
+        self.assertEqual(map_model_to_effort("Gemini 1.5 Pro", EFFORT_MEDIUM), "Gemini 3.8 Flash (Medium)")
+        # For non-Gemini models without effort suffix, keep
         self.assertEqual(map_model_to_effort("Claude Sonnet 4.6 (Thinking)", EFFORT_HIGH), "Claude Sonnet 4.6 (Thinking)")
+
+    def test_canonical_model_for_code_and_planning(self):
+        from scripts.agy_effort_router import get_canonical_model_for_task
+        # Code execution always returns Gemini 3.8 Flash with appropriate effort
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L0_TRIVIAL, is_planning=False), ("Gemini 3.8 Flash", EFFORT_LOW))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L1_SMALL, is_planning=False), ("Gemini 3.8 Flash", EFFORT_MEDIUM))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L2_FEATURE, is_planning=False), ("Gemini 3.8 Flash", EFFORT_HIGH))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L3_CRITICAL, is_planning=False), ("Gemini 3.8 Flash", EFFORT_HIGH))
+
+        # Planning tasks for complex features/critical use Gemini Pro
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L0_TRIVIAL, is_planning=True), ("Gemini 3.8 Flash", EFFORT_LOW))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L3_CRITICAL, is_planning=True), ("Gemini Pro", EFFORT_HIGH))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L2_FEATURE, is_planning=True), ("Gemini Pro", EFFORT_MEDIUM))
+
 
     def test_update_settings_effort(self):
         with tempfile.TemporaryDirectory() as tmpdir:

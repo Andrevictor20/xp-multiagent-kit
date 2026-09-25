@@ -425,10 +425,42 @@ def classify_task_effort(
     )
 
 
+def get_canonical_model_for_task(risk_level: str, is_planning: bool = False) -> Tuple[str, str]:
+    """
+    Retorna o modelo canônico e o reasoning effort ideal para a tarefa.
+    Regra de Ouro: Escrita de código/execução SEMPRE usa Gemini 3.8 Flash (modulando effort).
+    Gemini Pro é reservado exclusivamente para planejamento arquitetural / Stop Gate prévio.
+    """
+    if is_planning:
+        if risk_level == LEVEL_L3_CRITICAL:
+            return "Gemini Pro", EFFORT_HIGH
+        elif risk_level == LEVEL_L2_FEATURE:
+            return "Gemini Pro", EFFORT_MEDIUM
+        elif risk_level == LEVEL_L1_SMALL:
+            return "Gemini 3.8 Flash", EFFORT_MEDIUM
+        else:
+            return "Gemini 3.8 Flash", EFFORT_LOW
+
+    # Escrita de código e implementação prática (sempre Gemini 3.8 Flash)
+    if risk_level in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE):
+        return "Gemini 3.8 Flash", EFFORT_HIGH
+    elif risk_level == LEVEL_L1_SMALL:
+        return "Gemini 3.8 Flash", EFFORT_MEDIUM
+    else:
+        return "Gemini 3.8 Flash", EFFORT_LOW
+
+
 def map_model_to_effort(current_model: str, target_effort: str) -> str:
-    """Mapeia o modelo configurado para a variante correspondente de esforço."""
+    """
+    Mapeia o modelo configurado para a variante correspondente de esforço.
+    Se o modelo configurado for Pro, substitui por Gemini 3.8 Flash para escrita de código.
+    """
     effort_cap = target_effort.capitalize()
     effort_lower = target_effort.lower()
+
+    # Se for Pro, substitui para Gemini 3.8 Flash na execução de código
+    if "pro" in current_model.lower() and "gemini" in current_model.lower():
+        return f"Gemini 3.8 Flash ({effort_cap})"
 
     # Modelos no formato 'Gemini 3.8 Flash (High)'
     if re.search(r"\((High|Medium|Low)\)$", current_model, re.IGNORECASE):

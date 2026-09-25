@@ -15,11 +15,13 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
   - **Incident / Release:** Mitigação rápida e rollback ([incident.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/incident.md)) ou CI Gate rigoroso com Zero-Downtime Canary/Blue-Green ([release.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/workflows/release.md)).
 - Toda resposta inicial deve declarar brevemente o **Nível de Risco** e o **Workflow** escolhido antes de iniciar a execução.
 - **Modulação Adaptativa de Raciocínio & Gate Medium -> High (Regra [L-019]):** Para tarefas mecânicas ou conceituais L0/L1 (dúvidas, docs, CSS, refatoração isolada), responda de forma direta e concisa. No CLI, use o roteador inteligente (`agy-smart` ou `agy-effort`) ou perfis com reasoning effort reduzido (`agy-fast` com `--effort low` para economizar 3.000 a 8.000 tokens de raciocínio, `agy-deep` com `--effort high` para criticidade e salvaguarda de cota >80%). Na IDE, mantenha o seletor padrão sempre em `Medium`. Para tarefas de risco L2 (Feature) ou L3 (Crítico/Segurança/Arquitetura), o agente DEVE elaborar o plano de implementação em `Medium`, emitir obrigatoriamente um alerta explícito (Stop Gate) solicitando a elevação do modelo para `High` (ou `/effort high`) e PAUSAR a execução, iniciando a implementação estritamente após a confirmação do usuário.
-- **Matriz Canônica de Modelo & Reasoning Effort:**
-  - **L0 (Docs/Typos/CSS/Explicações):** `Gemini 3.8 Flash` com reasoning effort `low` (fast-path ativo, zero-tool para consultas conceituais).
-  - **L1 (Small Refactor/Bugfix pontual):** `Gemini 3.8 Flash` com reasoning effort `medium` (testes direcionados ao módulo afetado, sem suíte completa).
-  - **L2 (Features/APIs/Frontend):** `Gemini 3.8 Flash` (com effort `high`) ou `Gemini Pro` (com effort `medium`).
-  - **L3 (Critical/Security/Payments/Auth):** `Gemini Pro` com reasoning effort `high` (Threat Modeling STRIDE e salvaguarda de cota pré-flight).
+- **Matriz Canônica de Modelo & Reasoning Effort (Regra de Ouro: Código SEMPRE em Flash):**
+  - **Escrita de Código / Implementação:** O modelo utilizado para escrever código de produção DEVE ser SEMPRE o **Gemini 3.8 Flash**, variando o reasoning effort conforme o risco:
+    - **L0 (Docs/Typos/CSS/Explicações):** `Gemini 3.8 Flash` com reasoning effort `low` (fast-path ativo, zero-tool para consultas conceituais).
+    - **L1 (Small Refactor/Bugfix pontual):** `Gemini 3.8 Flash` com reasoning effort `medium` (testes direcionados ao módulo afetado, sem suíte completa).
+    - **L2 (Features/APIs/Frontend):** `Gemini 3.8 Flash` com reasoning effort `high`.
+    - **L3 (Critical/Security/Payments/Auth):** `Gemini 3.8 Flash` com reasoning effort `high` (substituindo o Pro por Flash High na escrita de código para economizar cota e maximizar velocidade).
+  - **Uso Exclusivo do Gemini Pro (Apenas Planos de Implementação):** O modelo `Gemini Pro` é reservado ESTRITAMENTE para elaboração de **planos arquiteturais complexos**, Threat Modeling preliminar (STRIDE) e Stop Gates no Momento Zero. Assim que o plano for concluído e aprovado pelo usuário, a escrita do código DEVE retornar obrigatoriamente para o `Gemini 3.8 Flash` (variando o effort conforme o risco).
 
 
 ---

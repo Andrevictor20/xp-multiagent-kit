@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-25 18:38 (Local)  
+> **Última Atualização:** 2026-09-25 18:42 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.24.0 (Autonomous Token Reduction: Fast-Path L0 Test Exemption, Active write_to_file Block in Smart Tool Optimizer & Canonical Model/Effort Matrix)
+> **Versão / Marco Atual:** v2.24.1 (Canon Model Governance: Gemini 3.8 Flash Mandatory for All Code Writing with Dynamic Effort, Pro Reserved Strictly for Planning/RFCs)
 
 ---
 
@@ -34,6 +34,7 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-09-25 | `FEAT` | Governança Canônica de Modelos: (1) Regra de Ouro no AGENTS.md e agy_effort_router.py impondo Gemini 3.8 Flash para 100% da escrita de código de produção (variando effort: Low para L0, Medium para L1, High para L2/L3), (2) Substituição forçada do Gemini Pro por Gemini 3.8 Flash (High) para codificação prática, reservando o Pro exclusivamente para elaboração de planos de implementação e Stop Gates, (3) Função get_canonical_model_for_task e auto-downgrade no map_model_to_effort com 100% dos testes aprovados (97/97 total) | `AGENTS.md`, `scripts/agy_effort_router.py`, `tests/test_agy_effort_router.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-CANON-MODEL-FLASH-CODE-20260925-01)` |
 | 2026-09-25 | `FEAT` | Otimização Autônoma de Consumo de Tokens: (1) Fast-Path L0 no AGENTS.md e trivial.md isentando formalmente alterações puramente documentais (.md, .txt, docstrings) de rodar suítes de testes de código de produção, (2) Bloqueio ativo no Smart Tool Optimizer (PreToolUse) contra write_to_file em arquivos existentes com mais de 40 linhas forçando uso de replace_file_content atômico, (3) Matriz canônica de Modelo × Reasoning Effort por nível de risco (L0-L3), e (4) 4 novos testes unitários adicionados com 100% de aprovação (96/96 testes total) | `AGENTS.md`, `.agents/workflows/trivial.md`, `scripts/hooks/smart_tool_optimizer.py`, `tests/test_smart_tool_optimizer.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-AUTONOMOUS-TOKEN-REDUCTION-20260925-01)` |
 | 2026-09-25 | `DOCS` | Sincronização do README.md com o estado real do repositório: documentação completa dos 63 skills, governança quádrupla de ferramentas (Smart Tool Optimizer, Tool Size Guard, Token Badge, Dynamic Effort Router), roteamento inteligente de reasoning effort (agy-smart, agy-effort, agy-fast, agy-deep), AST Repo Map (REPO_MAP.md), telemetria de tokens em 3 camadas, CI/CD auto-healer e guia de instalação global | `README.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-DOCS-README-SYNC-20260925-01)` |
 | 2026-09-25 | `FEAT` | Governança Quádrupla de Ferramentas e Otimização Inteligente de Tokens: (1) Loop Detection no hook smart_tool_optimizer.py (bloqueio automático de 3 chamadas repetidas com os mesmos argumentos via hash sha256), (2) Clamp de list_dir na raiz do workspace e injeção automática de filtros de ruído em grep_search, (3) Repo Map Atômico (< 80 linhas / ~1.2k tokens) via scripts/repo_map.py e comando global agy-repo-map, (4) Atualização de AGENTS.md e project-memory skill com Passo 0 e Auto-Compact | `scripts/hooks/smart_tool_optimizer.py`, `scripts/repo_map.py`, `scripts/agy-repo-map`, `scripts/install-global.sh`, `AGENTS.md`, `.agents/skills/project-memory/SKILL.md`, `tests/test_smart_tool_optimizer.py`, `tests/test_repo_map.py` | `PASS (EV-QUADRUPLE-TOOL-GOV-20260925-01)` |
