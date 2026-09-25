@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-24 18:30 (Local)  
+> **Última Atualização:** 2026-09-25 00:35 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.15.0 (Live Antigravity Server Quotas via Language Server RPC & Universal Workspace Ignore Deployment)
+> **Versão / Marco Atual:** v2.16.0 (Hard Tool Token Reduction: view_file <= 40 lines, agy-sanitize mandate, PostToolUse hook & 15-turn reset)
 
 ---
 
@@ -27,7 +27,7 @@
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 63 Skills, 7 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-TOKEN-LIVE-20260924-01` (21/21 testes unitários aprovados em test_token_tracker.py, telemetria oficial ao vivo do Antigravity Language Server RPC via RetrieveUserQuotaSummary ativa e 54 projetos imunizados com .geminiignore e .antigravityignore)
+- **Última Execução / Evidência:** `EV-TOOL-REDUCTION-20260925-01` (38/38 testes unitários aprovados em tests/, redução de view_file para máx 40 linhas, sanitização mandatória, hook PostToolUse tool-size-guard e antecipação do session reset para 15 turnos / 40k tokens)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
@@ -36,6 +36,7 @@
 
 | Data / Hora | Tipo | Resumo da Alteração | Arquivos Principais | Test Evidence / Status |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-09-25 | `FEAT` | Redução Drástica de Consumo de Ferramentas: limite cirúrgico de view_file restrito a 40 linhas, agy-sanitize/pipes obrigatórios para run_command, hook PostToolUse tool-size-guard no hooks.json, alerta de alto uso de tools (>1.5k) no footer e session reset antecipado para 15 turnos / 40k tokens | `AGENTS.md`, `.agents/skills/token-budget-tracker/SKILL.md`, `scripts/hooks/tool-size-guard.py`, `.agents/hooks.json`, `scripts/token_tracker.py`, `tests/test_token_tracker.py` | `PASS (EV-TOOL-REDUCTION-20260925-01)` |
 | 2026-09-24 | `FEAT` | Protocolo de Elevação de Esforço Sob Demanda (Gate Medium -> High): IDE mantida em Medium como baseline; ao atingir L2/L3 com plano pronto, o agente emite alerta explícito e pausa a execução aguardando confirmação de troca para High antes de implementar | `AGENTS.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-GATE-HIGH-20260924-01)` |
 | 2026-09-24 | `FEAT` | Protocolo Zero-Tool para Consultas (L0) & Desativação do Plugin GCP Datacloud: plugin googlecloudtools.datacloud_telemetry desativado (33 skills removidas do overhead global), AGENTS.md reforçado com proibição estrita de invocação de ferramentas para dúvidas conceituais e modulação de concisão | `AGENTS.md`, `~/.gemini/config/plugins_disabled/`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-ZERO-TOOL-20260924-01)` |
 | 2026-09-24 | `CHORE` | Desativação Global de Servidores MCP: mcp_config.json zerado (mcpServers: {}), caches de schemas em antigravity-ide/mcp e antigravity-cli/mcp movidos para mcp_disabled; auditoria agy-audit confirmou 0 MCP servers ativos | `~/.gemini/config/mcp_config.json`, `~/.gemini/antigravity-ide/mcp`, `~/.gemini/antigravity-cli/mcp` | `PASS (EV-MCP-DISABLE-20260924-01)` |
@@ -122,3 +123,5 @@
 
 ### Lição Procedural
 - **[L-018]** Nunca use `estimate_tokens(" " * bytes)` como proxy de byte→token. Esse padrão ignora o ratio de code_chars e sempre usa chars_per_token=3.8 (prose puro), subestimando outputs de ferramentas JSON/código em ~16% e superestimando prose em ~5%.
+- **[L-020]** O acúmulo de outputs de ferramentas em conversas longas gera inflação exponencial de tokens faturados a cada novo turno. Mitiga-se na fonte com 4 defesas: (1) teto estrito de 40 linhas em `view_file`, (2) sanitização mandatória via `agy-sanitize`/pipes em `run_command`, (3) auditoria de payload em hook `PostToolUse` (`tool-size-guard.py`) e (4) antecipação do session reset para 15 turnos / 40k tokens.
+

@@ -21,6 +21,14 @@ Mecanismo para auditoria, controle, governança preventiva e degradação gracio
 
 ---
 
+## Governança de Consumo em Ferramentas (Tool Budget)
+- **Teto por Chamada de Ferramenta:** Máximo 1.500 caracteres / 400 tokens por retorno.
+- **Sanitização Mandatória:** Todo comando com potencial de log extenso deve rodar via `agy-sanitize` ou pipes limitadores (`| head -n 25`, `| tail -n 20`).
+- **Fatiamento Cirúrgico:** `view_file` restrito a blocos de no máximo **40 linhas** (`EndLine - StartLine <= 40`), proibindo leitura cega.
+- **Session Reset Agressivo:** Recomendado reiniciar a sessão a cada **15 turnos ou 40k tokens** para impedir que históricos de ferramentas pesadas continuem faturando nos turnos posteriores.
+
+---
+
 ## Pre-Flight Budget Gate & Modo Cirúrgico Atômico
 
 ### 1. Alerta Prévio Obrigatório

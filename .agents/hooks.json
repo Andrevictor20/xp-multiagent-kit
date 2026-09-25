@@ -54,5 +54,19 @@
         "timeout": 10
       }
     ]
+  },
+  "tool-size-guard": {
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/tool-size-guard.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

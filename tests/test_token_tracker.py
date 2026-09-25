@@ -329,6 +329,19 @@ class TestTokenTracker(unittest.TestCase):
         self.assertIn("5h:", footer)
         self.assertIn("Semana:", footer)
 
+    def test_format_message_footer_tool_warning(self):
+        turn = TurnStats(user_input_tokens=100, tool_tokens=2500, model_output_tokens=300, total_tokens=2900)
+        rolling = RollingWindowStats(tokens_5h=30000, limit_5h=500000, tokens_7d=1200000, limit_7d=10000000)
+        stats = parse_transcript_data(
+            conversation_id="conv-warn",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "Hello"}],
+            system_prompt_bytes=5000,
+            rolling=rolling,
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("⚠️ [Alto Uso de Ferramentas", footer)
+
     def test_clean_refresh_text(self):
         desc1 = "You have used some of your weekly limit, it will fully refresh in 6 days, 23 hours."
         self.assertEqual(clean_refresh_text(desc1), "renova em 6 d, 23 h")
