@@ -30,16 +30,17 @@ mkdir -p "$GLOBAL_SKILLS_DIR" "$GLOBAL_RULES_DIR"
 echo "🔗 Vinculando AGENTS.md mestre global..."
 ln -sf "$KIT_DIR/AGENTS.md" "$GLOBAL_CONFIG_DIR/AGENTS.md"
 
-# 3.1. Reorganizar skills legadas de GCP em plugin dedicado para não estourar o orçamento de skills
-GCP_PLUGIN_SKILLS="$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry/skills"
+# 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
+GCP_PLUGIN_SKILLS="$GLOBAL_CONFIG_DIR/plugins_disabled/googlecloudtools.datacloud_telemetry/skills"
 mkdir -p "$GCP_PLUGIN_SKILLS"
 for existing_skill in "$GLOBAL_SKILLS_DIR"/*; do
   if [ -d "$existing_skill" ] && [ ! -L "$existing_skill" ]; then
     sname="$(basename "$existing_skill")"
-    echo "📦 Isolando skill legado em plugin: $sname"
+    echo "📦 Isolando skill legado em plugins_disabled: $sname"
     mv "$existing_skill" "$GCP_PLUGIN_SKILLS/"
   fi
 done
+rm -rf "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
 
 # 4. Vincular todas as Skills globais dinamicamente
 echo "🔗 Sincronizando Skills globais do kit..."
@@ -93,6 +94,7 @@ if [ -d "$IDE_DIR" ]; then
   ln -sfn "$KIT_DIR/AGENTS.md" "$IDE_DIR/GEMINI.md"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$IDE_DIR/mcp_config.json"
   [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$IDE_DIR/hooks.json"
+  rm -rf "$CLI_DIR/mcp"/* "$IDE_DIR/mcp"/* 2>/dev/null || true
   if [ -f "$CLI_DIR/settings.json" ] && [ ! -f "$IDE_DIR/settings.json" ]; then
     cp "$CLI_DIR/settings.json" "$IDE_DIR/settings.json"
   fi
