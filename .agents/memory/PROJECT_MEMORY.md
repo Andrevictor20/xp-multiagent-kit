@@ -139,5 +139,6 @@
 3. **Correção de Argument Parsing:** `parse_cli_session_args()` agora reconhece flags com valor (`--mode accept-edits`, `-m`, etc.), evitando que valores de flags sejam capturados como prompt da tarefa.
 4. **Interceptação Global do Binário Nativo:** O binário ELF original foi movido para `~/.local/bin/agy-native` e `~/.local/bin/agy` foi convertido em symlink para `agy-wrapper.sh`. Agora, tanto `agy`, `agy-smart`, `agy-fast` quanto `agy-deep` executam através do classificador inteligente com sincronização imediata de `settings.json`.
 5. **Anti-False-Positive em `detect_effort`:** Adicionado filtro contra saídas de ferramentas que contêm código-fonte no transcript, evitando que referências literais a `Model Selection` no código sobrescrevam o esforço real.
+6. **Implantação Global Universal:** Executada varredura e sincronização em todos os 53 projetos e workspaces locais (`apply_ignore_rules.py` e `install-global.sh`), propagando `.geminiignore`, `.antigravityignore`, symlinks globais do kit e hooks de push para observabilidade.
 
 
