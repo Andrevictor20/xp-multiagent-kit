@@ -45,11 +45,27 @@ Se o usuário insistir em prosseguir mesmo com o limite baixo:
 
 ---
 
+## Consultas de Consumo no Chat (IDE & CLI)
+Quando o usuário perguntar no chat sobre dados de consumo, cotas ou tokens:
+O agente **DEVE apresentar o máximo de informações possíveis**, incluindo:
+1. **Modelo Ativo & Limites:** Nome amigável, chave técnica, Janela de Contexto e Saída Máxima.
+2. **Janela de Mensagem (Sessão Atual):** Tokens acumulados, teto, margem livre restante e percentual de ocupação.
+3. **Cota Oficial ao Vivo (Google Language Server):** Percentual restante e tempo exato de refresh para a Janela Móvel de 5 Horas e para o Ciclo Semanal de 7 Dias.
+4. **Decomposição do Consumo:** Tokens e bytes gastos em System Prompt/Schemas, Chamadas de Ferramentas, Respostas/Thinking e Mensagens do Usuário.
+5. **Heurística Acumulada da Conta:** Total de tokens e sessões registradas nas últimas 5h e 7 dias com taxa horária/diária.
+6. **Diagnóstico & Status:** Avaliação de integridade (🟢 Saudável, 🟡 Atenção ou 🔴 Crítico) e recomendações práticas de preservação de cota.
+
+---
+
 ## Comandos Disponíveis
 
 ```bash
 # Visualizar dashboard interativo no terminal (com rich e <usado>/<total>)
 xp-tokens
+
+# Forçar modelo específico e visualizar seus limites dedicados
+xp-tokens -m claude-sonnet-4-6
+xp-tokens -m gemini-3.8-pro --plain
 
 # Verificar integridade do orçamento e emitir alertas se necessário
 xp-tokens --check

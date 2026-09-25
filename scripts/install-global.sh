@@ -118,6 +118,10 @@ ln -sf "$KIT_DIR/scripts/agy-handoff" "$HOME/.local/bin/agy-handoff"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit-config"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit"
 ln -sf "$KIT_DIR/scripts/apply_ignore_rules.py" "$HOME/.local/bin/agy-apply-ignore"
+if [ -f "$HOME/.local/bin/agy" ] && [ ! -L "$HOME/.local/bin/agy" ]; then
+  mv "$HOME/.local/bin/agy" "$HOME/.local/bin/agy-native"
+fi
+ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-fast"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-deep"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-smart"

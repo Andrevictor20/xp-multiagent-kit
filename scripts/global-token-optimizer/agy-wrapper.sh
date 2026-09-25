@@ -34,16 +34,25 @@ fi
 
 # Locate underlying antigravity / agy binary
 REAL_BIN=""
-IFS=':' read -ra ADDR <<< "$PATH"
-for p in "${ADDR[@]}"; do
-  if [ -x "$p/agy" ] && [ "$(realpath "$p/agy")" != "$(realpath "$0")" ]; then
-    REAL_BIN="$p/agy"
-    break
-  elif [ -x "$p/antigravity" ] && [ "$(realpath "$p/antigravity")" != "$(realpath "$0")" ]; then
-    REAL_BIN="$p/antigravity"
+for candidate in "$HOME/.local/bin/agy-native" "$HOME/.local/bin/agy-bin" "/usr/local/bin/agy-native"; do
+  if [ -x "$candidate" ]; then
+    REAL_BIN="$candidate"
     break
   fi
 done
+
+if [ -z "$REAL_BIN" ]; then
+  IFS=':' read -ra ADDR <<< "$PATH"
+  for p in "${ADDR[@]}"; do
+    if [ -x "$p/agy" ] && [ "$(realpath "$p/agy")" != "$(realpath "$0")" ]; then
+      REAL_BIN="$p/agy"
+      break
+    elif [ -x "$p/antigravity" ] && [ "$(realpath "$p/antigravity")" != "$(realpath "$0")" ]; then
+      REAL_BIN="$p/antigravity"
+      break
+    fi
+  done
+fi
 
 if [ -z "$REAL_BIN" ]; then
   echo "⚠️ Executável nativo 'agy' ou 'antigravity' não encontrado em outro PATH."

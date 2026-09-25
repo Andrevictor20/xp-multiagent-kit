@@ -19,6 +19,7 @@ from scripts.agy_effort_router import (
     LEVEL_L1_SMALL,
     LEVEL_L2_FEATURE,
     LEVEL_L3_CRITICAL,
+    parse_cli_session_args,
 )
 
 
@@ -184,6 +185,42 @@ class TestAgyEffortRouter(unittest.TestCase):
             updated_data = json.loads(settings_path.read_text(encoding="utf-8"))
             self.assertEqual(updated_data["model"], "Gemini 3.8 Flash (Low)")
             self.assertEqual(updated_data["reasoningEffort"], "low")
+
+    def test_classify_conversational_and_simple_questions_as_l0(self):
+        prompts = [
+            "do que se trata esse repositorio e o que ele faz na pratica de forma simples?",
+            "Outra duvida simples, usar o cli economiza mais tokens que o ide?",
+            "como funciona o kit de agentes?",
+            "qual a diferença entre cli e ide para economizar tokens?",
+            "para que serve o script token_tracker.py?",
+            "quantos tokens de contexto ainda tenho disponiveis?",
+        ]
+        for p in prompts:
+            decision = classify_task_effort(prompt=p)
+            self.assertEqual(
+                decision.effort,
+                EFFORT_LOW,
+                f"Prompt '{p}' deveria ser LOW, mas foi {decision.effort}"
+            )
+            self.assertEqual(decision.risk_level, LEVEL_L0_TRIVIAL)
+
+    def test_token_disambiguation_llm_vs_auth(self):
+        # Auth / security tokens must be L3 Critical (HIGH)
+        auth_decision = classify_task_effort("implemente autenticação segura com jwt token")
+        self.assertEqual(auth_decision.effort, EFFORT_HIGH)
+        self.assertEqual(auth_decision.risk_level, LEVEL_L3_CRITICAL)
+
+        # General LLM token inquiries must NOT be L3 Critical
+        llm_decision = classify_task_effort("qual o consumo estimado de tokens por requisição?")
+        self.assertNotEqual(llm_decision.risk_level, LEVEL_L3_CRITICAL)
+
+    def test_parse_cli_session_args(self):
+        argv = ["--mode", "accept-edits", "do que se trata esse repositorio?"]
+        prompt, explicit_effort, pass_through = parse_cli_session_args(argv)
+        self.assertEqual(prompt, "do que se trata esse repositorio?")
+        self.assertIsNone(explicit_effort)
+        self.assertIn("--mode", pass_through)
+        self.assertIn("accept-edits", pass_through)
 
 
 if __name__ == "__main__":

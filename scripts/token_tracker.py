@@ -102,6 +102,12 @@ def get_model_display_name(model_name: Optional[str]) -> str:
     clean_name = model_name.lower().strip()
     for key, display in MODEL_DISPLAY_NAMES.items():
         if key in clean_name:
+            if "(high)" in clean_name:
+                return f"{display} (High)"
+            elif "(low)" in clean_name:
+                return f"{display} (Low)"
+            elif "(medium)" in clean_name:
+                return f"{display} (Medium)"
             return display
     return model_name
 
@@ -381,6 +387,7 @@ class TokenStats:
     total_tokens: int
     remaining_tokens: int
     percent_used: float
+    effort: Optional[str] = None
     rolling: RollingWindowStats = field(default_factory=RollingWindowStats)
     live_quota: LiveServerQuota = field(default_factory=LiveServerQuota)
     top_tools: Dict[str, Dict[str, int]] = field(default_factory=dict)
@@ -542,6 +549,68 @@ def detect_model_name_from_steps(steps: List[Dict[str, Any]]) -> Optional[str]:
     return None
 
 
+def detect_effort(
+    conversation_id: str,
+    steps: Optional[List[Dict[str, Any]]] = None,
+    explicit_effort: Optional[str] = None,
+) -> Optional[str]:
+    """Detecta o nível de reasoning effort ativo (Low, Medium, High, Thinking)."""
+    if explicit_effort:
+        return explicit_effort.capitalize()
+
+    # 1. Transcript steps (USER_SETTINGS_CHANGE / Model Selection)
+    if steps:
+        for step in reversed(steps):
+            if step.get("type") != "USER_INPUT":
+                continue
+            content = step.get("content", "")
+            if not isinstance(content, str):
+                content = json.dumps(content) if content else ""
+            # Evita falsos positivos em saídas de ferramentas lendo código
+            if "File Path:" in content or "Created At:" in content or "diff_block_start" in content:
+                continue
+            if "USER_SETTINGS_CHANGE" in content and "Model Selection" in content:
+                to_part = content.split("to", 1)[-1] if "to" in content else content
+                m = re.search(r"\b(high|medium|low|thinking)\b", to_part, re.IGNORECASE)
+                if m:
+                    val = m.group(1).lower()
+                    return "Thinking" if val == "thinking" else val.capitalize()
+            elif step.get("source") == "USER_EXPLICIT" and ("--effort" in content.lower() or "/effort" in content.lower()):
+                m = re.search(r"(?:--effort|/effort)\s+(high|medium|low)", content, re.IGNORECASE)
+                if m:
+                    return m.group(1).capitalize()
+
+    # 2. Env vars
+    for env_key in ("AGY_EFFORT", "REASONING_EFFORT", "EFFORT"):
+        env_val = os.environ.get(env_key, "").strip().lower()
+        if env_val:
+            return env_val.capitalize()
+
+    # 3. Settings files
+    home = Path.home()
+    for cfg_path in [
+        home / ".gemini" / "antigravity-cli" / "settings.json",
+        home / ".gemini" / "antigravity-ide" / "settings.json",
+        home / ".gemini" / "config" / "settings.json",
+    ]:
+        if cfg_path.is_file():
+            try:
+                data = json.loads(cfg_path.read_text(encoding="utf-8"))
+                eff = data.get("reasoningEffort") or data.get("effort")
+                if eff and isinstance(eff, str):
+                    return eff.strip().capitalize()
+                mod = data.get("model", "")
+                if isinstance(mod, str):
+                    m = re.search(r"\b(high|medium|low|thinking)\b", mod, re.IGNORECASE)
+                    if m:
+                        val = m.group(1).lower()
+                        return "Thinking" if val == "thinking" else val.capitalize()
+            except Exception:
+                pass
+
+    return "Medium"
+
+
 def _measure_system_prompt_bytes() -> int:
     """Mede o tamanho real do system prompt somando regras e schemas carregados."""
     home = Path.home()
@@ -689,6 +758,7 @@ def parse_transcript_data(
     rolling: Optional[RollingWindowStats] = None,
     live_quota: Optional[LiveServerQuota] = None,
     fetch_live: bool = False,
+    effort: Optional[str] = None,
 ) -> TokenStats:
     """Processa steps do transcript e consolida telemetria em 3 camadas.
 
@@ -769,11 +839,15 @@ def parse_transcript_data(
     else:
         live_quota = live_quota or LiveServerQuota(is_live=False)
 
+    if effort is None:
+        effort = detect_effort(conversation_id, steps=steps)
+
     return TokenStats(
         conversation_id=conversation_id,
         model_name=model_name,
         context_window=limits["context_window"],
         max_output=limits["max_output"],
+        effort=effort,
         system_prompt_tokens=sys_tokens,
         system_prompt_bytes=eff_sys_bytes,
         user_input_tokens=user_tokens,
@@ -832,6 +906,9 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
 
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
+    max_out_str = human_tokens(stats.max_output)
+
+    effort_tag = f" (Effort: `{stats.effort}`)" if stats.effort else ""
 
     if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
@@ -854,7 +931,8 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
             f"📊 **Telemetria Acumulada ({display_model}):** "
             f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
             f"5h: `{s_5h}` | "
-            f"Semana: `{s_7d}`"
+            f"Semana: `{s_7d}`\n"
+            f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
         )
 
     r5h_used = human_tokens(stats.rolling.tokens_5h)
@@ -869,15 +947,25 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         f"📊 **Telemetria Acumulada ({display_model}):** "
         f"Contexto: `{tot_str}/{win_str}` ({stats.percent_used:.1f}%) | "
         f"5h: `{r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) | "
-        f"Semana: `{r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
+        f"Semana: `{r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)\n"
+        f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
     )
 
 
 def format_json_stats(stats: TokenStats) -> str:
     """Exporta as métricas de telemetria em formato JSON estruturado com os tetos <usado>/<total>."""
+    display_model = get_model_display_name(stats.model_name)
     payload = {
         "conversation_id": stats.conversation_id,
         "model": stats.model_name,
+        "model_display_name": display_model,
+        "effort": stats.effort,
+        "model_limits": {
+            "context_window": stats.context_window,
+            "max_output": stats.max_output,
+            "context_window_human": human_tokens(stats.context_window),
+            "max_output_human": human_tokens(stats.max_output),
+        },
         "context_window": stats.context_window,
         "max_output": stats.max_output,
         "total_tokens": stats.total_tokens,
@@ -888,9 +976,13 @@ def format_json_stats(stats: TokenStats) -> str:
             "is_live": stats.live_quota.is_live,
             "plan_name": stats.live_quota.plan_name,
             "gemini_5h_remaining_pct": round(stats.live_quota.gemini_5h.remaining_fraction * 100.0, 2) if stats.live_quota.gemini_5h else None,
+            "gemini_5h_refresh": clean_refresh_text(stats.live_quota.gemini_5h.description) if stats.live_quota.gemini_5h else None,
             "gemini_weekly_remaining_pct": round(stats.live_quota.gemini_weekly.remaining_fraction * 100.0, 2) if stats.live_quota.gemini_weekly else None,
+            "gemini_weekly_refresh": clean_refresh_text(stats.live_quota.gemini_weekly.description) if stats.live_quota.gemini_weekly else None,
             "claude_5h_remaining_pct": round(stats.live_quota.claude_5h.remaining_fraction * 100.0, 2) if stats.live_quota.claude_5h else None,
+            "claude_5h_refresh": clean_refresh_text(stats.live_quota.claude_5h.description) if stats.live_quota.claude_5h else None,
             "claude_weekly_remaining_pct": round(stats.live_quota.claude_weekly.remaining_fraction * 100.0, 2) if stats.live_quota.claude_weekly else None,
+            "claude_weekly_refresh": clean_refresh_text(stats.live_quota.claude_weekly.description) if stats.live_quota.claude_weekly else None,
             "error": stats.live_quota.error,
         },
         "rolling_limits": {
@@ -943,9 +1035,12 @@ def format_markdown_report(stats: TokenStats) -> str:
         )
     tools_table = "\n".join(tools_rows) if tools_rows else "| Nenhuma ferramenta executada | - | - | - |"
 
+    display_model = get_model_display_name(stats.model_name)
+    effort_str = f" | **Effort:** `{stats.effort}`" if stats.effort else ""
     report = f"""# 📊 Relatório de Telemetria de Tokens — Antigravity
 > **Status:** {status_emoji} | **Última Leitura:** {time.strftime('%Y-%m-%d %H:%M:%S')}  
-> **Sessão:** `{stats.conversation_id}` | **Modelo:** `{stats.model_name}`
+> **Sessão:** `{stats.conversation_id}` | **Modelo Utilizado:** `{display_model}` (`{stats.model_name}`){effort_str}  
+> **Limites do Modelo:** Janela de Contexto: `{human_tokens(stats.context_window)}` (`{stats.context_window:,}` tokens) | Saída Máxima: `{human_tokens(stats.max_output)}` (`{stats.max_output:,}` tokens)
 
 ---
 
@@ -1159,6 +1254,8 @@ def detect_model_name(conversation_id: str, steps: Optional[List[Dict[str, Any]]
     # 3. Arquivo de configuração do Antigravity (IDE ou CLI)
     home = Path.home()
     for cfg_path in [
+        home / ".gemini" / "antigravity-cli" / "settings.json",
+        home / ".gemini" / "antigravity-ide" / "settings.json",
         home / ".gemini" / "antigravity-ide" / "config.json",
         home / ".gemini" / "antigravity-cli" / "config.json",
         home / ".gemini" / "config" / "settings.json",
@@ -1173,6 +1270,9 @@ def detect_model_name(conversation_id: str, steps: Optional[List[Dict[str, Any]]
                     or ""
                 )
                 if model:
+                    norm = detect_model_name_from_steps([{"type": "USER_INPUT", "content": f"Model Selection to {model}"}])
+                    if norm:
+                        return norm
                     return str(model).lower().strip()
             except Exception:
                 pass
@@ -1219,8 +1319,16 @@ def render_rich_dashboard(stats: TokenStats):
         info_text = Text()
         info_text.append("Sessão Ativa: ", style="bold cyan")
         info_text.append(f"{stats.conversation_id}\n", style="white")
-        info_text.append("Modelo: ", style="bold cyan")
-        info_text.append(f"{stats.model_name}  ", style="bold yellow")
+        display_model = get_model_display_name(stats.model_name)
+        info_text.append("Modelo Utilizado: ", style="bold cyan")
+        info_text.append(f"{display_model} ", style="bold yellow")
+        info_text.append(f"({stats.model_name})", style="dim")
+        if stats.effort:
+            info_text.append(" | Effort: ", style="bold cyan")
+            info_text.append(f"{stats.effort}", style="bold magenta")
+        info_text.append("\n", style="white")
+        info_text.append("Limites do Modelo: ", style="bold cyan")
+        info_text.append(f"Janela Contexto: {human_tokens(stats.context_window)} ({stats.context_window:,}) | Saída Máx: {human_tokens(stats.max_output)} ({stats.max_output:,})\n", style="bold green")
         info_text.append("Passos Registrados: ", style="bold cyan")
         info_text.append(f"{stats.steps_count}\n\n", style="white")
 
@@ -1238,6 +1346,18 @@ def render_rich_dashboard(stats: TokenStats):
         info_text.append(f"{human_tokens(stats.rolling.tokens_7d)} / {human_tokens(stats.rolling.limit_7d)} tokens ", style="bold white")
         info_text.append(f"({stats.rolling.percent_7d:.2f}%)\n", style=f"bold {c_7d}")
         info_text.append(f"   Margem Livre: {human_tokens(stats.rolling.remaining_7d)} tokens | {stats.rolling.conversations_7d} sessões (~{human_tokens(stats.rolling.tokens_7d // 7)}/dia)\n", style="dim")
+
+        if stats.live_quota and stats.live_quota.is_live:
+            is_gemini = "gemini" in stats.model_name.lower()
+            b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+            b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+            pct_5h = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+            pct_7d = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+            d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
+            d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
+            info_text.append(f"\n⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):\n", style="bold yellow")
+            info_text.append(f"   • Janela 5h:     {pct_5h:.1f}% restante{d_5h}\n", style="white")
+            info_text.append(f"   • Cota Semanal:  {pct_7d:.1f}% restante{d_7d}\n", style="white")
 
         console.print(Panel(info_text, title="🧠 [bold magenta]Antigravity Token & Quota Tracker[/bold magenta]", border_style="bright_blue"))
 
@@ -1276,11 +1396,14 @@ def render_rich_dashboard(stats: TokenStats):
 
 def render_plain_dashboard(stats: TokenStats):
     """Fallback simples caso rich não esteja instalado."""
+    display_model = get_model_display_name(stats.model_name)
     print("=" * 70)
     print(" ANTIGRAVITY TOKEN & QUOTA TELEMETRY TRACKER")
     print("=" * 70)
-    print(f"Sessão:        {stats.conversation_id}")
-    print(f"Modelo:        {stats.model_name}")
+    print(f"Sessão:          {stats.conversation_id}")
+    effort_str = f" | Effort: {stats.effort}" if stats.effort else ""
+    print(f"Modelo Utilizado: {display_model} ({stats.model_name}){effort_str}")
+    print(f"Limites Modelo:   Janela Contexto: {stats.context_window:,} ({human_tokens(stats.context_window)}) | Saída Máx: {stats.max_output:,} ({human_tokens(stats.max_output)})")
     print("-" * 70)
     print(f"1. Contexto Msg: {stats.total_tokens:,} / {stats.context_window:,} ({stats.percent_used:.2f}%)")
     print(f"   Margem Livre: {stats.remaining_tokens:,} tokens disponíveis")
@@ -1288,6 +1411,18 @@ def render_plain_dashboard(stats: TokenStats):
     print(f"   Margem Livre: {stats.rolling.remaining_5h:,} tokens disponíveis ({stats.rolling.conversations_5h} conversas)")
     print(f"3. Janela 7d:    {stats.rolling.tokens_7d:,} / {stats.rolling.limit_7d:,} ({stats.rolling.percent_7d:.2f}%)")
     print(f"   Margem Livre: {stats.rolling.remaining_7d:,} tokens disponíveis ({stats.rolling.conversations_7d} conversas)")
+    if stats.live_quota and stats.live_quota.is_live:
+        is_gemini = "gemini" in stats.model_name.lower()
+        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+        pct_5h = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+        pct_7d = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
+        d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
+        print("-" * 70)
+        print(f"⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):")
+        print(f"   • Janela 5 Horas: {pct_5h:.1f}% restante{d_5h}")
+        print(f"   • Cota Semanal:   {pct_7d:.1f}% restante{d_7d}")
     print("-" * 70)
     print(f" - System Prompt & Schemas: {stats.system_prompt_tokens:,} tokens ({stats.system_prompt_bytes:,} B)")
     print(f" - Execuções de Ferramentas: {stats.tool_tokens:,} tokens ({stats.tool_bytes:,} B)")
@@ -1299,6 +1434,8 @@ def render_plain_dashboard(stats: TokenStats):
 def main():
     parser = argparse.ArgumentParser(description="Antigravity Token & Quota Telemetry Tracker")
     parser.add_argument("-c", "--conversation-id", help="ID da conversa específica para monitorar")
+    parser.add_argument("-m", "--model", help="Sobrescreve o modelo ativo para exibição e limites (ex: gemini-3.8-flash, claude-sonnet-4-6, gpt-4o)")
+    parser.add_argument("-e", "--effort", help="Sobrescreve o nível de reasoning effort para exibição (ex: low, medium, high)")
     parser.add_argument("-w", "--watch", action="store_true", help="Atualiza em loop contínuo (tempo real)")
     parser.add_argument("-i", "--interval", type=int, default=2, help="Intervalo de atualização em segundos para --watch")
     parser.add_argument("--limit-5h", help="Teto da janela de 5h (ex: 500k, 300000)")
@@ -1338,9 +1475,9 @@ def main():
             continue
 
         steps = load_transcript(transcript_path)
-        model_name = detect_model_name(conv_id, steps=steps)
+        model_name = args.model if args.model else detect_model_name(conv_id, steps=steps)
         rolling = calculate_rolling_windows(limit_5h=limit_5h, limit_7d=limit_7d)
-        stats = parse_transcript_data(conv_id, model_name, steps, rolling=rolling, fetch_live=True)
+        stats = parse_transcript_data(conv_id, model_name, steps, rolling=rolling, fetch_live=True, effort=args.effort)
 
         if args.turn:
             turn = calculate_turn_stats(steps)

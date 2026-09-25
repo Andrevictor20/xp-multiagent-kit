@@ -43,13 +43,20 @@ L0_KEYWORDS = [
     r"\bcss\b", r"\bscss\b", r"\bestilos?\b", r"\bpadding\b", r"\bmargin\b",
     r"\bcores?\b", r"\bfont-size\b",
     r"\bo que [ée]\b", r"\bexplique\b", r"\bcomo funciona\b", r"\bquais s[ãa]o\b",
+    r"\bdo que se trata\b", r"\bo que faz\b", r"\bpara que serve\b", r"\bcomo uso\b", r"\bcomo usar\b",
+    r"\bduvida\b", r"\bd[úu]vida\b", r"\bpergunta\b", r"\bquest[ãa]o\b",
+    r"\beconomiza\b", r"\beconomizar\b", r"\beconomia de tokens?\b", r"\bquantos tokens\b",
+    r"\bqual(?: a)? diferen[çc]a\b", r"\bcompar[ea]\b", r"\bcomparativo\b",
+    r"\bde forma simples\b", r"\bsimples\b", r"\br[áa]pido\b", r"\bb[áa]sico\b",
     r"\bresumo\b", r"\bstatus\b", r"\bgit log\b", r"\bgit status\b",
     r"\bquais arquivos\b", r"\bclean code\b",
 ]
 
 L3_KEYWORDS = [
     r"\bauth\b", r"\bautentica[çc][ãa]o\b", r"\blogin\b", r"\bjwt\b", r"\boauth\b",
-    r"\btoken\b", r"\bmfa\b", r"\bsenha\b", r"\bpassword\b", r"\bpermiss[ãa]o\b",
+    r"\b(?:jwt|auth|bearer|csrf|session|access|refresh)[_-]?tokens?\b",
+    r"\btokens?\s+(?:de\s+)?(?:acesso|jwt|auth|api|sess[ãa]o|bearer)\b",
+    r"\bmfa\b", r"\bsenha\b", r"\bpassword\b", r"\bpermiss[ãa]o\b",
     r"\brbac\b", r"\bidor\b", r"\bcrypto\b", r"\bcriptografia\b", r"\bsecret\b",
     r"\bvulnerabilidade\b", r"\bcve\b", r"\bthreat modeling\b", r"\bstride\b",
     r"\bpagamento\b", r"\bpayment\b", r"\bstripe\b", r"\bbilling\b", r"\bcheckout\b",
@@ -324,17 +331,28 @@ def sync_global_settings(target_effort: str) -> List[str]:
 
 def locate_native_agy() -> Optional[str]:
     """Encontra o binário nativo do agy ou antigravity."""
+    # 1. Verifica binários nativos renomeados com prioridade
+    for bin_name in ("agy-native", "agy-bin", "antigravity-native", "agy.real"):
+        p = shutil.which(bin_name)
+        if p:
+            return p
+        for p_str in (f"/home/andrevmp/.local/bin/{bin_name}", f"/usr/local/bin/{bin_name}"):
+            if os.path.isfile(p_str) and os.access(p_str, os.X_OK):
+                return p_str
+
+    # 2. Busca padrão no PATH evitando o wrapper e este script
     for bin_name in ("agy", "antigravity"):
         p = shutil.which(bin_name)
         if p:
             real_p = os.path.realpath(p)
-            # Evita loop infinito chamando o próprio script
-            if real_p != os.path.realpath(__file__) and not real_p.endswith("agy-wrapper.sh"):
+            if real_p != os.path.realpath(__file__) and not real_p.endswith("agy-wrapper.sh") and not real_p.endswith("agy-effort"):
                 return p
-    # Fallback para locais padrão
+
     for path_str in ("/home/andrevmp/.local/bin/agy", "/usr/local/bin/agy"):
         if os.path.isfile(path_str) and os.access(path_str, os.X_OK):
-            return path_str
+            real_p = os.path.realpath(path_str)
+            if real_p != os.path.realpath(__file__) and not real_p.endswith("agy-wrapper.sh") and not real_p.endswith("agy-effort"):
+                return path_str
     return None
 
 
@@ -356,36 +374,45 @@ def format_badge(decision: EffortDecision) -> str:
     return "\n".join(lines)
 
 
-def run_cli_session(argv: List[str]) -> int:
-    """Executa a sessão do agy com o esforço inteligente injetado."""
-    # Extrai flags e prompt
-    prompt_text = ""
-    explicit_effort = None
-    pass_through_args = []
+def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], List[str]]:
+    """Extrai prompt, esforço explícito e argumentos de repasse da linha de comando."""
+    prompt_parts: List[str] = []
+    explicit_effort: Optional[str] = None
+    pass_through_args: List[str] = []
     skip_next = False
-
+    val_flags = {
+        "--mode", "--model", "-m", "--agent", "--conversation",
+        "--input-format", "--output-format", "--log-file", "--project",
+        "--json-schema", "--print-timeout", "--add-dir", "--cwd", "-C",
+        "--target", "--profile", "--config",
+    }
     for i, arg in enumerate(argv):
         if skip_next:
             skip_next = False
             continue
-
         if arg in ("--effort", "-e") and i + 1 < len(argv):
             explicit_effort = argv[i + 1]
             skip_next = True
-            continue
         elif arg.startswith("--effort="):
             explicit_effort = arg.split("=", 1)[1]
-            continue
-        elif arg in ("-p", "--print", "-i", "--prompt-interactive") and i + 1 < len(argv):
-            prompt_text = argv[i + 1]
+        elif arg in ("-p", "--print", "--prompt", "-i", "--prompt-interactive") and i + 1 < len(argv):
+            prompt_parts.append(argv[i + 1])
             pass_through_args.extend([arg, argv[i + 1]])
             skip_next = True
-            continue
-        elif not arg.startswith("-") and not prompt_text:
-            prompt_text = arg
+        elif arg in val_flags and i + 1 < len(argv):
+            pass_through_args.extend([arg, argv[i + 1]])
+            skip_next = True
+        elif arg.startswith("-"):
             pass_through_args.append(arg)
         else:
+            prompt_parts.append(arg)
             pass_through_args.append(arg)
+    return " ".join(prompt_parts).strip(), explicit_effort, pass_through_args
+
+
+def run_cli_session(argv: List[str]) -> int:
+    """Executa a sessão do agy com o esforço inteligente injetado."""
+    prompt_text, explicit_effort, pass_through_args = parse_cli_session_args(argv)
 
     # Classificação
     git_ctx = detect_git_context()
@@ -430,6 +457,7 @@ def main() -> int:
 
     # Subcomando: apply
     apply_p = subparsers.add_parser("apply", help="Aplica o esforço no settings.json da CLI e IDE")
+    apply_p.add_argument("prompt", nargs="?", default="", help="Texto da tarefa ou prompt para classificação")
     apply_p.add_argument("--effort", choices=["low", "medium", "high"], help="Nível de esforço explícito")
     apply_p.add_argument("--auto", nargs="?", const="", help="Classifica automaticamente baseado no prompt ou git")
 
@@ -461,7 +489,7 @@ def main() -> int:
     elif args.subcommand == "apply":
         target_effort = args.effort
         if not target_effort:
-            prompt_str = args.auto if isinstance(args.auto, str) else ""
+            prompt_str = args.prompt or (args.auto if isinstance(args.auto, str) else "")
             decision = classify_task_effort(
                 prompt=prompt_str,
                 git_context=detect_git_context(),

@@ -24,6 +24,8 @@ from scripts.token_tracker import (
     LiveServerQuota,
     LiveQuotaBucket,
     clean_refresh_text,
+    render_plain_dashboard,
+    detect_effort,
 )
 
 class TestTokenTracker(unittest.TestCase):
@@ -388,6 +390,114 @@ class TestTokenTracker(unittest.TestCase):
         self.assertEqual(status, "CRITICAL")
         self.assertTrue(is_low)
         self.assertIn("Cota Semanal (Google): apenas 2.0% restante", msg)
+
+    def test_format_message_footer_shows_model_and_limits(self):
+        turn = TurnStats(user_input_tokens=100, tool_tokens=200, model_output_tokens=300, total_tokens=600)
+        rolling = RollingWindowStats(tokens_5h=30000, limit_5h=500000, tokens_7d=1200000, limit_7d=10000000)
+        stats = parse_transcript_data(
+            conversation_id="conv-limits",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            rolling=rolling,
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("🎯 **Modelo & Limites:**", footer)
+        self.assertIn("`Gemini 3.8 Flash`", footer)
+        self.assertIn("Janela: `1.05M`", footer)
+        self.assertIn("Saída Máx: `65.5k`", footer)
+
+    def test_format_json_stats_includes_model_limits(self):
+        sample_steps = [{"type": "USER_INPUT", "content": "Test input"}]
+        stats = parse_transcript_data(
+            conversation_id="c-json-limits",
+            model_name="claude-sonnet-4-6",
+            steps=sample_steps,
+            system_prompt_bytes=4000,
+        )
+        json_str = format_json_stats(stats)
+        data = json.loads(json_str)
+        self.assertEqual(data["model_display_name"], "Claude Sonnet 4.6")
+        self.assertIn("model_limits", data)
+        self.assertEqual(data["model_limits"]["context_window"], 200_000)
+        self.assertEqual(data["model_limits"]["max_output"], 8_192)
+
+    def test_render_plain_dashboard_displays_model_and_limits(self):
+        from io import StringIO
+        import sys
+        stats = parse_transcript_data(
+            conversation_id="c-plain",
+            model_name="gemini-3.8-pro",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+        )
+        captured = StringIO()
+        old_stdout = sys.stdout
+        try:
+            sys.stdout = captured
+            render_plain_dashboard(stats)
+        finally:
+            sys.stdout = old_stdout
+        out = captured.getvalue()
+        self.assertIn("Modelo Utilizado: Gemini 3.8 Pro (gemini-3.8-pro)", out)
+        self.assertIn("Limites Modelo:", out)
+        self.assertIn("2,097,152", out)
+        self.assertIn("65,536", out)
+
+    def test_detect_effort_from_steps(self):
+        steps_high = [
+            {"type": "USER_INPUT", "content": "Olá\n<USER_SETTINGS_CHANGE>\nThe user changed setting Model Selection from None to Gemini 3.8 Flash (High).\n</USER_SETTINGS_CHANGE>"}
+        ]
+        self.assertEqual(detect_effort("c-eff-high", steps=steps_high), "High")
+
+        steps_low = [
+            {"type": "USER_INPUT", "content": "<USER_SETTINGS_CHANGE>\nThe user changed setting Model Selection from Gemini 3.8 Flash (High) to Claude Sonnet 4.6 (Low).\n</USER_SETTINGS_CHANGE>"}
+        ]
+        self.assertEqual(detect_effort("c-eff-low", steps=steps_low), "Low")
+
+    def test_format_message_footer_with_effort(self):
+        turn = TurnStats(user_input_tokens=100, tool_tokens=200, model_output_tokens=300, total_tokens=600)
+        stats = parse_transcript_data(
+            conversation_id="conv-effort",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            effort="High",
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("Effort: `High`", footer)
+
+    def test_render_plain_dashboard_with_effort(self):
+        from io import StringIO
+        import sys
+        stats = parse_transcript_data(
+            conversation_id="c-plain-eff",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            effort="High",
+        )
+        captured = StringIO()
+        old_stdout = sys.stdout
+        try:
+            sys.stdout = captured
+            render_plain_dashboard(stats)
+        finally:
+            sys.stdout = old_stdout
+        out = captured.getvalue()
+        self.assertIn("Effort: High", out)
+
+    def test_format_json_stats_with_effort(self):
+        stats = parse_transcript_data(
+            conversation_id="c-json-eff",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            system_prompt_bytes=5000,
+            effort="High",
+        )
+        json_str = format_json_stats(stats)
+        data = json.loads(json_str)
+        self.assertEqual(data["effort"], "High")
 
 
 if __name__ == "__main__":
