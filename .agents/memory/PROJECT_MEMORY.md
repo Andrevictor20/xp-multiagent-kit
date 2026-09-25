@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-25 01:20 (Local)  
+> **Última Atualização:** 2026-09-25 03:08 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.17.0 (Intelligent CLI Reasoning Effort Router: agy-smart, agy-effort & Pre-Flight Budget Throttling)
+> **Versão / Marco Atual:** v2.18.0 (Smart Tool Optimizer: PreToolUse Auto-Clamping & Auto-Sanitization via overwrite)
 
 ---
 
@@ -27,13 +27,14 @@
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 63 Skills, 7 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-TOOL-REDUCTION-20260925-01` (38/38 testes unitários aprovados em tests/, redução de view_file para máx 40 linhas, sanitização mandatória, hook PostToolUse tool-size-guard e antecipação do session reset para 15 turnos / 40k tokens)
+- **Última Execução / Evidência:** `EV-SMART-TOOL-OPTIMIZER-20260925-01` (68/68 testes unitários aprovados em tests/, hook PreToolUse smart-tool-optimizer ativo com auto-clamping de view_file e injeção automática de agy-sanitize)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-09-25 | `FEAT` | Smart Tool Optimizer Ativo (PreToolUse Hook com overwrite): interceptação inteligente de ferramentas em runtime para IDE e CLI; clamp automático de view_file para máx 40 linhas, injeção automática de agy-sanitize em run_command verboso sem limitador, hook registrado em .agents/hooks.json com paridade global e suíte de 11 testes unitários dedicados (68/68 no total do projeto) | `scripts/hooks/smart_tool_optimizer.py`, `tests/test_smart_tool_optimizer.py`, `.agents/hooks.json`, `AGENTS.md`, `.agents/skills/token-budget-tracker/SKILL.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-SMART-TOOL-OPTIMIZER-20260925-01)` |
 | 2026-09-25 | `FEAT` | Detecção Dinâmica e Exibição de Reasoning Effort na Telemetria CLI & IDE: inclusão do nível de esforço ativo (High, Medium, Low, Thinking) nas saídas `agy-tokens` (`--turn`, `--plain`, `--rich`, `--badge`, `--report`, `--json`), parâmetro CLI `-e`/`--effort`, detecção a partir de `USER_SETTINGS_CHANGE`, `settings.json` e env vars, com 54/54 testes aprovados | `scripts/token_tracker.py`, `tests/test_token_tracker.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-CLI-EFFORT-DISPLAY-20260925-01)` |
 | 2026-09-25 | `FEAT` | Política de Relatório Exaustivo de Consumo no Chat & Detalhes de Refresh ao Vivo: governança no `AGENTS.md` e skill `token-budget-tracker` obrigando detalhamento máximo (modelo/limites, cotas oficiais ao vivo, refresh times, decomposição e status), inclusão de refresh nas saídas JSON, plain e rich do `token_tracker.py` e 50/50 testes aprovados | `AGENTS.md`, `.agents/skills/token-budget-tracker/SKILL.md`, `scripts/token_tracker.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-CHAT-EXHAUSTIVE-TELEMETRY-20260925-01)` |
 | 2026-09-25 | `FEAT` | Exibição Explícita de Modelo Utilizado e Limites Dinâmicos na Telemetria CLI: inclusão do nome amigável e raw do modelo ativo com detecção dinâmica e flag `-m`/`--model`, exibição explícita dos limites do modelo (janela de contexto e saída máxima) nos comandos `agy-tokens`/`xp-tokens` (`--plain`, `--rich`, `--turn`, `--badge`, `--report`, `--json`), inspeção adicional de `settings.json` e 25/25 testes unitários aprovados | `scripts/token_tracker.py`, `tests/test_token_tracker.py`, `.agents/skills/token-budget-tracker/SKILL.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-CLI-MODEL-LIMITS-20260925-01)` |

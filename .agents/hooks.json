@@ -68,5 +68,19 @@
         ]
       }
     ]
+  },
+  "smart-tool-optimizer": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command|view_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/smart-tool-optimizer.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }

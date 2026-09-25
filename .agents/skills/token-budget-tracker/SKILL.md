@@ -22,6 +22,7 @@ Mecanismo para auditoria, controle, governança preventiva e degradação gracio
 ---
 
 ## Governança de Consumo em Ferramentas (Tool Budget)
+- **Smart Tool Optimizer Ativo (PreToolUse Hook):** O hook `smart-tool-optimizer` intercepta e reescreve automaticamente argumentos via `overwrite`: aplica clamping transparente em `view_file` (máx 40 linhas) e injeta `agy-sanitize` em comandos verbosos não filtrados (`run_command`).
 - **Teto por Chamada de Ferramenta:** Máximo 1.500 caracteres / 400 tokens por retorno.
 - **Sanitização Mandatória:** Todo comando com potencial de log extenso deve rodar via `agy-sanitize` ou pipes limitadores (`| head -n 25`, `| tail -n 20`).
 - **Fatiamento Cirúrgico:** `view_file` restrito a blocos de no máximo **40 linhas** (`EndLine - StartLine <= 40`), proibindo leitura cega.
