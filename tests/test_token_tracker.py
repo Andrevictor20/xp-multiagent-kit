@@ -500,5 +500,54 @@ class TestTokenTracker(unittest.TestCase):
         self.assertEqual(data["effort"], "High")
 
 
+class TestProviderDefaults(unittest.TestCase):
+    """Testes para get_provider_defaults e PROVIDER_RATE_LIMITS."""
+
+    def setUp(self):
+        from scripts.token_tracker import get_provider_defaults
+        self.gpd = get_provider_defaults
+
+    def test_claude_defaults(self):
+        d = self.gpd("claude-sonnet-4-6")
+        self.assertEqual(d["limit_5h"], 100_000)
+        self.assertEqual(d["limit_7d"], 2_000_000)
+
+    def test_claude_older(self):
+        d = self.gpd("claude-3-5-sonnet")
+        self.assertEqual(d["limit_5h"], 100_000)
+
+    def test_openai_gpt4o(self):
+        d = self.gpd("gpt-4o")
+        self.assertEqual(d["limit_5h"], 80_000)
+        self.assertEqual(d["limit_7d"], 1_500_000)
+
+    def test_openai_o1(self):
+        d = self.gpd("o1")
+        self.assertEqual(d["limit_5h"], 80_000)
+
+    def test_openai_o3_mini(self):
+        d = self.gpd("o3-mini")
+        self.assertEqual(d["limit_5h"], 80_000)
+
+    def test_deepseek(self):
+        d = self.gpd("deepseek-v3")
+        self.assertEqual(d["limit_5h"], 60_000)
+        self.assertEqual(d["limit_7d"], 1_000_000)
+
+    def test_gemini_flash(self):
+        d = self.gpd("gemini-3.8-flash")
+        self.assertEqual(d["limit_5h"], 800_000)
+        self.assertEqual(d["limit_7d"], 10_000_000)
+
+    def test_unknown_model_fallback(self):
+        d = self.gpd("some-unknown-model-xyz")
+        self.assertEqual(d["limit_5h"], 80_000)
+        self.assertEqual(d["limit_7d"], 1_000_000)
+
+    def test_anthropic_in_name(self):
+        d = self.gpd("anthropic-custom-model")
+        self.assertEqual(d["limit_5h"], 100_000)
+
+
 if __name__ == "__main__":
     unittest.main()

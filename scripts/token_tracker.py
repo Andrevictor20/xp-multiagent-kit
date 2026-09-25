@@ -62,6 +62,16 @@ MODEL_LIMITS: Dict[str, Dict[str, int]] = {
     "default": {"context_window": 1_000_000, "max_output": 8_192},
 }
 
+# Defaults de taxa por provider (5h e semanal) para modelos não-Google
+# Usado como fallback quando o Language Server não expõe cotas nativas
+PROVIDER_RATE_LIMITS: Dict[str, Dict[str, int]] = {
+    "gemini": {"limit_5h": 800_000, "limit_7d": 10_000_000},
+    "claude": {"limit_5h": 100_000, "limit_7d": 2_000_000},
+    "openai": {"limit_5h": 80_000,  "limit_7d": 1_500_000},
+    "deepseek": {"limit_5h": 60_000, "limit_7d": 1_000_000},
+    "default": {"limit_5h": 80_000,  "limit_7d": 1_000_000},
+}
+
 MODEL_DISPLAY_NAMES: Dict[str, str] = {
     "gemini-3.8-flash": "Gemini 3.8 Flash",
     "gemini-3.8-pro": "Gemini 3.8 Pro",
@@ -114,6 +124,21 @@ def get_model_display_name(model_name: Optional[str]) -> str:
 DEFAULT_SYSTEM_PROMPT_BYTES = 85_000
 DEFAULT_LIMIT_5H = 800_000        # Teto padrão oficial para Gemini Flash na janela de 5 horas
 DEFAULT_LIMIT_WEEKLY = 10_000_000  # Teto padrão de cota semanal da conta
+
+
+def get_provider_defaults(model_name: str) -> Dict[str, int]:
+    """Retorna defaults de taxa (5h e semanal) pelo provider do modelo para rodapé fallback."""
+    m = model_name.lower()
+    if "gemini" in m:
+        return PROVIDER_RATE_LIMITS["gemini"]
+    if "claude" in m or "anthropic" in m:
+        return PROVIDER_RATE_LIMITS["claude"]
+    if "gpt" in m or "o1" in m or "o3" in m or "openai" in m:
+        return PROVIDER_RATE_LIMITS["openai"]
+    if "deepseek" in m:
+        return PROVIDER_RATE_LIMITS["deepseek"]
+    return PROVIDER_RATE_LIMITS["default"]
+
 
 # Chars/token por tipo de conteúdo (BPE empirico)
 _CHARS_PER_TOKEN_PROSE = 4.0   # Texto corrido: mensagens de usuário
@@ -985,23 +1010,39 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
             f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
         )
 
-    r5h_used = human_tokens(stats.rolling.tokens_5h)
-    r5h_tot = human_tokens(stats.rolling.limit_5h)
-    r5h_rem = human_tokens(stats.rolling.remaining_5h)
-    r7d_used = human_tokens(stats.rolling.tokens_7d)
-    r7d_tot = human_tokens(stats.rolling.limit_7d)
-    r7d_rem = human_tokens(stats.rolling.remaining_7d)
+    # Fallback: sem dados ao vivo do Language Server — usa defaults por provider
+    provider_defaults = get_provider_defaults(stats.model_name)
+    is_gemini = "gemini" in stats.model_name.lower()
+    provider_label = (
+        "Claude" if "claude" in stats.model_name.lower()
+        else "OpenAI" if any(x in stats.model_name.lower() for x in ("gpt", "o1", "o3"))
+        else "DeepSeek" if "deepseek" in stats.model_name.lower()
+        else "Gemini" if is_gemini
+        else "Estimado"
+    )
 
-    pct_5h_rem = max(0.0, 100.0 - stats.rolling.percent_5h)
-    pct_7d_rem = max(0.0, 100.0 - stats.rolling.percent_7d)
+    fallback_5h = provider_defaults["limit_5h"]
+    fallback_7d = provider_defaults["limit_7d"]
+
+    r5h_used = human_tokens(stats.rolling.tokens_5h) if stats.rolling.limit_5h else "~0"
+    r5h_tot = human_tokens(stats.rolling.limit_5h or fallback_5h)
+    r5h_rem = human_tokens(stats.rolling.remaining_5h if stats.rolling.limit_5h else fallback_5h)
+    r7d_used = human_tokens(stats.rolling.tokens_7d) if stats.rolling.limit_7d else "~0"
+    r7d_tot = human_tokens(stats.rolling.limit_7d or fallback_7d)
+    r7d_rem = human_tokens(stats.rolling.remaining_7d if stats.rolling.limit_7d else fallback_7d)
+
+    pct_5h = stats.rolling.percent_5h if stats.rolling.limit_5h else 0.0
+    pct_7d = stats.rolling.percent_7d if stats.rolling.limit_7d else 0.0
+    pct_5h_rem = max(0.0, 100.0 - pct_5h)
+    pct_7d_rem = max(0.0, 100.0 - pct_7d)
     pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
 
-    bar_5h = make_progress_bar(stats.rolling.percent_5h, 10)
-    bar_7d = make_progress_bar(stats.rolling.percent_7d, 10)
+    bar_5h = make_progress_bar(pct_5h, 10)
+    bar_7d = make_progress_bar(pct_7d, 10)
 
     s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
-    s_5h = f"`[{bar_5h}]` {stats.rolling.percent_5h:.1f}% usado (`{r5h_used}`) • **{pct_5h_rem:.1f}% restante (`{r5h_rem}`)** de `{r5h_tot}` [Estimado]"
-    s_7d = f"`[{bar_7d}]` {stats.rolling.percent_7d:.1f}% usado (`{r7d_used}`) • **{pct_7d_rem:.1f}% restante (`{r7d_rem}`)** de `{r7d_tot}` [Estimado]"
+    s_5h = f"`[{bar_5h}]` {pct_5h:.1f}% usado (`{r5h_used}`) • **{pct_5h_rem:.1f}% restante (`{r5h_rem}`)** de `{r5h_tot}` [Estimado · {provider_label}]"
+    s_7d = f"`[{bar_7d}]` {pct_7d:.1f}% usado (`{r7d_used}`) • **{pct_7d_rem:.1f}% restante (`{r7d_rem}`)** de `{r7d_tot}` [Estimado · {provider_label}]"
 
     return (
         f"---\n"
