@@ -76,7 +76,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/smart-tool-optimizer.py",
+            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/smart_tool_optimizer.py",
             "timeout": 5
           }
         ]
@@ -87,7 +87,7 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/dynamic-effort-hook.py",
+        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/dynamic_effort_hook.py",
         "timeout": 5
       }
     ]

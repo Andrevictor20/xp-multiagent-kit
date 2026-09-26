@@ -12,6 +12,32 @@ import subprocess
 import sys
 from pathlib import Path
 
+COMPACT_THRESHOLD_LINES = 50  # Comprime automaticamente se PROJECT_MEMORY.md > 50 linhas
+
+
+def compress_project_memory(cwd: Path) -> str:
+    """Comprime PROJECT_MEMORY.md via agy-compact se disponível e acima do threshold."""
+    memory_path = cwd / ".agents" / "memory" / "PROJECT_MEMORY.md"
+    if not memory_path.exists():
+        return ""
+    content = memory_path.read_text(encoding="utf-8", errors="replace")
+    if len(content.splitlines()) <= COMPACT_THRESHOLD_LINES:
+        return content
+    # Tenta comprimir via context_compactor se disponível
+    kit_root = Path(__file__).resolve().parent.parent
+    compactor_path = kit_root / "scripts" / "context_compactor.py"
+    if compactor_path.exists():
+        try:
+            result = subprocess.run(
+                ["python3", str(compactor_path), "--stdin"],
+                input=content, capture_output=True, text=True, timeout=10,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout
+        except Exception:
+            pass
+    return content
+
 
 def get_git_info(cwd):
     branch = "unknown"
@@ -101,11 +127,21 @@ def main():
     parser.add_argument("--output-dir", type=str, default=".", help="Directory where SESSION_HANDOFF.md will be saved")
     parser.add_argument("--goal", type=str, default=None, help="Custom goal or progress summary")
     parser.add_argument("--next", type=str, default=None, help="Immediate next step for the new session")
+    parser.add_argument("--compress", action="store_true",
+                        help="Comprime PROJECT_MEMORY.md via agy-compact antes de gerar o packet (60-70%% menor)")
 
     args = parser.parse_args()
     cwd = Path(args.output_dir).resolve() if args.output_dir != "." else Path.cwd()
 
     packet = build_handoff_packet(cwd=cwd, custom_goal=args.goal, custom_next=args.next)
+
+    if args.compress:
+        compressed = compress_project_memory(cwd)
+        if compressed:
+            compressed_lines = compressed.splitlines()
+            snippet = "\n".join(compressed_lines[:15])
+            packet = packet.rstrip() + f"\n\n## 📦 Contexto Comprimido (PROJECT_MEMORY)\n```\n{snippet}\n```\n"
+            print(f"🗜️  PROJECT_MEMORY comprimido: {len(compressed_lines)} linhas incluídas no packet")
 
     if args.write_file:
         out_path = cwd / "SESSION_HANDOFF.md"

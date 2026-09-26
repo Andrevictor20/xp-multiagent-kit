@@ -1,1 +1,0 @@
-dynamic_effort_hook.py

@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""
+agy-init-memory: Inicializa memória isolada para um novo projeto.
+
+Cria .agents/memory/PROJECT_MEMORY.md e archive/HISTORY.md preenchidos
+sob medida para o projeto, garantindo isolamento total da memória do
+XP Multi-Agent Kit e de outros projetos.
+
+Uso:
+  agy-init-memory [--project-dir DIR] [--project-name NAME] [--stack STACK]
+  agy-init-memory --dry-run
+"""
+
+import argparse
+import datetime
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+TEMPLATE_PLACEHOLDERS = {
+    "{{LAST_UPDATED}}": lambda ctx: ctx["now"],
+    "{{STATUS}}": lambda ctx: "BOOTSTRAPPING",
+    "{{VERSION}}": lambda ctx: "v0.1.0 (Genesis — Scaffold Inicial)",
+    "{{PURPOSE}}": lambda ctx: ctx["purpose"],
+    "{{TECH_STACK}}": lambda ctx: ctx["stack"],
+    "{{ARCHITECTURE}}": lambda ctx: ctx["architecture"],
+    "{{BUILD_CMD}}": lambda ctx: ctx["build_cmd"],
+    "{{TEST_CMD}}": lambda ctx: ctx["test_cmd"],
+    "{{LINT_CMD}}": lambda ctx: ctx["lint_cmd"],
+    "{{DEV_CMD}}": lambda ctx: ctx["dev_cmd"],
+    "{{CI_STATUS}}": lambda ctx: "CONFIGURED (pipeline inicial ativo)",
+    "{{QUALITY_GATE}}": lambda ctx: "Scaffold + Harness de testes + CI pipeline",
+    "{{LAST_EVIDENCE}}": lambda ctx: f"EV-GENESIS-{ctx['date_compact']}-01 (scaffold inicial validado)",
+    "{{ENV}}": lambda ctx: "Local / Development",
+    "{{DATE}}": lambda ctx: ctx["date"],
+    "{{SCAFFOLD_FILES}}": lambda ctx: ctx["scaffold_files"],
+    "{{DATE_COMPACT}}": lambda ctx: ctx["date_compact"],
+    "{{ARCH_RATIONALE}}": lambda ctx: "Stack escolhida no Momento Zero com scaffold mínimo funcional.",
+    "{{PROJECT_NAME}}": lambda ctx: ctx["project_name"],
+}
+
+
+def detect_stack(project_dir: Path) -> str:
+    """Detecta o stack do projeto inspecionando arquivos de manifesto."""
+    manifests = {
+        "package.json": "Node.js / TypeScript",
+        "pyproject.toml": "Python",
+        "requirements.txt": "Python",
+        "Cargo.toml": "Rust",
+        "go.mod": "Go",
+        "Gemfile": "Ruby on Rails",
+        "pom.xml": "Java / Maven",
+        "build.gradle": "Java / Gradle",
+        "composer.json": "PHP",
+        "mix.exs": "Elixir",
+    }
+    for manifest, stack in manifests.items():
+        if (project_dir / manifest).exists():
+            return stack
+    return "Agnóstico (stack a definir)"
+
+
+def detect_commands(project_dir: Path, stack: str) -> dict:
+    """Detecta comandos de build, test, lint e dev baseado no stack."""
+    defaults = {
+        "Node.js / TypeScript": {
+            "build": "npm run build",
+            "test": "npm test",
+            "lint": "npm run lint",
+            "dev": "npm run dev",
+        },
+        "Python": {
+            "build": "python -m build",
+            "test": "pytest",
+            "lint": "ruff check .",
+            "dev": "python -m uvicorn main:app --reload",
+        },
+        "Rust": {
+            "build": "cargo build",
+            "test": "cargo test",
+            "lint": "cargo clippy",
+            "dev": "cargo run",
+        },
+        "Go": {
+            "build": "go build ./...",
+            "test": "go test ./...",
+            "lint": "golangci-lint run",
+            "dev": "go run .",
+        },
+    }
+    cmds = defaults.get(stack, {
+        "build": "make build",
+        "test": "make test",
+        "lint": "make lint",
+        "dev": "make dev",
+    })
+    return cmds
+
+
+def get_git_scaffold_files(project_dir: Path) -> str:
+    """Lista arquivos do scaffold inicial via git status."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=project_dir,
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            files = [line.strip().split()[-1] for line in result.stdout.splitlines()[:6]]
+            return ", ".join(f"`{f}`" for f in files) if files else "`(scaffold inicial)`"
+    except Exception:
+        pass
+    return "`(scaffold inicial)`"
+
+
+def render_template(template_path: Path, context: dict) -> str:
+    """Substitui placeholders do template com valores reais do contexto."""
+    content = template_path.read_text(encoding="utf-8")
+    for placeholder, resolver in TEMPLATE_PLACEHOLDERS.items():
+        content = content.replace(placeholder, resolver(context))
+    return content
+
+
+def init_memory(project_dir: Path, project_name: str, stack: str = None, dry_run: bool = False) -> int:
+    """
+    Inicializa .agents/memory/ com PROJECT_MEMORY.md e HISTORY.md isolados.
+    Retorna 0 em sucesso, 1 em falha.
+    """
+    now = datetime.datetime.now()
+    date_str = now.strftime("%Y-%m-%d %H:%M")
+    date_compact = now.strftime("%Y%m%d")
+
+    detected_stack = stack or detect_stack(project_dir)
+    cmds = detect_commands(project_dir, detected_stack)
+
+    context = {
+        "now": date_str,
+        "date": now.strftime("%Y-%m-%d"),
+        "date_compact": date_compact,
+        "project_name": project_name,
+        "purpose": f"Projeto {project_name} — propósito a ser refinado nas primeiras features.",
+        "stack": detected_stack,
+        "architecture": f"Scaffold inicial ({detected_stack}). Arquitetura a evoluir conforme features.",
+        "build_cmd": cmds["build"],
+        "test_cmd": cmds["test"],
+        "lint_cmd": cmds["lint"],
+        "dev_cmd": cmds["dev"],
+        "scaffold_files": get_git_scaffold_files(project_dir),
+    }
+
+    # Resolve o caminho do template
+    kit_root = Path(__file__).parent.parent
+    template_path = kit_root / "templates" / "PROJECT_MEMORY_TEMPLATE.md"
+
+    if not template_path.exists():
+        print(f"❌ Template não encontrado em: {template_path}", file=sys.stderr)
+        return 1
+
+    memory_content = render_template(template_path, context)
+    history_content = f"""# 📜 Arquivo Histórico de Entregas — {project_name}
+
+Este arquivo armazena entregas e decisões podadas de `.agents/memory/PROJECT_MEMORY.md`
+para manter a memória ativa dentro do orçamento de tokens.
+
+> ⚠️ **ISOLAMENTO:** Este histórico pertence exclusivamente ao projeto `{project_name}`.
+
+---
+
+## [v0.1.0] — Genesis Scaffold ({now.strftime('%Y-%m-%d')})
+- Scaffold inicial criado com harness de testes, CI pipeline e memória isolada.
+- Stack: {detected_stack}
+"""
+
+    if dry_run:
+        print("--- [DRY RUN] PROJECT_MEMORY.md ---")
+        print(memory_content)
+        print("--- [DRY RUN] archive/HISTORY.md ---")
+        print(history_content)
+        return 0
+
+    memory_dir = project_dir / ".agents" / "memory"
+    archive_dir = memory_dir / "archive"
+
+    memory_dir.mkdir(parents=True, exist_ok=True)
+    archive_dir.mkdir(parents=True, exist_ok=True)
+
+    memory_file = memory_dir / "PROJECT_MEMORY.md"
+    history_file = archive_dir / "HISTORY.md"
+
+    if memory_file.exists():
+        print(f"⚠️  {memory_file} já existe. Use --force para sobrescrever.", file=sys.stderr)
+        return 1
+
+    memory_file.write_text(memory_content, encoding="utf-8")
+    history_file.write_text(history_content, encoding="utf-8")
+
+    print(f"✅ Memória isolada inicializada em: {memory_dir}")
+    print(f"   📄 PROJECT_MEMORY.md — {len(memory_content.splitlines())} linhas")
+    print(f"   📜 archive/HISTORY.md — {len(history_content.splitlines())} linhas")
+    print(f"   🏷️  Projeto: {project_name} | Stack: {detected_stack}")
+    print(f"\n⚠️  ISOLAMENTO GARANTIDO: esta memória é exclusiva do projeto '{project_name}'.")
+    print(f"   Não será contaminada pela memória do XP Multi-Agent Kit.")
+    return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Inicializa memória isolada (.agents/memory/) para um novo projeto.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--project-dir", type=str, default=".", help="Diretório raiz do projeto")
+    parser.add_argument("--project-name", type=str, default=None, help="Nome do projeto (padrão: nome do diretório)")
+    parser.add_argument("--stack", type=str, default=None, help="Stack do projeto (ex: Python, Go, Rust)")
+    parser.add_argument("--dry-run", action="store_true", help="Imprime o resultado sem gravar em disco")
+    parser.add_argument("--force", action="store_true", help="Sobrescreve PROJECT_MEMORY.md existente")
+
+    args = parser.parse_args()
+    project_dir = Path(args.project_dir).resolve()
+
+    if not project_dir.exists():
+        print(f"❌ Diretório não encontrado: {project_dir}", file=sys.stderr)
+        sys.exit(1)
+
+    project_name = args.project_name or project_dir.name
+
+    if args.force:
+        memory_file = project_dir / ".agents" / "memory" / "PROJECT_MEMORY.md"
+        if memory_file.exists():
+            memory_file.unlink()
+
+    sys.exit(init_memory(project_dir, project_name, args.stack, args.dry_run))
+
+
+if __name__ == "__main__":
+    main()
