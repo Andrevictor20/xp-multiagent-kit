@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-26 16:35 (Local)  
+> **Última Atualização:** 2026-09-26 16:55 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.31.0 (Incremental AST Caching, HTML Compactor & Full Test Suite Coverage)
+> **Versão / Marco Atual:** v2.32.0 (Fast SQLite FTS5 Memory Engine, Durable Session Resumer & Multi-Project Rollout)
 
 ---
 
@@ -22,6 +22,8 @@
   - Diagnóstico Cirúrgico de CI: `agy-ci-heal --diagnose-run <run-id>`
   - Sanitizador Anti-Flood: `agy-sanitize <cmd>` ou `<cmd> | agy-sanitize`
   - Handoff / Reset de Sessão: `agy-handoff --write-file`
+  - Retomada Instantânea de Sessão: `agy-resume` ou `agy-resume --prompt`
+  - Busca FTS5 Rápida em Memória: `agy-memory-search "termo"` ou `agy-memory-search --index`
   - Auditoria de Configuração: `agy-audit`
   - Validação Git: `git status && git log -n 5 --oneline`
 
@@ -30,14 +32,14 @@
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 71 Skills, 10 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens, Git Ops, Memory Archiver e Health Scanner em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-P2-P3-COMPACTION-AST-CACHE-20260926-01` (Implementação de compress_html/--html, cache incremental de AST no repo_map e 100% de cobertura de testes unitários; 155/155 testes aprovados)
+- **Última Execução / Evidência:** `EV-FTS5-RESUME-SATURN-ROLLOUT-20260926-01` (Motor de busca SQLite FTS5 agy-memory-search, checkpoints duráveis agy-resume, suporte a subseções no agy-memory-archive com poda de 30.3KB no Saturn e 163/163 testes aprovados)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
-
+| 2026-09-26 | `FEAT` | Motor de Busca Rápida FTS5 (agy-memory-search), Checkpoints Duráveis (agy-resume) & Transição no Projeto Saturn: (1) Implementação do motor `scripts/memory_search.py` e CLI `agy-memory-search` utilizando SQLite FTS5 para recuperação instantânea (<3ms, ~80 tokens) de lições aprendidas [L-NNN] e histórico episódico, (2) Implementação do motor de checkpoint durável `scripts/session_resumer.py` e CLI `agy-resume` com integração no `agy-handoff`, persistindo `.session_state.json` para retomada instantânea sem reexplicação de contexto, (3) Generalização do `scripts/memory_archiver.py` para suportar tanto tabelas quanto subseções markdown `### `, (4) Transição no projeto real `Saturn`: rotação com poda de 30.3 KB (~7.7k tokens poupados por leitura) em `PROJECT_MEMORY.md`, geração de `REPO_MAP.md` e indexação FTS5 com 133 itens indexados, (5) Atualização do `agy-health` para 14/14 ferramentas e 163/163 testes unitários aprovados | `scripts/memory_search.py`, `scripts/session_resumer.py`, `scripts/agy-memory-search`, `scripts/agy-resume`, `scripts/memory_archiver.py`, `scripts/install-global.sh`, `scripts/agy_health.py`, `tests/test_memory_search.py`, `tests/test_session_resumer.py`, `tests/test_memory_archiver.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-FTS5-RESUME-SATURN-ROLLOUT-20260926-01)` |
 
 | 2026-09-26 | `FEAT` | Implementação de P2 (Filtro Anti-HTML & Cobertura Total de Testes) e P3 (Cache Incremental de AST no Repo Map): (1) Implementação de `compress_html` / `--html` no `scripts/context_compactor.py` reduzindo páginas HTML em até 85% e eliminando ruído CSS/SVG/JS, (2) Criação de testes unitários para scripts legados (`tests/test_apply_ignore_rules.py` 3/3 PASS, `tests/test_tool_size_guard.py` 3/3 PASS, `tests/test_agy_git_ops.py` 5/5 PASS), (3) Implementação de cache incremental persistente em `scripts/repo_map.py` com detecção de mtime/size em `.agents/memory/.repo_map_cache.json` evitando re-parsing de AST para arquivos inalterados, (4) Inclusão do arquivo de cache no `.gitignore`, (5) 155/155 testes unitários aprovados em toda a base de código do projeto | `scripts/context_compactor.py`, `scripts/repo_map.py`, `.gitignore`, `tests/test_context_compactor.py`, `tests/test_repo_map.py`, `tests/test_apply_ignore_rules.py`, `tests/test_tool_size_guard.py`, `tests/test_agy_git_ops.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-P2-P3-COMPACTION-AST-CACHE-20260926-01)` |
 
@@ -52,8 +54,6 @@
 | 2026-09-26 | `TEST` | Teste E2E em Repositório Real (`scratch/test-app`) & Prova de Isolamento Total de Memória: (1) Criação de repositório git autônomo com `pyproject.toml`, (2) Execução de `agy-init-memory` criando `.agents/memory/PROJECT_MEMORY.md` e `archive/HISTORY.md` dedicados para o projeto, (3) Comprovação de isolamento absoluto: a memória do `xp-multiagent-kit` permaneceu 100% intocada, (4) Execução de `agy-repo-map` gerando `REPO_MAP.md` isolado, (5) Ciclo TDD estrito com teste cirúrgico direcionado (Targeted Testing: RED em `test_calculator.py` -> GREEN em `src/calculator.py` com 3/3 testes aprovados sem rodar suíte geral), (6) Geração de `SESSION_HANDOFF.md` via `agy-handoff`, (7) Symlink global de `agy-init-memory` em `~/.local/bin/` | `scripts/agy-init-memory`, `scratch/test-app/`, `scripts/install-global.sh`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-REAL-REPO-E2E-ISOLATION-20260926-01)` |
 
 | 2026-09-26 | `AUDIT` | Confirmação da Contabilização Oficial de Modelos Não-Google (Claude & GPT): (1) Consulta direta e validação via Language Server RPC (`RetrieveUserQuotaSummary`) comprovando leitura em tempo real das cotas do grupo `3p-5h` (100% livre) e `3p-weekly` (33.1% rest. / 66.9% usado, renova em 2d 7h), (2) Teste de renderização comprovando janelas estritas (Claude: 200k contexto / 8.2k saída; 100k 5h / 2M semanal) versus Gemini (1.05M contexto / 65.5k saída; 800k 5h / 10M semanal), (3) 38/38 testes unitários aprovados em `tests/test_token_tracker.py` | `scripts/token_tracker.py`, `tests/test_token_tracker.py`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-3P-MODELS-ACCOUNTING-AUDIT-20260926-01)` |
-
-| 2026-09-26 | `AUDIT` | Auditoria & Confirmação de Effort Routing e Testes Cirúrgicos Sob Demanda (Targeted Testing): (1) Validação do Router Inteligente de Reasoning Effort (`scripts/agy_effort_router.py` e `scripts/hooks/dynamic_effort_hook.py`) confirmando classificação 100% precisa em L0 (Low: ~5k tokens poupados), L1 (Medium), L2 (High) e L3 (High) via CLI e IDE, (2) Confirmação da paridade de execução de testes: Fast-Path L0 (isenção formal para docs/css), Targeted & On-Demand Testing (restrição estrita ao módulo/arquivo em desenvolvimento sem rodar a suíte inteira indiscriminadamente), (3) Blindagem explícita nos workflows `small.md` e `feature.md`, (4) Execução direcionada de testes unitários com 17/17 testes aprovados em `tests/test_agy_effort_router.py` | `scripts/agy_effort_router.py`, `scripts/hooks/dynamic_effort_hook.py`, `.agents/workflows/small.md`, `.agents/workflows/feature.md`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-EFFORT-TARGETED-TESTING-AUDIT-20260926-01)` |
 
 ---
 

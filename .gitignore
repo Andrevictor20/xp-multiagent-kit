@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 .agents/memory/TOKEN_TELEMETRY.md
 .agents/memory/.repo_map_cache.json
+.agents/memory/.memory_index.db*
+.agents/memory/.session_state.json

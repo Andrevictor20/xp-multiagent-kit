@@ -44,6 +44,8 @@ EXPECTED_TOOLS = [
     "agy-smart",
     "agy-fast",
     "agy-deep",
+    "agy-memory-search",
+    "agy-resume",
 ]
 
 

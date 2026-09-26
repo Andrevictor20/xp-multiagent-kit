@@ -110,6 +110,26 @@ class TestMemoryArchiver(unittest.TestCase):
         self.assertEqual(retained, 8)
         self.assertEqual(archived, 0)
 
+    def test_archive_subsection_blocks(self):
+        header = "# Project Memory\n\n## 3. Working Memory\n\n"
+        blocks = [f"### 3.{i}. Subseção número {i}\nDetalhes do passo {i}\n" for i in range(12, 0, -1)]
+        footer = "\n## 4. Lessons\n- Lição\n"
+        content = header + "\n".join(blocks) + footer
+        self.memory_file.write_text(content, encoding="utf-8")
+
+        retained, archived = archive_memory(self.memory_file, self.history_file, max_entries=8)
+        self.assertEqual(retained, 8)
+        self.assertEqual(archived, 4)
+
+        new_content = self.memory_file.read_text(encoding="utf-8")
+        self.assertIn("### 3.12", new_content)
+        self.assertIn("### 3.5", new_content)
+        self.assertNotIn("### 3.4", new_content)
+
+        history_content = self.history_file.read_text(encoding="utf-8")
+        self.assertIn("### 3.4", history_content)
+        self.assertIn("### 3.1", history_content)
+
 
 if __name__ == "__main__":
     unittest.main()

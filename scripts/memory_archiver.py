@@ -17,7 +17,7 @@ from typing import List, Optional, Tuple, Union
 
 DEFAULT_MAX_EPISODIC_ENTRIES = 8
 SECTION_3_HEADER_PATTERN = re.compile(
-    r"(##\s+3\.\s+Recent Changes & Activity Log[^\n]*\n+)",
+    r"(##\s+3\.\s+[^\n]*\n+)",
     re.IGNORECASE,
 )
 NEXT_SECTION_PATTERN = re.compile(
@@ -46,6 +46,13 @@ def parse_episodic_entries(content: str) -> List[str]:
             if re.match(r"^\|[\s\-:|]+\|$", line_stripped):
                 continue
             entries.append(line_stripped)
+
+    if not entries and "### " in sec3_body:
+        blocks = re.split(r"(?m)(?=^### )", sec3_body)
+        for b in blocks:
+            b_str = b.strip()
+            if b_str.startswith("### "):
+                entries.append(b_str)
 
     return entries
 
@@ -82,6 +89,18 @@ def split_memory_sections(content: str) -> Tuple[str, List[str], str]:
                 continue
             entries.append(line_stripped)
 
+    if not entries and "### " in sec3_body:
+        blocks = re.split(r"(?m)(?=^### )", sec3_body)
+        intro_blocks = []
+        for b in blocks:
+            b_str = b.strip()
+            if b_str.startswith("### "):
+                entries.append(b_str)
+            elif b_str:
+                intro_blocks.append(b_str)
+        if intro_blocks:
+            prefix = prefix.rstrip() + "\n\n" + "\n\n".join(intro_blocks)
+
     return prefix, entries, suffix
 
 
@@ -115,7 +134,10 @@ def archive_memory(
     archived_entries = entries[max_entries:]
 
     # Monta novo conteúdo do PROJECT_MEMORY.md
-    new_memory_content = prefix + "\n\n" + "\n\n".join(retained_entries) + suffix
+    if suffix.strip():
+        new_memory_content = prefix.rstrip() + "\n\n" + "\n\n".join(retained_entries) + "\n\n" + suffix.lstrip()
+    else:
+        new_memory_content = prefix.rstrip() + "\n\n" + "\n\n".join(retained_entries) + "\n"
 
     # Prepara o append ordenado no HISTORY.md
     history_header = (

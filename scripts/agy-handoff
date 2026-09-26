@@ -157,6 +157,12 @@ def main():
         out_path.write_text(packet, encoding="utf-8")
         print(f"✅ Handoff packet gravado com sucesso em: {out_path}")
         print(f"📊 Tamanho: {len(packet.splitlines())} linhas | {len(packet)} caracteres")
+        try:
+            from scripts.session_resumer import save_session_state
+            st_path = save_session_state(cwd, goal=args.goal, next_steps=args.next)
+            print(f"💾 Checkpoint durável gravado em: {st_path}")
+        except Exception:
+            pass
 
     if args.dry_run or not args.write_file:
         sys.stdout.write(packet)
