@@ -31,6 +31,7 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
 - **Matriz de Testes Multi-Camadas:** Unitários (lógica pura), Integração (DB, filas, HTTP), Contrato (schemas API), Regressão (bugs reproduzidos), E2E, Fuzzing e Segurança (SAST/DAST).
 - **Anti-Test-Bypass (Tolerância Zero):**
   - **Isenção de Escopo em L0:** A obrigatoriedade de suíte de testes de backend aplica-se a código de produção (código-fonte executável). Alterações estritamente documentais e de estilo cosmético não exigem suíte completa de testes.
+  - **Execução Cirúrgica e Sob Demanda (Targeted & On-Demand Testing):** Testes NUNCA devem ser executados de forma indiscriminada rodando a suíte inteira do projeto (`discover`, `pytest`, `npm test` geral) para alterações pontuais ou refatorações isoladas. Execute testes ESTRITAMENTE quando houver alteração de lógica em código executável e direcionados exclusivamente ao arquivo ou módulo afetado (ex: `python3 -m unittest tests/test_<modulo>.py`). A suíte completa é reservada exclusivamente para validação final de release (L3 / Pre-Release Gatekeeper) ou quando expressamente requisitada pelo usuário, poupando de 5.000 a 20.000 tokens de payload de ferramentas por ciclo.
   - **Zero Mocks Cegos:** Permitido mocar apenas I/O externo de terceiros; nunca mocar lógica interna para forçar passagem de teste.
   - **Zero Asserções Vazias:** Proibido testes sem `assert` ou com `assert(true)`.
   - **Zero Skips:** Proibido `.skip`, `xit`, `@pytest.mark.skip` ou flags como `--passWithNoTests`.

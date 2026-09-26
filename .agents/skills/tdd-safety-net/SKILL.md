@@ -32,3 +32,13 @@ Antes de considerar um teste como válido, verifique se ele não comete nenhuma 
 - [ ] **Nenhum teste foi silenciado com `.skip` ou `xit`?** (Proibido pular testes falhando).
 - [ ] **Nenhum teste existente quebrado foi deletado ou comentado?** (Erros devem ser corrigidos na causa raiz do código de produção).
 - [ ] **A evidência foi capturada via terminal nativo?** (Proibido forçar aprovação sem execução real da toolchain).
+
+---
+
+## 3. Execução Cirúrgica e Eficiência de Tokens (Targeted & On-Demand)
+
+Para economizar de 5.000 a 20.000 tokens de payload de ferramentas por ciclo, aplique o princípio de execução cirúrgica:
+
+1. **Gatilho Estrito por Necessidade:** Se a alteração for puramente documental (`.md`), configs declarativas, comentários ou estilos cosméticos (Fast-Path L0), a execução de testes de código de produção é **formalmente dispensada**.
+2. **Escopo Cirúrgico por Arquivo/Módulo:** Ao modificar um módulo específico, execute **exclusivamente** o arquivo de teste correspondente àquele módulo (ex: `python3 -m unittest tests/test_<modulo>.py` ou `pytest tests/test_<modulo>.py -k test_especifico`). É expressamente proibido rodar a suíte inteira (`discover`, `pytest`, `npm test` geral) para validar refatorações ou correções locais.
+3. **Reserva da Suíte Completa:** A execução da suíte abrangente fica restrita ao gate final de release (`L3` / `release-gatekeeper`), alterações transversais no núcleo do framework ou quando expressamente requisitado pelo usuário.

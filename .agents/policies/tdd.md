@@ -33,3 +33,16 @@ O agente `test-guardian` e o `builder` devem aplicar o tipo correto de teste par
 5. **Asserção de Tipo em vez de Valor:** É proibido checar apenas `expect(typeof res).toBe("object")` quando os campos e valores de negócio (`id`, `status`, `amount`) devem ser validados.
 6. **Testes Tautológicos:** Testes que reproduzem a própria implementação interna em vez de testar o comportamento observável.
 7. **Fabricação de Evidências:** É proibido declarar verbalmente que testes passaram sem execução nativa comprovada no terminal.
+
+---
+
+## 3. Execução Cirúrgica e Sob Demanda (Targeted & On-Demand Testing)
+
+> **🎯 DIRETRIZ DE EFICIÊNCIA DE TOKENS & ENGENHARIA CIRÚRGICA:** Testes unitários devem ser acionados com precisão laser, eliminando execuções redundantes da suíte inteira em tarefas pontuais.
+
+1. **Gatilho Estrito por Necessidade:** Se a alteração for em documentação (`.md`), configurações declarativas, comentários ou estilos visuais cosméticos (Fast-Path L0), testes de código de backend são dispensados.
+2. **Escopo Cirúrgico por Arquivo:** Ao modificar um módulo específico, execute **exclusivamente** o arquivo de teste correspondente àquele módulo (ex: `python3 -m unittest tests/test_<modulo>.py`). É proibido rodar a suíte inteira (`discover`, `pytest`, `npm test`) para validar refatorações ou correções locais.
+3. **Reserva da Suíte Completa:** A execução da suíte abrangente de testes é restrita aos seguintes momentos:
+   - Validação pré-release pelo `release-gatekeeper` (Workflow L3).
+   - Alterações arquiteturais transversais que impactem múltiplos contratos de API ou o núcleo do framework.
+   - Quando expressamente solicitado pelo desenvolvedor no prompt.
