@@ -196,6 +196,16 @@ para manter a memória ativa dentro do orçamento de tokens.
     memory_file.write_text(memory_content, encoding="utf-8")
     history_file.write_text(history_content, encoding="utf-8")
 
+    # Garante que o .gitignore do novo projeto ignore arquivos efêmeros de telemetria
+    gitignore_file = project_dir / ".gitignore"
+    if gitignore_file.exists():
+        gi_content = gitignore_file.read_text(encoding="utf-8", errors="ignore")
+        if ".agents/memory/TOKEN_TELEMETRY.md" not in gi_content:
+            with open(gitignore_file, "a", encoding="utf-8") as f:
+                if not gi_content.endswith("\n"):
+                    f.write("\n")
+                f.write(".agents/memory/TOKEN_TELEMETRY.md\n")
+
     print(f"✅ Memória isolada inicializada em: {memory_dir}")
     print(f"   📄 PROJECT_MEMORY.md — {len(memory_content.splitlines())} linhas")
     print(f"   📜 archive/HISTORY.md — {len(history_content.splitlines())} linhas")
