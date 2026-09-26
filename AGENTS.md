@@ -87,10 +87,11 @@ Instruções mestras, disciplinas inegociáveis e governança arquitetural do **
     - **Loop Detection & Anti-Repetição:** Bloqueia automaticamente com `deny` ferramentas executadas 3x consecutivas com os mesmos argumentos.
     - **Proteção de Workspace (`list_dir`):** Bloqueia listagens na raiz do workspace; exige uso do `REPO_MAP.md` ou caminhos específicos.
     - **Filtro de Ruído em `grep_search`:** Injeta automaticamente exclusões de diretórios ruidosos (`node_modules`, `.git`, `dist`, `__pycache__`, etc.) quando `Includes` estiver vazio.
-    - **Clamp Cirúrgico em `view_file`:** Teto estrito de **máximo 40 linhas por leitura** (`EndLine - StartLine <= 40`).
+    - **Clamp Cirúrgico em `view_file` & Anti-Fatiamento:** Teto calibrado de **máximo 60 linhas por leitura** (`EndLine - StartLine <= 60`) com detecção ativa de leitura contígua para evitar a armadilha do fatiamento cego $O(N^2)$.
     - **Sanitização Mandatória de `run_command`:** Injeção automática de `agy-sanitize` em comandos verbosos sem limitador.
     - **Bloqueio Ativo de `write_to_file` em Arquivos Existentes (>40 linhas):** Bloqueio com `deny` no hook PreToolUse forçando o uso obrigatório de `replace_file_content` com blocos atômicos (< 20 linhas), eliminando reenvios redundantes de arquivos completos no payload.
-  - **Repo Map Atômico (Passo 0 anti-exploração cega):** O agente DEVE consultar `.agents/memory/REPO_MAP.md` (gerado/atualizado via `agy-repo-map`) para saber os arquivos e símbolos existentes, eliminando cadeias exploratórias de busca.
+  - **Deduplicação Estrita de Mensagens Ephemerais de Hooks:** Bloqueio de injeções redundantes de diretrizes no mesmo turno/prompt, eliminando até 40.000 tokens desnecessários por sessão.
+  - **Repo Map & Symbol-First Navigation (Passo 0 anti-exploração cega):** O agente DEVE consultar `.agents/memory/REPO_MAP.md` e localizar símbolos via `grep_search` cirúrgico antes de ler arquivos, eliminando cadeias exploratórias e o custo acumulado em sub-etapas.
   - **Proibição de `write_to_file` em Arquivos Existentes:** Sempre use `replace_file_content` com chunks atômicos (< 20 linhas) para evitar reenviar o arquivo completo no payload de contexto.
 - **Saídas Efêmeras & Auto-Compact (15 Turnos / 40k Tokens):** O histórico de saídas de ferramentas antigas acumula e encarece exponencialmente a conversa. Ao atingir 15 turnos ou 40k tokens na sessão ativa, execute obrigatoriamente o checkpoint no [PROJECT_MEMORY.md](file:///home/andrevmp/Downloads/xp-multiagent-kit/.agents/memory/PROJECT_MEMORY.md) e instrua a abertura de um chat limpo via Fast Bootstrap (Passo 0), eliminando até 75% do desperdício de tokens acumulados.
 

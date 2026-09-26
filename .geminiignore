@@ -60,6 +60,7 @@ scratch/
 # Diretórios Internos do Antigravity & AI (Logs de conversas e transcripts)
 .system_generated/
 *.jsonl
+.agents/memory/TOKEN_TELEMETRY.md
 
 # Mídias Grandes e Arquivos Binários
 *.zip

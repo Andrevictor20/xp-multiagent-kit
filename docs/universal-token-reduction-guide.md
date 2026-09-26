@@ -40,11 +40,12 @@ Este guia apresenta as **melhores práticas operacionais e ferramentas** para ma
 
 ---
 
-### 4. Inspeção Cirúrgica de Código vs Leituras Completas
-- **O Problema:** Ler arquivos inteiros de 600 linhas com `view_file` consome 15.000 tokens em uma única chamada.
+### 4. Inspeção Cirúrgica de Código vs Fatiamento Cego ($O(N^2)$)
+- **O Problema:** Ler arquivos inteiros consome milhares de tokens, mas fatiar cegamente em múltiplos blocos contíguos sequenciais (ex: 1-40, depois 41-80, depois 81-120) gera acúmulo quadrático de histórico em sub-etapas intermediárias ($O(N^2)$), retransmitindo as saídas anteriores a cada round-trip.
 - **A Solução:**
-  - Prefira localizar o trecho com `grep_search`.
-  - Ao inspecionar o código, limite sempre a visualização a fatias de 30 a 80 linhas especificando `StartLine` e `EndLine`.
+  - Pratique **Symbol-First Navigation**: consulte o `REPO_MAP.md` e localize a linha exata do símbolo via `grep_search`.
+  - Ao inspecionar o código, solicite uma janela cirúrgica de até 60 linhas contendo o símbolo completo, evitando round-trips repetidos.
+  - O hook nativo `smart-tool-optimizer` calibra janelas em 60 linhas e detecta automaticamente leituras contíguas para evitar a armadilha do fatiamento excessivo.
 
 ---
 

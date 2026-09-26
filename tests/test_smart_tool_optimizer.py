@@ -73,6 +73,14 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(decision, "allow")
         self.assertIsNone(overwrite)
 
+    def test_view_file_contiguous_read_detects_streak(self):
+        # Call 1: lines 1-30
+        optimize_view_file({"AbsolutePath": str(self.large_file), "StartLine": 1, "EndLine": 30})
+        # Call 2: lines 31-60 (contiguous read)
+        decision, reason, overwrite = optimize_view_file({"AbsolutePath": str(self.large_file), "StartLine": 31, "EndLine": 60})
+        self.assertEqual(decision, "allow")
+        self.assertIn("contígua", reason)
+
     def test_run_command_verbose_test_runner_is_sanitized(self):
         cmd = "pytest tests/ -v"
         decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})

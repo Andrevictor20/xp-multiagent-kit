@@ -151,6 +151,26 @@ class TestDynamicEffortHook(unittest.TestCase):
         self.assertIn("HIGH", msg.upper())
         self.assertIn("L3", msg.upper())
 
+    def test_handle_pre_invocation_deduplicates_same_turn(self):
+        payload = {
+            "invocationNum": 1,
+            "transcriptPath": str(self.transcript_file),
+            "conversationId": "test-dedup-conv-999",
+        }
+        first_call = handle_pre_invocation(payload)
+        self.assertIn("injectSteps", first_call)
+        self.assertTrue(len(first_call["injectSteps"]) > 0)
+
+        # Immediate second call for the same turn/prompt
+        payload_step_2 = {
+            "invocationNum": 2,
+            "transcriptPath": str(self.transcript_file),
+            "conversationId": "test-dedup-conv-999",
+        }
+        second_call = handle_pre_invocation(payload_step_2)
+        self.assertEqual(second_call.get("injectSteps"), [])
+
 
 if __name__ == "__main__":
     unittest.main()
+

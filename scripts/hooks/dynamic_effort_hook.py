@@ -205,16 +205,18 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     inv_num = payload.get("invocationNum", 0)
 
     # Evita dupla injeção se o hook for executado por múltiplos hooks.json (global e workspace)
+    # ou em sub-etapas consecutivas (invocations) dentro do mesmo turno/prompt
     tpath = payload.get("transcriptPath", "")
     tpath_hash = hashlib.md5(tpath.encode("utf-8")).hexdigest()[:8] if tpath else "notrans"
+    prompt_hash = hashlib.md5(prompt_text.encode("utf-8")).hexdigest()[:8] if prompt_text else "noprompt"
     safe_conv = re.sub(r"[^a-zA-Z0-9_-]", "_", conv_id or "default")
-    dedup_file = Path(tempfile.gettempdir()) / f".agy_effort_injected_{safe_conv}_{tpath_hash}_{inv_num}.lock"
+    dedup_file = Path(tempfile.gettempdir()) / f".agy_effort_injected_{safe_conv}_{tpath_hash}_{prompt_hash}.lock"
     already_injected = False
     now = time.time()
     if dedup_file.is_file():
         try:
             mtime = dedup_file.stat().st_mtime
-            if (now - mtime) < 15.0:
+            if (now - mtime) < 600.0:
                 already_injected = True
         except Exception:
             pass

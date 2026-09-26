@@ -447,6 +447,7 @@ class TurnStats:
     tool_tokens: int = 0
     model_output_tokens: int = 0
     total_tokens: int = 0
+    ephemeral_tokens: int = 0
 
 
 def estimate_tokens(text: Optional[str]) -> int:
@@ -492,6 +493,7 @@ def calculate_turn_stats(steps: List[Dict[str, Any]]) -> TurnStats:
     user_bytes = 0
     tool_bytes = 0
     model_bytes = 0
+    ephemeral_bytes = 0
 
     for step in turn_steps:
         stype = step.get("type", "UNKNOWN")
@@ -507,19 +509,23 @@ def calculate_turn_stats(steps: List[Dict[str, Any]]) -> TurnStats:
             if isinstance(thinking, str):
                 step_len += len(thinking)
             model_bytes += step_len
+        elif stype in ("EPHEMERAL_MESSAGE", "SYSTEM_MESSAGE", "ERROR_MESSAGE"):
+            ephemeral_bytes += step_len
         else:
             tool_bytes += step_len
 
     user_tokens = _tokens_from_bytes(user_bytes, _CHARS_PER_TOKEN_PROSE)
     tool_tokens = _tokens_from_bytes(tool_bytes, _CHARS_PER_TOKEN_CODE)
     model_tokens = _tokens_from_bytes(model_bytes, _CHARS_PER_TOKEN_MIXED)
-    total_tokens = user_tokens + tool_tokens + model_tokens
+    ephemeral_tokens = _tokens_from_bytes(ephemeral_bytes, _CHARS_PER_TOKEN_PROSE)
+    total_tokens = user_tokens + tool_tokens + model_tokens + ephemeral_tokens
 
     return TurnStats(
         user_input_tokens=user_tokens,
         tool_tokens=tool_tokens,
         model_output_tokens=model_tokens,
         total_tokens=total_tokens,
+        ephemeral_tokens=ephemeral_tokens,
     )
 
 

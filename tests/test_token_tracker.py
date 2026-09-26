@@ -300,6 +300,21 @@ class TestTokenTracker(unittest.TestCase):
             turn.user_input_tokens + turn.tool_tokens + turn.model_output_tokens,
         )
 
+    def test_calculate_turn_stats_with_ephemeral_message(self):
+        steps = [
+            {"type": "USER_INPUT", "content": "Pergunta com 30 caracteres"},
+            {"type": "EPHEMERAL_MESSAGE", "content": "Diretriz ephemeral com 200 caracteres de instruções para o modelo"},
+            {"type": "RUN_COMMAND", "content": "Saída da ferramenta de 50 caracteres"},
+            {"type": "PLANNER_RESPONSE", "content": "Resposta do modelo de 40 caracteres"},
+        ]
+        turn = calculate_turn_stats(steps)
+        self.assertGreater(turn.ephemeral_tokens, 0)
+        self.assertGreater(turn.tool_tokens, 0)
+        self.assertEqual(
+            turn.total_tokens,
+            turn.user_input_tokens + turn.tool_tokens + turn.model_output_tokens + turn.ephemeral_tokens,
+        )
+
     def test_format_message_footer(self):
         turn = TurnStats(
             user_input_tokens=320,

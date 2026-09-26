@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-26 10:23 (Local)  
+> **Última Atualização:** 2026-09-26 11:45 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.27.0 (Smart Quota Failover CLI Google ⇄ 3P & Targeted Testing Gate)
+> **Versão / Marco Atual:** v2.28.0 (Smart Tool Consumption Optimizer & O(N^2) Quadratic Reduction)
 
 ---
 
@@ -27,12 +27,14 @@
 ## 2. Current Health & System Status
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 71 Skills, 10 Workflows, 9 Policies, CI/CD Auto-Healer, Suíte Global de Tokens e Worktrees em `~/.local/bin/`, Configuração Global Ativa em `~/.gemini/config/`, Paridade Total em `~/.gemini/antigravity-ide/`, Memória em 4 Tiers com Persistência Forçada em Disco)
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Zero-Downtime, IaC Governance, Observability RED, CloudSec OIDC, Root-Cause Debugging, No Workarounds, Code Deslop, Frontend Anti-Slop, 4-Tier Memory, Auto-Onboarding, Reverse Ingestion, CI/CD Auto-Healing com limite L-003, Telemetria Obrigatória por Mensagem e Hard Disk Persistence)
-- **Última Execução / Evidência:** `EV-CLI-RECURSION-FIX-20260926-01` (Restauração do binário ELF nativo em ~/.local/bin/agy-bin e ~/.local/bin/agy-native, validação de magic bytes \x7fELF em locate_native_agy(), eliminando loop recursivo no CLI)
+- **Última Execução / Evidência:** `EV-SMART-TOOL-OPTIMIZER-20260926-01` (Deduplicação de mensagens ephemerais por prompt-hash, calibração MAX_VIEW_LINES=60 com detecção contígua, discriminação precisa de ephemeral_tokens em TurnStats e 74/74 testes unitários aprovados)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
+
+| 2026-09-26 | `FEAT` | Otimização Inteligente de Consumo de Ferramentas & Eliminação do Custo Quadrático O(N^2): (1) Deduplicação estrita de injeções ephemerais em `scripts/hooks/dynamic_effort_hook.py` indexando o lock por conversa e hash do prompt do usuário, eliminando a re-injeção redundante de mensagens ephemerais a cada sub-etapa de ferramenta no mesmo turno (economia de 15k a 40k tokens por sessão), (2) Calibração de `MAX_VIEW_LINES = 60` e detecção de leitura contígua sequencial em `scripts/hooks/smart_tool_optimizer.py` com alerta contra fatiamento cego, (3) Discriminação precisa de tokens em `scripts/token_tracker.py` separando `ephemeral_tokens` de `tool_tokens` reais para evitar contaminação da métrica de ferramentas por injeções de hooks, (4) Atualização formal das regras no `AGENTS.md` e `docs/universal-token-reduction-guide.md` priorizando Symbol-First Navigation, (5) 74/74 testes unitários aprovados em `tests/test_dynamic_effort_hook.py`, `tests/test_smart_tool_optimizer.py` e `tests/test_token_tracker.py` | `scripts/hooks/dynamic_effort_hook.py`, `scripts/hooks/smart_tool_optimizer.py`, `scripts/token_tracker.py`, `AGENTS.md`, `docs/universal-token-reduction-guide.md`, `tests/` | `PASS (EV-SMART-TOOL-OPTIMIZER-20260926-01)` |
 
 | 2026-09-26 | `FEAT` | Smart Quota Failover Bidirecional CLI (Google ⇄ Claude/GPT): (1) Implementação de `evaluate_provider_quota_health()` e `resolve_model_with_failover()` em `scripts/agy_effort_router.py`, (2) Consulta em tempo real via Language Server RPC alternando automaticamente para `claude-sonnet-4-6` se a cota do Google esgotar (<= 2%) e para `gemini-3.8-flash-<effort>` se a cota 3P esgotar, (3) Suporte a override manual via `--model <modelo>` bypassando failover, (4) Injeção automática da flag `--model` no comando nativo do CLI e sincronização com `settings.json`, (5) 21/21 testes unitários aprovados em `tests/test_agy_effort_router.py`, (6) Instalação global via `install-global.sh` | `scripts/agy_effort_router.py`, `tests/test_agy_effort_router.py`, `scripts/install-global.sh`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-SMART-QUOTA-FAILOVER-20260926-01)` |
 | 2026-09-26 | `TEST` | Teste E2E em Repositório Real (`scratch/test-app`) & Prova de Isolamento Total de Memória: (1) Criação de repositório git autônomo com `pyproject.toml`, (2) Execução de `agy-init-memory` criando `.agents/memory/PROJECT_MEMORY.md` e `archive/HISTORY.md` dedicados para o projeto, (3) Comprovação de isolamento absoluto: a memória do `xp-multiagent-kit` permaneceu 100% intocada, (4) Execução de `agy-repo-map` gerando `REPO_MAP.md` isolado, (5) Ciclo TDD estrito com teste cirúrgico direcionado (Targeted Testing: RED em `test_calculator.py` -> GREEN em `src/calculator.py` com 3/3 testes aprovados sem rodar suíte geral), (6) Geração de `SESSION_HANDOFF.md` via `agy-handoff`, (7) Symlink global de `agy-init-memory` em `~/.local/bin/` | `scripts/agy-init-memory`, `scratch/test-app/`, `scripts/install-global.sh`, `.agents/memory/PROJECT_MEMORY.md` | `PASS (EV-REAL-REPO-E2E-ISOLATION-20260926-01)` |

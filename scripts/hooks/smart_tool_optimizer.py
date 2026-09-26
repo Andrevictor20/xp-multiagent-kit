@@ -14,10 +14,12 @@ import os
 import re
 import shutil
 import sys
+import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-MAX_VIEW_LINES = 40
+MAX_VIEW_LINES = 60
 
 # Padrões de comandos verbosos que precisam de sanitização automática
 VERBOSE_CMD_PATTERNS = [
@@ -85,9 +87,54 @@ def count_file_lines(file_path: Path, max_check: int = 50) -> int:
         return 0
 
 
+def detect_contiguous_read(target_path: Path, start_line: Optional[int], end_line: Optional[int]) -> Optional[str]:
+    """Detecta leituras sequenciais contíguas no mesmo arquivo para alertar contra fatiamento ineficiente."""
+    if start_line is None:
+        return None
+    try:
+        state_file = Path(tempfile.gettempdir()) / ".agy_last_view_state.json"
+        now = time.time()
+        prev_data: Dict[str, Any] = {}
+        if state_file.is_file():
+            try:
+                prev_data = json.loads(state_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        path_str = str(target_path.resolve())
+        last_file = prev_data.get("file", "")
+        last_end = prev_data.get("end_line", 0)
+        last_ts = prev_data.get("ts", 0.0)
+        streak = prev_data.get("streak", 0)
+
+        curr_end = end_line if end_line is not None else (start_line + MAX_VIEW_LINES)
+
+        is_contiguous = (
+            path_str == last_file
+            and (now - last_ts) < 45.0
+            and abs(start_line - last_end) <= 2
+        )
+
+        new_streak = (streak + 1) if is_contiguous else 1
+        state_file.write_text(json.dumps({
+            "file": path_str,
+            "end_line": curr_end,
+            "ts": now,
+            "streak": new_streak,
+        }), encoding="utf-8")
+
+        if is_contiguous and new_streak >= 2:
+            return (
+                f" [Aviso: leitura contígua #{new_streak} em {target_path.name} - considere buscar o símbolo via grep_search]"
+            )
+    except Exception:
+        pass
+    return None
+
+
 def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[str, Any]]]:
     """
-    Analisa argumentos de view_file e aplica fatiamento cirúrgico de até 40 linhas
+    Analisa argumentos de view_file e aplica fatiamento cirúrgico de até MAX_VIEW_LINES linhas
     se o arquivo exceder o limite ou se o intervalo for desproporcional.
     """
     path_str = args.get("AbsolutePath")
@@ -97,6 +144,7 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
     target_path = Path(path_str)
     start_line = args.get("StartLine")
     end_line = args.get("EndLine")
+    hint = detect_contiguous_read(target_path, start_line, end_line) or ""
 
     # Caso 1: Nenhuma linha especificada (leitura do arquivo inteiro)
     if start_line is None and end_line is None:
@@ -104,17 +152,17 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
         if total_lines > MAX_VIEW_LINES:
             return (
                 "allow",
-                f"Clamped view_file to 40 lines (StartLine: 1, EndLine: {MAX_VIEW_LINES}) to prevent context flood.",
+                f"Clamped view_file to {MAX_VIEW_LINES} lines (StartLine: 1, EndLine: {MAX_VIEW_LINES}) to prevent context flood.{hint}",
                 {"StartLine": 1, "EndLine": MAX_VIEW_LINES},
             )
-        return "allow", "", None
+        return "allow", hint.strip(), None
 
     # Caso 2: Apenas StartLine especificado
     if start_line is not None and end_line is None:
         clamped_end = int(start_line) + MAX_VIEW_LINES
         return (
             "allow",
-            f"Clamped view_file to 40 lines window from StartLine {start_line}.",
+            f"Clamped view_file to {MAX_VIEW_LINES} lines window from StartLine {start_line}.{hint}",
             {"StartLine": int(start_line), "EndLine": clamped_end},
         )
 
@@ -125,12 +173,12 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
             clamped_start = max(1, int_end - MAX_VIEW_LINES)
             return (
                 "allow",
-                f"Clamped view_file to 40 lines window ending at EndLine {int_end}.",
+                f"Clamped view_file to {MAX_VIEW_LINES} lines window ending at EndLine {int_end}.{hint}",
                 {"StartLine": clamped_start, "EndLine": int_end},
             )
-        return "allow", "", None
+        return "allow", hint.strip(), None
 
-    # Caso 4: Ambos especificados, mas intervalo > 40 linhas
+    # Caso 4: Ambos especificados, mas intervalo > MAX_VIEW_LINES
     if start_line is not None and end_line is not None:
         int_start = int(start_line)
         int_end = int(end_line)
@@ -139,11 +187,11 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
             clamped_end = int_start + MAX_VIEW_LINES
             return (
                 "allow",
-                f"Clamped view_file range from {diff} lines to {MAX_VIEW_LINES} lines.",
+                f"Clamped view_file range from {diff} lines to {MAX_VIEW_LINES} lines.{hint}",
                 {"StartLine": int_start, "EndLine": clamped_end},
             )
 
-    return "allow", "", None
+    return "allow", hint.strip(), None
 
 
 def has_output_limiter(cmd: str) -> bool:
