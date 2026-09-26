@@ -43,6 +43,15 @@ Mensagens devem ser específicas o suficiente para que alguém (ou outro agente)
 - Mensagens de commit vagas demais para reconstruir o histórico do projeto.
 - Qualquer commit que não passou no CI sendo enviado "temporariamente" com a intenção de corrigir depois.
 
+## Eficiência de Tokens em Operações Git (< 1.0k tokens)
+
+Para evitar inflar o contexto durante staging, commit e push:
+- **Status:** Use `git status -s` ou `agy-git-ops status` (~50 tokens vs ~400 tokens).
+- **Inspeção de Diff:** Use `git diff --stat` ou `agy-git-ops diff` para validar escopo. Diff detalhado somente via `agy-compact --diff` em arquivos específicos.
+- **Histórico:** Use `git log -n 5 --oneline` ou `agy-git-ops log`.
+- **Inspeção de Commit:** Use `git show --stat <hash>` em vez de `git show <hash>`.
+- **Push:** Use `git push --quiet` ou `agy-git-ops push`.
+
 ## Uso em auditoria de projeto
 
 Se pedirem para avaliar a saúde de um projeto pelo histórico de commits, calcule e reporte:

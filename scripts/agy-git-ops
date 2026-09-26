@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# agy-git-ops: Utilitário para Operações Git e CI/CD Ultra-Econômicas em Tokens
+# XP Multi-Agent Kit v2
+# ==============================================================================
+set -euo pipefail
+
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
+COMPACTOR="${SCRIPT_DIR}/context_compactor.py"
+
+usage() {
+    cat <<EOF
+Uso: agy-git-ops <comando> [argumentos...]
+
+Comandos ultra-econômicos em tokens:
+  status                Executa 'git status -s' (saída compacta ~50 tokens)
+  diff [--full]         Executa 'git diff --stat' (ou diff compactado via CCR)
+  log [N]               Exibe os últimos N commits em formato oneline (padrão: 5)
+  show <commit>         Exibe metadados e diff resumido do commit (--stat)
+  commit -m "<msg>"     Executa commit atômico e exibe apenas o hash e assunto
+  push [args...]        Executa git push silencioso e confirmação atômica
+  ci-status             Exibe o status dos últimos 3 workflows sem log dump
+  ci-log <run-id>       Extrai cirurgicamente apenas a falha do CI via agy-compact
+
+Exemplos:
+  agy-git-ops status
+  agy-git-ops diff
+  agy-git-ops commit -m "feat(docker): add batch updates"
+  agy-git-ops push origin main
+  agy-git-ops ci-status
+  agy-git-ops ci-log 36263198
+EOF
+    exit 1
+}
+
+if [[ $# -lt 1 ]]; then
+    usage
+fi
+
+CMD="$1"
+shift || true
+
+case "$CMD" in
+    status)
+        git status -s
+        ;;
+    diff)
+        if [[ "${1:-}" == "--full" ]]; then
+            shift || true
+            git diff "$@" | python3 "${COMPACTOR}" --diff
+        else
+            git diff --stat "$@"
+        fi
+        ;;
+    log)
+        COUNT="${1:-5}"
+        git log -n "${COUNT}" --oneline
+        ;;
+    show)
+        if [[ $# -lt 1 ]]; then
+            echo "Erro: especifique o hash do commit." >&2
+            exit 1
+        fi
+        git show --stat "$1"
+        ;;
+    commit)
+        git commit "$@" --quiet
+        git log -1 --oneline
+        ;;
+    push)
+        git push --quiet "$@"
+        echo "✅ Push efetuado com sucesso para $*"
+        ;;
+    ci-status)
+        if command -v gh >/dev/null 2>&1; then
+            gh run list -L 3 --json databaseId,status,conclusion,name,headBranch --template '{{range .}}#{{.databaseId}} | {{.name}} | {{.headBranch}} | {{.status}} ({{.conclusion}}){{"\n"}}{{end}}'
+        else
+            echo "gh CLI não encontrado no ambiente." >&2
+            exit 1
+        fi
+        ;;
+    ci-log)
+        if [[ $# -lt 1 ]]; then
+            echo "Erro: especifique o ID da execução do workflow." >&2
+            exit 1
+        fi
+        RUN_ID="$1"
+        if command -v gh >/dev/null 2>&1; then
+            gh run view "${RUN_ID}" --log-failed | python3 "${COMPACTOR}" --ci
+        else
+            echo "gh CLI não encontrado no ambiente." >&2
+            exit 1
+        fi
+        ;;
+    -h|--help|help)
+        usage
+        ;;
+    *)
+        echo "Comando desconhecido: $CMD" >&2
+        usage
+        ;;
+esac

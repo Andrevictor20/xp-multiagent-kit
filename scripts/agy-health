@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Wrapper executável para o compactador de contexto e mensagens do XP Kit
+# Wrapper executável para o scanner de diagnóstico e saúde do sistema
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
-python3 "${SCRIPT_DIR}/context_compactor.py" "$@"
+python3 "${SCRIPT_DIR}/agy_health.py" "$@"

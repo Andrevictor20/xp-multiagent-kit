@@ -133,6 +133,15 @@ def main():
     args = parser.parse_args()
     cwd = Path(args.output_dir).resolve() if args.output_dir != "." else Path.cwd()
 
+    # Auto-rotaciona a memória episódica para nunca permitir inchaço de contexto
+    try:
+        from scripts.memory_archiver import archive_memory
+        mem_file = cwd / ".agents" / "memory" / "PROJECT_MEMORY.md"
+        if mem_file.is_file():
+            archive_memory(mem_file)
+    except Exception:
+        pass
+
     packet = build_handoff_packet(cwd=cwd, custom_goal=args.goal, custom_next=args.next)
 
     if args.compress:

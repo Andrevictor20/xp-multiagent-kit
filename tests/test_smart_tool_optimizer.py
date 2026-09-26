@@ -97,10 +97,26 @@ class TestSmartToolOptimizer(unittest.TestCase):
         new_cmd = overwrite.get("CommandLine", "")
         self.assertTrue("agy-sanitize" in new_cmd or "head" in new_cmd or "-n" in new_cmd)
 
+    def test_run_command_gh_run_and_workflows_are_sanitized(self):
+        cmds = [
+            "gh run list",
+            "gh run view 12345 --log",
+            "gh run watch 9876",
+            "gh workflow list",
+            "git show 39b2fa9",
+        ]
+        for cmd in cmds:
+            decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+            self.assertEqual(decision, "allow", f"Failed for {cmd}")
+            self.assertIsNotNone(overwrite, f"Expected overwrite for {cmd}")
+            self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+
     def test_run_command_already_piped_or_limited_is_preserved(self):
         cmds = [
             "pytest tests/ -v | head -n 30",
             "git log -n 5 --oneline",
+            "git show 39b2fa9 --stat",
+            "gh run list -L 5",
             "npm test | agy-sanitize",
             "find . -maxdepth 2 -name '*.py' | head -n 10",
         ]

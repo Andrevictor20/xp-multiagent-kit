@@ -3,3 +3,4 @@ __pycache__/
 *.pyo
 .pytest_cache/
 .agents/memory/TOKEN_TELEMETRY.md
+.agents/memory/.repo_map_cache.json

@@ -19,11 +19,13 @@ Esta skill governa a autonomia do Antigravity para monitorar esteiras remotas (G
 ## 2. Protocolo Operacional em 5 Etapas
 
 ### Etapa 1: Diagnóstico Cirúrgico da Falha
-1. Obtenha o log isolado da falha através do utilitário:
+1. Obtenha o log isolado da falha através de:
    ```bash
    agy-ci-heal --diagnose-run <run-id>
+   # ou: agy-git-ops ci-log <run-id>
+   # ou: gh run view <run-id> --log-failed | agy-compact --ci
    ```
-2. Analise o bloco extraído sem carregar logs inteiros no contexto da conversa (economia de tokens).
+2. Analise o bloco extraído sem carregar logs inteiros no contexto da conversa (economia de 95% dos tokens de CI). É proibido rodar `gh run view --log` sem filtro.
 
 ### Etapa 2: Investigação de Causa Raiz (4 Fases)
 1. **Fase 1 (Compreensão):** Identifique o arquivo, linha, dependência ou variável de ambiente responsável.

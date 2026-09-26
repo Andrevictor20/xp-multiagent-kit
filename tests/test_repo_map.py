@@ -66,6 +66,25 @@ class TestRepoMap(unittest.TestCase):
         self.assertTrue(target_file.is_file())
         self.assertGreater(target_file.stat().st_size, 0)
 
+    def test_incremental_ast_caching(self):
+        from scripts.repo_map import save_repo_map, load_symbol_cache, CACHE_FILENAME
+        save_repo_map(self.temp_path)
+
+        cache_file = self.temp_path / ".agents" / "memory" / CACHE_FILENAME
+        self.assertTrue(cache_file.is_file())
+
+        cache_data = load_symbol_cache(cache_file)
+        self.assertIn("files", cache_data)
+        # Check that src/calculator.py is cached
+        calc_rel = str(Path("src") / "calculator.py")
+        self.assertIn(calc_rel, cache_data["files"])
+        self.assertIn("Calculator", cache_data["files"][calc_rel]["symbols"][0])
+
+        # Second run should hit cache without errors
+        save_repo_map(self.temp_path)
+        cache_data_2 = load_symbol_cache(cache_file)
+        self.assertEqual(len(cache_data["files"]), len(cache_data_2["files"]))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -286,7 +286,18 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def auto_heal_plugin_directories() -> None:
+    """Garante que diretórios exigidos por plugins internos do Antigravity existam para evitar falhas em hooks."""
+    try:
+        target = Path.home() / ".gemini" / "config" / "plugins" / "googlecloudtools.datacloud_telemetry"
+        if not target.exists():
+            target.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+
 def main() -> int:
+    auto_heal_plugin_directories()
     try:
         raw_input = sys.stdin.read() if not sys.stdin.isatty() else ""
         if raw_input.strip():

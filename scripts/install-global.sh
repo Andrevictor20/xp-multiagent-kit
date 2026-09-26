@@ -39,7 +39,8 @@ for existing_skill in "$GLOBAL_SKILLS_DIR"/*; do
     mv "$existing_skill" "$GCP_PLUGIN_SKILLS/"
   fi
 done
-rm -rf "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
+# Garantir que o diretório do plugin interno exista para evitar falhas em hooks de PreToolUse
+mkdir -p "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
 
 # 4. Vincular todas as Skills globais dinamicamente
 echo "🔗 Sincronizando Skills globais do kit..."
@@ -150,8 +151,11 @@ ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/agy-worktree"
 ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/xp-worktree"
 ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/agy-compact"
 ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/xp-compact"
+ln -sf "$KIT_DIR/scripts/agy-git-ops" "$HOME/.local/bin/agy-git-ops"
+ln -sf "$KIT_DIR/scripts/agy-memory-archive" "$HOME/.local/bin/agy-memory-archive"
+ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/agy-health"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health disponíveis no PATH!"
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."

@@ -8,11 +8,14 @@ para zerar a necessidade de chamadas de exploração cega (list_dir, grep explor
 from __future__ import annotations
 
 import ast
+import json
 import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
+
+CACHE_FILENAME: str = ".repo_map_cache.json"
 
 IGNORED_DIRS: Set[str] = {
     ".git",
@@ -52,6 +55,27 @@ IGNORED_EXTS: Set[str] = {
     ".jsonl",
     ".log",
 }
+
+def load_symbol_cache(cache_file: Path) -> Dict[str, Any]:
+    """Carrega o cache incremental de símbolos do disco."""
+    if not cache_file.is_file():
+        return {"version": 1, "files": {}}
+    try:
+        data = json.loads(cache_file.read_text(encoding="utf-8"))
+        if isinstance(data, dict) and "files" in data:
+            return data
+    except Exception:
+        pass
+    return {"version": 1, "files": {}}
+
+
+def save_symbol_cache(cache_file: Path, cache_data: Dict[str, Any]) -> None:
+    """Persiste o cache incremental de símbolos em disco em formato JSON."""
+    try:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps(cache_data, indent=2, sort_keys=True), encoding="utf-8")
+    except Exception:
+        pass
 
 
 def extract_python_symbols(file_path: Path) -> List[str]:
@@ -101,17 +125,48 @@ def extract_js_ts_symbols(file_path: Path) -> List[str]:
     return symbols
 
 
-def extract_file_symbols(file_path: Path) -> List[str]:
-    """Roteia extração de símbolos pelo formato do arquivo."""
+def extract_file_symbols(
+    file_path: Path,
+    rel_path: str = "",
+    cache_data: Optional[Dict[str, Any]] = None,
+) -> List[str]:
+    """Roteia extração de símbolos com suporte a cache incremental por mtime/size."""
+    if cache_data is not None and rel_path:
+        files_cache = cache_data.setdefault("files", {})
+        try:
+            stat = file_path.stat()
+            cached = files_cache.get(rel_path)
+            if cached and cached.get("mtime") == stat.st_mtime and cached.get("size") == stat.st_size:
+                return cached.get("symbols", [])
+        except OSError:
+            pass
+
     suffix = file_path.suffix.lower()
+    symbols: List[str] = []
     if suffix == ".py":
-        return extract_python_symbols(file_path)
+        symbols = extract_python_symbols(file_path)
     elif suffix in {".ts", ".tsx", ".js", ".jsx"}:
-        return extract_js_ts_symbols(file_path)
-    return []
+        symbols = extract_js_ts_symbols(file_path)
+
+    if cache_data is not None and rel_path:
+        try:
+            stat = file_path.stat()
+            cache_data.setdefault("files", {})[rel_path] = {
+                "mtime": stat.st_mtime,
+                "size": stat.st_size,
+                "symbols": symbols,
+            }
+        except OSError:
+            pass
+
+    return symbols
 
 
-def generate_repo_map(workspace_dir: Path, max_lines: int = 80) -> str:
+def generate_repo_map(
+    workspace_dir: Path,
+    max_lines: int = 80,
+    cache_data: Optional[Dict[str, Any]] = None,
+) -> str:
     """Gera o mapa conciso de repositório em formato Markdown compatível com Aider."""
     workspace = workspace_dir.resolve()
     lines: List[str] = [
@@ -155,7 +210,8 @@ def generate_repo_map(workspace_dir: Path, max_lines: int = 80) -> str:
             if len(lines) + len(dir_lines) >= max_lines - 2:
                 break
             rel_file = fp.name
-            symbols = extract_file_symbols(fp)
+            rel_path = os.path.relpath(fp, workspace)
+            symbols = extract_file_symbols(fp, rel_path=rel_path, cache_data=cache_data)
             if symbols:
                 sym_str = f" [{', '.join(symbols[:3])}]"
                 dir_lines.append(f"- `{rel_file}`{sym_str}")
@@ -172,13 +228,17 @@ def save_repo_map(
     workspace_dir: Path,
     target_path: Optional[Path] = None,
     max_lines: int = 80,
+    cache_path: Optional[Path] = None,
 ) -> Path:
-    """Salva o mapa do repositório em disco."""
+    """Salva o mapa do repositório em disco e atualiza o cache incremental."""
     workspace = workspace_dir.resolve()
     dest = target_path or (workspace / ".agents" / "memory" / "REPO_MAP.md")
     dest.parent.mkdir(parents=True, exist_ok=True)
-    content = generate_repo_map(workspace, max_lines=max_lines)
+    cache_file = cache_path or (workspace / ".agents" / "memory" / CACHE_FILENAME)
+    cache_data = load_symbol_cache(cache_file)
+    content = generate_repo_map(workspace, max_lines=max_lines, cache_data=cache_data)
     dest.write_text(content, encoding="utf-8")
+    save_symbol_cache(cache_file, cache_data)
     return dest
 
 

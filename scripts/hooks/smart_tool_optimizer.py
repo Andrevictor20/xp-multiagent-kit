@@ -64,8 +64,8 @@ VERBOSE_CMD_PATTERNS = [
     r"^kubectl\s+(?:logs|get|describe)(?:\s+|$)",
     # System logs & processes
     r"^(?:journalctl|dmesg|ps\s+aux|top\s+-b)(?:\s+|$)",
-    # Network / API tools
-    r"^(?:curl|wget|http|gh\s+api|gh\s+issue|gh\s+pr)(?:\s+|$)",
+    # Network / API / GitHub CLI tools
+    r"^(?:curl|wget|http|gh\s+(?:api|issue|pr|run|workflow|release))(?:\s+|$)",
 ]
 
 COMPILED_VERBOSE_PATTERNS = [re.compile(p, re.IGNORECASE) for p in VERBOSE_CMD_PATTERNS]
@@ -200,8 +200,8 @@ def has_output_limiter(cmd: str) -> bool:
     if re.search(r">\s*\S+", cmd):
         return True
 
-    # Se já tem agy-sanitize em qualquer ponto
-    if "agy-sanitize" in cmd:
+    # Se já tem agy-sanitize ou agy-compact em qualquer ponto
+    if "agy-sanitize" in cmd or "agy-compact" in cmd:
         return True
 
     # Se termina com pipe limitador explícito
@@ -211,10 +211,12 @@ def has_output_limiter(cmd: str) -> bool:
         if re.search(r"^(?:head|tail|wc|less|more)\b", last_part):
             return True
 
-    # Flags restritivas específicas para comandos git/find
+    # Flags restritivas específicas para comandos git/gh/find
     if re.search(r"\bgit\s+log\b.*-(?:n\s*\d+|[0-9]+)\b", cmd):
         return True
-    if re.search(r"\bgit\s+diff\b.*--stat\b", cmd):
+    if re.search(r"\bgit\s+(?:diff|show)\b.*--(?:stat|name-only|name-status)\b", cmd):
+        return True
+    if re.search(r"\bgh\s+run\s+list\b.*-(?:L|l|-limit)\s*\d+\b", cmd):
         return True
     if re.search(r"\bfind\b.*-maxdepth\s+[12]\b.*\|\s*head", cmd):
         return True
@@ -486,8 +488,19 @@ def optimize_tool_call(payload: Dict[str, Any]) -> Dict[str, Any]:
     return result
 
 
+def auto_heal_plugin_directories() -> None:
+    """Garante que diretórios estruturais exigidos por plugins internos existam para evitar falhas em hooks."""
+    try:
+        target = Path.home() / ".gemini" / "config" / "plugins" / "googlecloudtools.datacloud_telemetry"
+        if not target.exists():
+            target.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+
 def main() -> int:
     """Execução principal do hook PreToolUse."""
+    auto_heal_plugin_directories()
     try:
         raw_input = sys.stdin.read() if not sys.stdin.isatty() else ""
         if raw_input.strip():
