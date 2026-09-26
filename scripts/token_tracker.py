@@ -1001,12 +1001,12 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         bar_7d = make_progress_bar(pct_7d_used, 10)
 
         s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
-        s_5h = f"`[{bar_5h}]` {pct_5h_used:.1f}% usado (~`{tok_5h_used}`) • **{pct_5h_rem:.1f}% restante (~`{tok_5h_rem}`)** de `{tok_5h_tot}`" + (f" ({desc_5h})" if desc_5h else "")
-        s_7d = f"`[{bar_7d}]` {pct_7d_used:.1f}% usado (~`{tok_7d_used}`) • **{pct_7d_rem:.1f}% restante (~`{tok_7d_rem}`)** de `{tok_7d_tot}`" + (f" ({desc_7d})" if desc_7d else "")
+        s_5h = f"`[{bar_5h}]` {pct_5h_used:.1f}% usado (`{tok_5h_used}`) • **{pct_5h_rem:.1f}% restante (`{tok_5h_rem}`)** de `{tok_5h_tot}`" + (f" ({desc_5h})" if desc_5h else "")
+        s_7d = f"`[{bar_7d}]` {pct_7d_used:.1f}% usado (`{tok_7d_used}`) • **{pct_7d_rem:.1f}% restante (`{tok_7d_rem}`)** de `{tok_7d_tot}`" + (f" ({desc_7d})" if desc_7d else "")
 
         return (
             f"---\n"
-            f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
+            f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
             f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
             f"📊 **Telemetria Acumulada ({display_model}):**\n"
             f"  • **Contexto:** {s_ctx}\n"
@@ -1051,7 +1051,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
 
     return (
         f"---\n"
-        f"🪙 **Consumo Desta Mensagem:** ~`{turn_tot}` tokens "
+        f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
         f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
         f"📊 **Telemetria Acumulada ({display_model}):**\n"
         f"  • **Contexto:** {s_ctx}\n"
