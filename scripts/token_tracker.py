@@ -979,8 +979,13 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         desc_5h = clean_refresh_text(b_5h.description) if b_5h else ""
         desc_7d = clean_refresh_text(b_7d.description) if b_7d else ""
 
-        limit_5h = stats.rolling.limit_5h or 800_000
-        limit_7d = stats.rolling.limit_7d or 10_000_000
+        if is_gemini:
+            limit_5h = stats.rolling.limit_5h or 800_000
+            limit_7d = stats.rolling.limit_7d or 10_000_000
+        else:
+            p_defs = get_provider_defaults(stats.model_name)
+            limit_5h = p_defs["limit_5h"]
+            limit_7d = p_defs["limit_7d"]
 
         tok_5h_rem = human_tokens(int(limit_5h * (pct_5h_rem / 100.0)))
         tok_5h_used = human_tokens(int(limit_5h * (pct_5h_used / 100.0)))
