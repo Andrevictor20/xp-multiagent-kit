@@ -1,6 +1,6 @@
 ---
 name: cro-landing-pages
-description: "Otimização de taxa de conversão, redução de atrito e gestão de objeções."
+description: Otimização de conversão (CRO) e redução de atrito.
 ---
 
 # CRO Landing Pages: Otimização de Conversão & Redução de Atrito

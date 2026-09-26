@@ -1,6 +1,6 @@
 ---
 name: ci-auto-heal
-description: Monitoramento autônomo de CI/CD e autocorreção de falhas (máx 3 tentativas).
+description: Monitoramento de CI/CD e autocorreção autônoma (máx 3).
 ---
 
 # CI/CD Auto-Heal & Self-Correction Skill

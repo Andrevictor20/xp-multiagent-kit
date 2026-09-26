@@ -1,6 +1,6 @@
 ---
 name: adr-architect-tracker
-description: Formalização ágil de Architectural Decision Records no padrão MADR 3.0 e detecção contínua de desvio arquitetural (Architectural Drift).
+description: ADRs MADR 3.0 e detecção de desvio arquitetural.
 ---
 
 # ADR Architect Tracker Skill

@@ -1,6 +1,6 @@
 ---
 name: living-docs-keeper
-description: "Manutenção contínua de documentação viva e decisões arquiteturais."
+description: Manutenção contínua de documentação viva e decisões.
 ---
 
 # Living Docs Keeper

@@ -1,6 +1,6 @@
 ---
 name: deploy-pipeline-conductor
-description: "Condução de CD, build de containers, ambientes e rollout gradual."
+description: Condução de CD, contêineres e rollout gradual.
 ---
 
 # Deploy Pipeline Conductor

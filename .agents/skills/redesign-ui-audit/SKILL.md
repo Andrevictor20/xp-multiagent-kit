@@ -1,6 +1,6 @@
 ---
 name: redesign-ui-audit
-description: "Auditoria e modernização de interfaces existentes sem quebrar layout."
+description: Auditoria e modernização de UI sem quebrar layout.
 ---
 
 # Redesign UI Audit: Protocolo de Modernização de Interfaces

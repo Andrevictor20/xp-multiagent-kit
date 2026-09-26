@@ -1,6 +1,6 @@
 ---
 name: copy-editing-sweeps
-description: "Edição cirúrgica de copy em 7 passadas para eliminar clichês e ruído."
+description: Edição de copy em 7 passadas contra clichês.
 ---
 
 # Copy Editing Sweeps: O Framework das 7 Passadas de Edição

@@ -1,6 +1,6 @@
 ---
 name: test-harness-bootstrap
-description: "Configuração de harness de testes no Momento Zero antes de features."
+description: Harness de testes no Momento Zero antes de features.
 ---
 
 # Test Harness Bootstrap

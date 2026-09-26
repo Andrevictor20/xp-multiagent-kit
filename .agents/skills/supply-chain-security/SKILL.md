@@ -1,6 +1,6 @@
 ---
 name: supply-chain-security
-description: "Auditoria de segurança de dependências e integridade da cadeia (SCA)."
+description: Segurança de dependências e integridade de cadeia (SCA).
 ---
 
 # Supply Chain Security

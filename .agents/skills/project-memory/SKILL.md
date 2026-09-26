@@ -1,6 +1,6 @@
 ---
 name: project-memory
-description: "Memória contínua em 4 Tiers, Fast Bootstrap e Auto-Onboarding."
+description: Memória contínua em 4 Tiers, Fast Bootstrap e Onboarding.
 ---
 
 # Project Memory, Auto-Onboarding & Zero-Prompt Lifecycle

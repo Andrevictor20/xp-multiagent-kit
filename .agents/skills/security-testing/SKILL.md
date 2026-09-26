@@ -1,6 +1,6 @@
 ---
 name: security-testing
-description: "Casos de teste SAST/DAST em ambiente controlado contra injeção e falhas."
+description: Casos de teste SAST/DAST contra injeções e falhas.
 ---
 
 # Security Testing

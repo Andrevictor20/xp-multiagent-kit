@@ -1,6 +1,6 @@
 ---
 name: authentication-security
-description: "Auditoria de autenticação, sessões, JWT, MFA e fluxos de login."
+description: Auditoria de autenticação, JWT, sessões e MFA.
 ---
 
 # Authentication Security

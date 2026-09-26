@@ -1,6 +1,6 @@
 ---
 name: privacy-review
-description: "Revisão de privacidade, conformidade LGPD/GDPR e proteção de PII."
+description: Revisão de privacidade, LGPD/GDPR e proteção de PII.
 ---
 
 # Privacy Review

@@ -1,6 +1,6 @@
 ---
 name: observability-instrumentation
-description: "Instrumentação de telemetria e monitoramento ativo pós-deploy."
+description: Instrumentação de telemetria pós-deploy.
 ---
 
 # Observability Instrumentation

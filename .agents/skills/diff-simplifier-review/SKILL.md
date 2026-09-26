@@ -1,6 +1,6 @@
 ---
 name: diff-simplifier-review
-description: Revisão cirúrgica de diff orientada a minimalismo, removendo código morto, complexidade acidental e over-engineering antes do commit.
+description: Revisão minimalista de diff e remoção de over-engineering.
 ---
 
 # Diff Simplifier Review Skill

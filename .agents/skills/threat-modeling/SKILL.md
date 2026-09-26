@@ -1,6 +1,6 @@
 ---
 name: threat-modeling
-description: "Modelagem de ameaças usando STRIDE e análise de Trust Boundaries."
+description: Modelagem de ameaças usando STRIDE e Trust Boundaries.
 ---
 
 # Threat Modeling

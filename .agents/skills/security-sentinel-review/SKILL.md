@@ -1,6 +1,6 @@
 ---
 name: security-sentinel-review
-description: "Revisão proativa de segurança e superfícies sensíveis além de SAST."
+description: Revisão proativa de segurança e superfícies sensíveis.
 ---
 
 # Security Sentinel Review

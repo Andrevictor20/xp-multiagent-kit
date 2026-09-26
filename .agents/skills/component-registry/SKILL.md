@@ -1,6 +1,6 @@
 ---
 name: component-registry
-description: "Registro documental e governança de componentes reaproveitáveis."
+description: Registro e governança de componentes reaproveitáveis.
 ---
 
 # Component Registry

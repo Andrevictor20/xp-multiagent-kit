@@ -1,6 +1,6 @@
 ---
 name: codebase-cartography
-description: "Mapeamento estrutural de dependências e análise de impacto da alteração."
+description: Mapeamento estrutural de dependências e impacto.
 ---
 
 # Codebase Cartography

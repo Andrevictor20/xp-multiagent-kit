@@ -1,6 +1,6 @@
 ---
 name: design-tokens
-description: "Tokens visuais semânticos com Color Consistency e Shape Locks."
+description: Tokens visuais semânticos com Color e Shape Locks.
 ---
 
 # Design Tokens

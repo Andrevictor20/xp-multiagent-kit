@@ -1,6 +1,6 @@
 ---
 name: observability-and-slo-engineering
-description: "Engenharia de observabilidade (logs JSON, métricas RED, tracing e SLOs)."
+description: Engenharia de observabilidade: logs JSON, métricas RED e SLOs.
 ---
 
 # Observability, Telemetry & SLO Engineering

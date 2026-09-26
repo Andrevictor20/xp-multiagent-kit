@@ -1,6 +1,6 @@
 ---
 name: image-to-code
-description: "Pipeline image-first para implementação de UI com fidelidade visual."
+description: Pipeline image-first para implementação de UI fiel.
 ---
 
 # Image-to-Code: Pipeline de Design Orientado a Imagem

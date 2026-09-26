@@ -1,6 +1,6 @@
 ---
 name: project-brief-architect
-description: "Entrevista técnica e estruturação de requisitos no Momento Zero."
+description: Entrevista técnica e requisitos no Momento Zero.
 ---
 
 # Project Brief Architect

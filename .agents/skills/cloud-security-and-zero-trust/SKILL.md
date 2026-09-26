@@ -1,6 +1,6 @@
 ---
 name: cloud-security-and-zero-trust
-description: "Zero Trust, autenticação federada OIDC, Cosign/SBOM e WAF/mTLS."
+description: Zero Trust, OIDC federado, Cosign e mTLS.
 ---
 
 # Cloud Security, Zero Trust & OIDC CD Pipelines

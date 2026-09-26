@@ -1,6 +1,6 @@
 ---
 name: minimalist-ui
-description: "Interfaces minimalistas, estilo editorial Linear/Notion e macro-whitespace."
+description: Interfaces minimalistas, Linear/Notion e whitespace.
 ---
 
 # Minimalist UI: Utilitarian Minimalism & Editorial Design

@@ -1,6 +1,6 @@
 ---
 name: spec-driven-development
-description: Engenharia de software guiada por especificação formal (SDD), invertendo vibe coding para Specification-as-Source-of-Truth.
+description: Engenharia guiada por especificação formal (SDD).
 ---
 
 # Spec-Driven Development (SDD) Skill

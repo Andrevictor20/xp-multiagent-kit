@@ -1,6 +1,6 @@
 ---
 name: seo-content-engine
-description: "SEO On-Page, Schema.org JSON-LD e otimização para AI Search (GEO/AEO)."
+description: SEO On-Page, Schema.org JSON-LD e AI Search (GEO/AEO).
 ---
 
 # SEO Content Engine: On-Page SEO & AI Search Optimization (GEO)

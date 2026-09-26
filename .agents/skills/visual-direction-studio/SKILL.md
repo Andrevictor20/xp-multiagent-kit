@@ -1,6 +1,6 @@
 ---
 name: visual-direction-studio
-description: "Definição de direção visual deliberada, eliminando UI genérica de IA."
+description: Definição de direção visual deliberada sem UI genérica.
 ---
 
 # Visual Direction Studio (Anti-Slop Art Direction)

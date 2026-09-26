@@ -1,6 +1,6 @@
 ---
 name: test-evidence-walkthrough
-description: "Validação de evidência de testes nativos de acordo com risco (L0-L4)."
+description: Validação de evidência de testes nativos por risco.
 ---
 
 # Test Evidence Walkthrough

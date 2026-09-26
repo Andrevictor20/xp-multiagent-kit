@@ -1,6 +1,6 @@
 ---
 name: security-observability
-description: "Monitoramento e auditoria em tempo real de eventos de segurança."
+description: Monitoramento e auditoria em tempo real de segurança.
 ---
 
 # Security Observability

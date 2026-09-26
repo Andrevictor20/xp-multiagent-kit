@@ -1,6 +1,6 @@
 ---
 name: component-architecture
-description: "Arquitetura de componentes modulares, estados e micro-interações."
+description: Componentes modulares, estados e micro-interações.
 ---
 
 # Component Architecture

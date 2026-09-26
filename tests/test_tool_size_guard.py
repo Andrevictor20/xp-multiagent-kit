@@ -65,6 +65,42 @@ class TestToolSizeGuard(unittest.TestCase):
         self.assertIn("view_file", log_content)
         self.assertIn("60 linhas", log_content)
 
+    def test_clamp_output_text_small_unchanged(self):
+        clamp_func = getattr(tool_size_guard, "clamp_output_text", None)
+        self.assertIsNotNone(clamp_func)
+        short_text = "Linha 1\nLinha 2\nLinha 3"
+        clamped, was_clamped = clamp_func(short_text, max_head=5, max_tail=5)
+        self.assertFalse(was_clamped)
+        self.assertEqual(clamped, short_text)
+
+    def test_clamp_output_text_large_truncated(self):
+        clamp_func = getattr(tool_size_guard, "clamp_output_text", None)
+        self.assertIsNotNone(clamp_func)
+        lines = [f"Linha {i}" for i in range(100)]
+        big_text = "\n".join(lines)
+        clamped, was_clamped = clamp_func(big_text, max_head=10, max_tail=10)
+        self.assertTrue(was_clamped)
+        self.assertIn("Linha 0", clamped)
+        self.assertIn("Linha 99", clamped)
+        self.assertIn("Omitidas 80 linhas", clamped)
+        self.assertNotIn("Linha 50", clamped)
+
+    def test_process_payload_flood_provides_clamped_output_and_backup(self):
+        lines = [f"Output {i}" for i in range(80)]
+        big_text = "\n".join(lines)
+        data = {
+            "tool_name": "run_command",
+            "output": big_text,
+        }
+        res = process_tool_payload(data, scratch_dir=self.scratch_dir)
+        self.assertTrue(res["is_flooding"])
+        self.assertIn("clamped_content", res)
+        self.assertIn("Omitidas", res["clamped_content"])
+
+        backup_file = self.scratch_dir / "last_tool_output.log"
+        self.assertTrue(backup_file.exists())
+        self.assertEqual(backup_file.read_text(encoding="utf-8"), big_text)
+
 
 if __name__ == "__main__":
     unittest.main()

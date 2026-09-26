@@ -1,6 +1,6 @@
 ---
 name: conversion-copywriting
-description: "Copywriting de alta conversão, headlines magnéticas e ponte benefício."
+description: Copywriting de conversão e ponte de benefícios.
 ---
 
 # Conversion Copywriting: Escrita Persuasiva para UI & Landing Pages

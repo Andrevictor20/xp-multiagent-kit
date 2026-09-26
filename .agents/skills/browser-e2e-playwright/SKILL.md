@@ -1,6 +1,6 @@
 ---
 name: browser-e2e-playwright
-description: Automação autônoma de testes de ponta a ponta (E2E) no navegador com Playwright headless, validação visual e captura de traces.
+description: Testes E2E headless com Playwright e traces.
 ---
 
 # Browser E2E Playwright Skill

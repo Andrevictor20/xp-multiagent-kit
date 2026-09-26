@@ -1,6 +1,6 @@
 ---
 name: frontend-taste-engineering
-description: "Direção estética Anti-Slop, calibração por dials e skeletons canônicos."
+description: Direção estética Anti-Slop e calibração por dials.
 ---
 
 # Frontend Taste Engineering (Anti-Slop Framework)

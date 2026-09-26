@@ -1,6 +1,6 @@
 ---
 name: token-budget-tracker
-description: "Telemetria de tokens em 3 camadas, Pre-Flight Budget Gate e Modo Cirúrgico Atômico."
+description: Telemetria de tokens em 3 camadas e Modo Cirúrgico.
 ---
 
 # Token & Quota Budget Tracker

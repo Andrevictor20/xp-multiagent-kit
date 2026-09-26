@@ -1,6 +1,6 @@
 ---
 name: code-deslop-review
-description: "Remoção de código redundante de IA e imposição da regra No God Files (<500 linhas)."
+description: Remoção de código redundante e regra No God Files.
 ---
 
 # Code Deslop Review: Limpeza Sistemática de Código de IA

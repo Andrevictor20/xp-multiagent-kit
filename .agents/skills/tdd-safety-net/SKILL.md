@@ -1,6 +1,6 @@
 ---
 name: tdd-safety-net
-description: "Ciclo RED-GREEN-REFACTOR, matriz multi-camadas e Anti-Test-Bypass estrito."
+description: Ciclo RED-GREEN-REFACTOR e Anti-Test-Bypass estrito.
 ---
 
 # TDD Safety Net & Anti-Test-Bypass

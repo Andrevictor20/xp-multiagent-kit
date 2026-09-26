@@ -25,9 +25,15 @@ rm -f "$HOME/.gemini/AGENTS.md" "$HOME/.gemini/GEMINI.md" "$GLOBAL_CONFIG_DIR/GE
 # 2. Criar pastas estruturais necessárias
 mkdir -p "$GLOBAL_SKILLS_DIR"
 
-# 3. Configurar AGENTS.md como Regra Mestre Global Única
-echo "🔗 Vinculando AGENTS.md mestre global..."
-ln -sf "$KIT_DIR/AGENTS.md" "$GLOBAL_CONFIG_DIR/AGENTS.md"
+# 3. Configurar AGENTS.md como Global Dispatcher Minimalista (elimina duplicação de 5k tokens por turno)
+echo "🔗 Gerando AGENTS.md mestre global como dispatcher minimalista..."
+cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
+# Antigravity Global Dispatcher — XP Multi-Agent Kit v2
+
+Regra mestra global para execução de agentes:
+1. Se o repositório/workspace ativo contiver um arquivo `AGENTS.md`, siga estritamente as diretrizes contidas nele como fonte única da verdade.
+2. Caso o workspace não contenha `AGENTS.md`, aplique a disciplina canônica do kit: TDD estrito (RED->GREEN->REFACTOR), roteamento por risco L0-L3, telemetria em 3 camadas, No Workarounds e persistência no `.agents/memory/PROJECT_MEMORY.md`.
+EOF
 
 # 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
 GCP_PLUGIN_SKILLS="$GLOBAL_CONFIG_DIR/plugins_disabled/googlecloudtools.datacloud_telemetry/skills"
@@ -73,8 +79,8 @@ if [ -d "$CLI_DIR" ]; then
   ln -sfn "$GLOBAL_CONFIG_DIR/policies" "$CLI_DIR/policies"
   ln -sfn "$GLOBAL_CONFIG_DIR/templates" "$CLI_DIR/templates"
   ln -sfn "$KIT_DIR/.agents/memory" "$CLI_DIR/memory"
-  ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
-  ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/GEMINI.md"
+  ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
+  rm -f "$CLI_DIR/GEMINI.md"
   # Garantir sanitização de hooks contra bloqueio de ferramentas
   if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
     python3 -c "
@@ -107,8 +113,8 @@ if [ -d "$IDE_DIR" ]; then
   ln -sfn "$GLOBAL_CONFIG_DIR/policies" "$IDE_DIR/policies"
   ln -sfn "$GLOBAL_CONFIG_DIR/templates" "$IDE_DIR/templates"
   ln -sfn "$KIT_DIR/.agents/memory" "$IDE_DIR/memory"
-  ln -sfn "$KIT_DIR/AGENTS.md" "$IDE_DIR/AGENTS.md"
-  ln -sfn "$KIT_DIR/AGENTS.md" "$IDE_DIR/GEMINI.md"
+  ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$IDE_DIR/AGENTS.md"
+  rm -f "$IDE_DIR/GEMINI.md"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$IDE_DIR/mcp_config.json"
   [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$IDE_DIR/hooks.json"
   rm -rf "$CLI_DIR/mcp"/* "$IDE_DIR/mcp"/* 2>/dev/null || true
@@ -158,8 +164,9 @@ ln -sf "$KIT_DIR/scripts/agy-memory-search" "$HOME/.local/bin/agy-memory-search"
 ln -sf "$KIT_DIR/scripts/agy-resume" "$HOME/.local/bin/agy-resume"
 ln -sf "$KIT_DIR/scripts/agy-daemon" "$HOME/.local/bin/agy-daemon"
 ln -sf "$KIT_DIR/scripts/agy-dashboard" "$HOME/.local/bin/agy-dashboard"
+ln -sf "$KIT_DIR/scripts/agy-session-compact" "$HOME/.local/bin/agy-session-compact"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact disponíveis no PATH!"
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."

@@ -1,6 +1,6 @@
 ---
 name: container-security
-description: "Hardening de Dockerfiles, imagens seguras, non-root e multi-stage builds."
+description: Hardening de Dockerfiles, imagens non-root e builds.
 ---
 
 # Container Security

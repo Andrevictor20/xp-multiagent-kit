@@ -1,6 +1,6 @@
 ---
 name: dependency-governance
-description: "Avaliação de risco, segurança e necessidade de novas dependências."
+description: Avaliação de risco e governança de novas dependências.
 ---
 
 # Dependency Governance

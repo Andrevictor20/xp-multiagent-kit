@@ -1,6 +1,6 @@
 ---
 name: mutation-testing-sentinel
-description: Auditoria matemática da robustez da suíte de testes via injeção controlada de mutações no código de produção.
+description: Auditoria de robustez de testes via injeção de mutações.
 ---
 
 # Mutation Testing Sentinel Skill

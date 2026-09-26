@@ -1,6 +1,6 @@
 ---
 name: git-worktree-workspace
-description: Isolamento físico de subagentes e tarefas paralelas em Git Worktrees limpos, eliminando contaminação do repositório principal.
+description: Isolamento de subagentes em Git Worktrees limpos.
 ---
 
 # Git Worktree Workspace Skill

@@ -1,6 +1,6 @@
 ---
 name: lesson-learned
-description: "Captura e formalização de lições aprendidas (L-001..L-NNN) na memória procedural."
+description: Captura e formalização de lições aprendidas (L-NNN).
 ---
 
 # Institutional Lessons Learned: Memória Procedural Permanente

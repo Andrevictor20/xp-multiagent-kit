@@ -1,6 +1,6 @@
 ---
 name: ci-security-gate
-description: "Pipeline de CI com lint, testes, auditoria de dependências e SAST."
+description: Pipeline CI com lint, testes, auditoria e SAST.
 ---
 
 # CI & Security Gate

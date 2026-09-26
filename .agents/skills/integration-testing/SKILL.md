@@ -1,6 +1,6 @@
 ---
 name: integration-testing
-description: "Testes de integração em fronteiras reais de banco, filas e APIs."
+description: Testes de integração em banco, filas e APIs reais.
 ---
 # Integration Testing
 

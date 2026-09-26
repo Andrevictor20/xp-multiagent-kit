@@ -1,6 +1,6 @@
 ---
 name: no-workarounds
-description: "Correção estrita na causa raiz, proibindo remendos, typecasts e hacks."
+description: Correção na causa raiz, proibindo remendos e casts.
 ---
 
 # No Workarounds: Corrija a Fonte, Nunca Silencie o Sinal

@@ -1,6 +1,6 @@
 ---
 name: refactor-watchdog
-description: "Vigilância contínua contra duplicação e arquivos grandes (>500 linhas)."
+description: Vigilância contra duplicação e arquivos grandes (>500 linhas).
 ---
 
 # Refactor Watchdog

@@ -1,6 +1,6 @@
 ---
 name: mcp-server-governance
-description: Governança, auditoria de segurança e integração do Model Context Protocol (MCP) para conexões externas de agentes.
+description: Governança, segurança e integração de servidores MCP.
 ---
 
 # MCP Server Governance Skill

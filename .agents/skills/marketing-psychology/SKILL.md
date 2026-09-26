@@ -1,6 +1,6 @@
 ---
 name: marketing-psychology
-description: "Princípios de economia comportamental (Hick, Ancoragem) aplicados a UI."
+description: Economia comportamental (Hick, Ancoragem) em UI.
 ---
 
 # Marketing Psychology: Modelos Mentais & Ciência Comportamental para UI

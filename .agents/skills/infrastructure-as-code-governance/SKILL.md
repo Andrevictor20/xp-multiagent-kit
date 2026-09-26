@@ -1,6 +1,6 @@
 ---
 name: infrastructure-as-code-governance
-description: "Governança e segurança em IaC (Terraform, Kubernetes, Docker Compose)."
+description: Governança e segurança em IaC (Terraform, K8s).
 ---
 
 # Infrastructure as Code (IaC) Governance & Security

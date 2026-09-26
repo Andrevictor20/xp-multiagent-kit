@@ -1,6 +1,6 @@
 ---
 name: ui-quality-gate
-description: "Checklist pré-release de acessibilidade, viewport 100dvh e qualidade visual."
+description: Checklist pré-release: WCAG AA, 100dvh e qualidade visual.
 ---
 
 # UI Quality Gate

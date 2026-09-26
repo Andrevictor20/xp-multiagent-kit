@@ -1,6 +1,6 @@
 ---
 name: high-end-visual-design
-description: "Design visual $150k+ Tier: Double-Bezel, Button-in-Button e física de mola."
+description: Design visual $150k+: Double-Bezel e física de mola.
 ---
 
 # High-End Visual Design & Motion Choreography (Awwwards-Tier)

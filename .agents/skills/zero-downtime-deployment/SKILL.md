@@ -1,6 +1,6 @@
 ---
 name: zero-downtime-deployment
-description: "Deploy Zero-Downtime (Blue/Green, Canary) e rollback automatizado."
+description: Deploy Zero-Downtime (Blue/Green, Canary) e rollback.
 ---
 
 # Zero-Downtime Deployment & Automated Rollback

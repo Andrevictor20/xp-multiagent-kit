@@ -1,6 +1,6 @@
 ---
 name: property-based-testing
-description: Geração automatizada de testes baseados em propriedades e fuzzing estruturado para descobrir casos de borda e invariantes de domínio.
+description: Testes baseados em propriedades e fuzzing estruturado.
 ---
 
 # Property-Based Testing Skill

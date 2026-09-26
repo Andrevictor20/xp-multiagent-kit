@@ -1,6 +1,6 @@
 ---
 name: systematic-debugging
-description: "Debugging sistemático em 4 fases e investigação metódica de causa raiz."
+description: Debugging sistemático em 4 fases e investigação de causa raiz.
 ---
 
 # Systematic Debugging: Investigação Metódica de Causa Raiz

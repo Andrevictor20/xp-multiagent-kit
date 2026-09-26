@@ -1,6 +1,6 @@
 ---
 name: industrial-brutalist-ui
-description: "Engenharia de UI brutalista industrial, grid 90° e dados densos."
+description: Engenharia de UI brutalista industrial e grid 90°.
 ---
 
 # Industrial Brutalism & Tactical Telemetry UI

@@ -1,6 +1,6 @@
 ---
 name: migration-safety
-description: "Migrações de banco de dados expand-and-contract seguras e sem downtime."
+description: Migrações de banco expand-and-contract sem downtime.
 ---
 
 # Migration Safety

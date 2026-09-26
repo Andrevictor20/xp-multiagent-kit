@@ -1,6 +1,6 @@
 ---
 name: design-system-architecture
-description: "Hierarquia e governança de Design System de tokens a páginas."
+description: Governança de Design System de tokens a páginas.
 ---
 
 # Design System Architecture

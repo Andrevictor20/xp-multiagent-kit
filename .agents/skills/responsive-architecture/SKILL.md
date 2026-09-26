@@ -1,6 +1,6 @@
 ---
 name: responsive-architecture
-description: "Engenharia de responsividade e arquitetura de layout fluida."
+description: Arquitetura de layout fluido e responsividade real.
 ---
 
 # Responsive Architecture

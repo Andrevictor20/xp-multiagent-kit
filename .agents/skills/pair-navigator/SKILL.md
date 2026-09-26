@@ -1,6 +1,6 @@
 ---
 name: pair-navigator
-description: "Navegação em pair programming, foco de domínio e combate ao over-engineering."
+description: Navegação em pair programming e combate ao over-engineering.
 ---
 
 # Pair Navigator

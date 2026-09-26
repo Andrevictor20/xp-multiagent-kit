@@ -1,6 +1,6 @@
 ---
 name: atomic-commit-discipline
-description: "Disciplina de commits atômicos, pequenos, categorizados e testados."
+description: Commits atômicos, categorizados e testados.
 ---
 
 # Atomic Commit Discipline

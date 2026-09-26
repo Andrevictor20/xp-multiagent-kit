@@ -1,6 +1,6 @@
 ---
 name: authorization-security
-description: "Auditoria de controle de acesso, permissões e isolamento BOLA/IDOR."
+description: Controle de acesso, permissões e prevenção BOLA/IDOR.
 ---
 
 # Authorization Security
