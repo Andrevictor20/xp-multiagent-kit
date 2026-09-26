@@ -245,11 +245,35 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     else:
         guidance = "Operar em modo MEDIUM: equilíbrio entre eficiência de tokens e análise metódica."
 
+    # Obtém o bloco oficial de telemetria ao vivo via Language Server RPC
+    live_footer = ""
+    try:
+        from scripts.token_tracker import (
+            find_active_session, load_transcript, calculate_turn_stats,
+            detect_model_name, parse_transcript_data, format_message_footer
+        )
+        t_path = Path(transcript_path) if transcript_path and os.path.isfile(transcript_path) else None
+        if not t_path:
+            _, t_path, _ = find_active_session()
+        steps = load_transcript(t_path) if t_path else []
+        turn = calculate_turn_stats(steps)
+        model_name = detect_model_name(conv_id, steps)
+        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=True, effort=decision.effort)
+        live_footer = format_message_footer(stats, turn)
+    except Exception:
+        live_footer = ""
+
     ephemeral_msg = (
         f"⚡ [AGY-EFFORT-ACTIVE] Modulação Automática Ativa: {effort_upper} "
         f"| Risco: {decision.risk_level} | Motivo: {decision.reason}\n"
         f"🎯 Diretriz de Execução: {guidance}"
     )
+    if live_footer:
+        ephemeral_msg += (
+            f"\n\n📋 TELEMETRIA AO VIVO OFICIAL DESTE TURNO (Language Server RPC):\n"
+            f"OBRIGATÓRIO: Copie e cole com exatidão matemática o bloco abaixo como rodapé final da sua resposta:\n"
+            f"{live_footer}"
+        )
 
     return {
         "injectSteps": [

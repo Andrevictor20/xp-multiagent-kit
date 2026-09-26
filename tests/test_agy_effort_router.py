@@ -232,12 +232,14 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertNotEqual(llm_decision.risk_level, LEVEL_L3_CRITICAL)
 
     def test_parse_cli_session_args(self):
-        argv = ["--mode", "accept-edits", "do que se trata esse repositorio?"]
-        prompt, explicit_effort, pass_through = parse_cli_session_args(argv)
+        argv = ["--mode", "accept-edits", "--model", "claude-sonnet-4-6", "do que se trata esse repositorio?"]
+        prompt, explicit_effort, explicit_model, pass_through = parse_cli_session_args(argv)
         self.assertEqual(prompt, "do que se trata esse repositorio?")
         self.assertIsNone(explicit_effort)
+        self.assertEqual(explicit_model, "claude-sonnet-4-6")
         self.assertIn("--mode", pass_through)
         self.assertIn("accept-edits", pass_through)
+        self.assertIn("--model", pass_through)
 
     def test_explicit_effort_directives_in_prompt_natural_language(self):
         prompts_high = [
@@ -326,7 +328,73 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertIn("--mode", called_args)
         self.assertIn("accept-edits", called_args)
 
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_google_healthy_keeps_gemini(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.80
+        mock_q.gemini_weekly.remaining_fraction = 0.50
+        mock_q.claude_5h.remaining_fraction = 1.0
+        mock_q.claude_weekly.remaining_fraction = 0.40
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(preferred_provider="google", effort="high")
+        self.assertEqual(model, "gemini-3.8-flash-high")
+        self.assertIsNone(failover_reason)
+
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_google_exhausted_failover_to_claude(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.01  # Esgotado
+        mock_q.gemini_weekly.remaining_fraction = 0.00
+        mock_q.claude_5h.remaining_fraction = 1.0   # Disponível
+        mock_q.claude_weekly.remaining_fraction = 0.35
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(preferred_provider="google", effort="high")
+        self.assertEqual(model, "claude-sonnet-4-6")
+        self.assertIsNotNone(failover_reason)
+        self.assertIn("Failover Automático", failover_reason)
+        self.assertIn("Claude Sonnet 4.6", failover_reason)
+
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_claude_exhausted_failover_to_gemini(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.70  # Disponível
+        mock_q.gemini_weekly.remaining_fraction = 0.40
+        mock_q.claude_5h.remaining_fraction = 0.00  # Esgotado
+        mock_q.claude_weekly.remaining_fraction = 0.01
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(preferred_provider="claude", effort="medium")
+        self.assertEqual(model, "gemini-3.8-flash-medium")
+        self.assertIsNotNone(failover_reason)
+        self.assertIn("Failover Automático", failover_reason)
+        self.assertIn("Gemini 3.8 Flash", failover_reason)
+
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_explicit_force_model_bypasses_failover(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.00  # Esgotado
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(
+            preferred_provider="google",
+            effort="high",
+            force_model="gemini-3.8-flash-high"
+        )
+        self.assertEqual(model, "gemini-3.8-flash-high")
+        self.assertIsNone(failover_reason)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

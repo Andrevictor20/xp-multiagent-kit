@@ -19,12 +19,11 @@ echo "🌐 Destino Global: $GLOBAL_CONFIG_DIR"
 echo "===================================================================="
 
 # 1. Limpar regras e links legados redundantes que causavam estouro de tokens
-rm -rf "$GLOBAL_RULES_DIR"/*
 rm -rf "$GLOBAL_PLUGIN_DIR"
 rm -f "$HOME/.gemini/AGENTS.md" "$HOME/.gemini/GEMINI.md" "$GLOBAL_CONFIG_DIR/GEMINI.md"
 
 # 2. Criar pastas estruturais necessárias
-mkdir -p "$GLOBAL_SKILLS_DIR" "$GLOBAL_RULES_DIR"
+mkdir -p "$GLOBAL_SKILLS_DIR"
 
 # 3. Configurar AGENTS.md como Regra Mestre Global Única
 echo "🔗 Vinculando AGENTS.md mestre global..."
@@ -54,10 +53,11 @@ for skill_path in "$KIT_DIR/.agents/skills"/*; do
 done
 echo "   ✅ $skill_count skills sincronizadas em $GLOBAL_SKILLS_DIR!"
 
-# 4.1. Vincular Agents, Workflows, Policies e Templates
+# 4.1. Vincular Agents, Workflows, Policies, Rules e Templates
 ln -sfn "$KIT_DIR/.agents/agents" "$GLOBAL_CONFIG_DIR/agents"
 ln -sfn "$KIT_DIR/.agents/workflows" "$GLOBAL_CONFIG_DIR/workflows"
 ln -sfn "$KIT_DIR/.agents/policies" "$GLOBAL_CONFIG_DIR/policies"
+ln -sfn "$KIT_DIR/.agents/rules" "$GLOBAL_CONFIG_DIR/rules"
 ln -sfn "$KIT_DIR/.agents/templates" "$GLOBAL_CONFIG_DIR/templates"
 ln -sfn "$KIT_DIR/.agents/memory" "$GLOBAL_CONFIG_DIR/memory"
 
@@ -74,6 +74,22 @@ if [ -d "$CLI_DIR" ]; then
   ln -sfn "$KIT_DIR/.agents/memory" "$CLI_DIR/memory"
   ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
   ln -sfn "$KIT_DIR/AGENTS.md" "$CLI_DIR/GEMINI.md"
+  # Garantir sanitização de hooks contra bloqueio de ferramentas
+  if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
+    python3 -c "
+import json
+p = '$KIT_DIR/.agents/hooks.json'
+try:
+    with open(p) as f:
+        d = json.load(f)
+    if 'orca-status' in d:
+        d.pop('orca-status', None)
+        with open(p, 'w') as f:
+            json.dump(d, f, indent=2)
+except Exception:
+    pass
+" 2>/dev/null || true
+  fi
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$CLI_DIR/mcp_config.json"
   [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$CLI_DIR/hooks.json"
   [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$GLOBAL_CONFIG_DIR/hooks.json"
@@ -126,6 +142,7 @@ ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bi
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-deep"
 ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-smart"
 ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/agy-effort"
+ln -sf "$KIT_DIR/scripts/agy-init-memory" "$HOME/.local/bin/agy-init-memory"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/agy-ci-heal"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/xp-ci-heal"
 ln -sf "$KIT_DIR/scripts/agy-repo-map" "$HOME/.local/bin/agy-repo-map"

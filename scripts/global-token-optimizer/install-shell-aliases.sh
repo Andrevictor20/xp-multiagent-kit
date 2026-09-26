@@ -24,6 +24,7 @@ if [ -f "$FISH_CONFIG" ]; then
     cat << 'EOF' >> "$FISH_CONFIG"
 
 # --- Antigravity Token Saver & CI Aliases ---
+alias agy="$HOME/.local/bin/agy-smart"
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias agy-smart="$HOME/.local/bin/agy-smart"
@@ -70,6 +71,7 @@ if [ -f "$BASH_CONFIG" ]; then
     cat << 'EOF' >> "$BASH_CONFIG"
 
 # --- Antigravity Token Saver & CI Aliases ---
+alias agy="$HOME/.local/bin/agy-smart"
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias agy-smart="$HOME/.local/bin/agy-smart"
@@ -103,6 +105,7 @@ if [ -f "$ZSH_CONFIG" ]; then
     cat << 'EOF' >> "$ZSH_CONFIG"
 
 # --- Antigravity Token Saver & CI Aliases ---
+alias agy="$HOME/.local/bin/agy-smart"
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"

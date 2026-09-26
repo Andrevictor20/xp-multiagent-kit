@@ -322,14 +322,14 @@ class TestTokenTracker(unittest.TestCase):
             rolling=rolling,
         )
         footer = format_message_footer(stats, turn)
-        self.assertIn("🪙 **Consumo Desta Mensagem:**", footer)
+        self.assertIn("Consumo:", footer)
         self.assertIn("Entrada:", footer)
         self.assertIn("Ferramentas:", footer)
         self.assertIn("Resposta:", footer)
-        self.assertIn("📊 **Telemetria Acumulada (Gemini 3.8 Flash):**", footer)
         self.assertIn("Contexto:", footer)
         self.assertIn("5h:", footer)
         self.assertIn("Semana:", footer)
+        self.assertIn("Modelo:", footer)
 
     def test_format_message_footer_tool_warning(self):
         turn = TurnStats(user_input_tokens=100, tool_tokens=2500, model_output_tokens=300, total_tokens=2900)
@@ -343,7 +343,7 @@ class TestTokenTracker(unittest.TestCase):
         )
         footer = format_message_footer(stats, turn)
         self.assertNotIn("⚠️ [Alto Uso de Ferramentas", footer)
-        self.assertIn("Ferramentas: `2.5k`", footer)
+        self.assertIn("Ferramentas: 2.5k", footer)
 
     def test_clean_refresh_text(self):
         desc1 = "You have used some of your weekly limit, it will fully refresh in 6 days, 23 hours."
@@ -403,10 +403,9 @@ class TestTokenTracker(unittest.TestCase):
             rolling=rolling,
         )
         footer = format_message_footer(stats, turn)
-        self.assertIn("🎯 **Modelo & Limites:**", footer)
-        self.assertIn("`Gemini 3.8 Flash`", footer)
-        self.assertIn("Janela: `1.05M`", footer)
-        self.assertIn("Saída Máx: `65.5k`", footer)
+        self.assertIn("Modelo:   Gemini 3.8 Flash", footer)
+        self.assertIn("Janela: 1.05M", footer)
+        self.assertIn("Saída: 65.5k", footer)
 
     def test_format_json_stats_includes_model_limits(self):
         sample_steps = [{"type": "USER_INPUT", "content": "Test input"}]
@@ -466,7 +465,7 @@ class TestTokenTracker(unittest.TestCase):
             effort="High",
         )
         footer = format_message_footer(stats, turn)
-        self.assertIn("Effort: `High`", footer)
+        self.assertIn("Effort: High", footer)
 
     def test_render_plain_dashboard_with_effort(self):
         from io import StringIO

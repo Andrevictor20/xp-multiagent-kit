@@ -22,6 +22,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    from scripts.token_tracker import fetch_live_antigravity_quota
+except ImportError:
+    try:
+        from token_tracker import fetch_live_antigravity_quota
+    except ImportError:
+        def fetch_live_antigravity_quota(force_refresh: bool = False):
+            class Dummy:
+                is_live = False
+            return Dummy()
+
 # Constantes de esforço
 EFFORT_LOW = "low"
 EFFORT_MEDIUM = "medium"
@@ -516,30 +527,41 @@ def sync_global_settings(target_effort: str) -> List[str]:
     return updated
 
 
+def is_real_binary(path_str: str) -> bool:
+    """Verifica se o arquivo é um executável ELF binário nativo real, evitando loops com scripts."""
+    try:
+        real_p = os.path.realpath(path_str)
+        if real_p == os.path.realpath(__file__):
+            return False
+        if any(real_p.endswith(ext) for ext in (".py", ".sh", "agy-wrapper.sh", "agy-effort", "agy-smart", "agy-fast", "agy-deep")):
+            return False
+        with open(real_p, "rb") as f:
+            header = f.read(4)
+            return header == b"\x7fELF"
+    except Exception:
+        return False
+
+
 def locate_native_agy() -> Optional[str]:
-    """Encontra o binário nativo do agy ou antigravity."""
-    # 1. Verifica binários nativos renomeados com prioridade
+    """Encontra o binário nativo compilado do agy ou antigravity."""
+    # 1. Verifica binários nativos dedicados com prioridade
     for bin_name in ("agy-native", "agy-bin", "antigravity-native", "agy.real"):
         p = shutil.which(bin_name)
-        if p:
+        if p and is_real_binary(p):
             return p
         for p_str in (f"/home/andrevmp/.local/bin/{bin_name}", f"/usr/local/bin/{bin_name}"):
-            if os.path.isfile(p_str) and os.access(p_str, os.X_OK):
+            if os.path.isfile(p_str) and is_real_binary(p_str):
                 return p_str
 
-    # 2. Busca padrão no PATH evitando o wrapper e este script
+    # 2. Busca no PATH garantindo que seja um binário ELF real
     for bin_name in ("agy", "antigravity"):
         p = shutil.which(bin_name)
-        if p:
-            real_p = os.path.realpath(p)
-            if real_p != os.path.realpath(__file__) and not real_p.endswith("agy-wrapper.sh") and not real_p.endswith("agy-effort"):
-                return p
+        if p and is_real_binary(p):
+            return p
 
     for path_str in ("/home/andrevmp/.local/bin/agy", "/usr/local/bin/agy"):
-        if os.path.isfile(path_str) and os.access(path_str, os.X_OK):
-            real_p = os.path.realpath(path_str)
-            if real_p != os.path.realpath(__file__) and not real_p.endswith("agy-wrapper.sh") and not real_p.endswith("agy-effort"):
-                return path_str
+        if os.path.isfile(path_str) and is_real_binary(path_str):
+            return path_str
     return None
 
 
@@ -561,14 +583,129 @@ def format_badge(decision: EffortDecision) -> str:
     return "\n".join(lines)
 
 
-def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], List[str]]:
-    """Extrai prompt, esforço explícito e argumentos de repasse da linha de comando."""
+DEFAULT_GOOGLE_MODEL = "gemini-3.8-flash"
+DEFAULT_3P_MODEL = "claude-sonnet-4-6"
+
+PROVIDER_GOOGLE_MODELS = {
+    "low": "gemini-3.8-flash-low",
+    "medium": "gemini-3.8-flash-medium",
+    "high": "gemini-3.8-flash-high",
+}
+
+
+def evaluate_provider_quota_health() -> Dict[str, Any]:
+    """Avalia em tempo real a saúde das cotas do Google (Gemini) e Terceiros (Claude/GPT)."""
+    try:
+        quota = fetch_live_antigravity_quota()
+        if not quota or not getattr(quota, "is_live", False):
+            return {
+                "is_live": False,
+                "google_exhausted": False,
+                "third_party_exhausted": False,
+                "google_5h_pct": 100.0,
+                "google_weekly_pct": 100.0,
+                "third_party_5h_pct": 100.0,
+                "third_party_weekly_pct": 100.0,
+            }
+
+        g_5h = getattr(quota, "gemini_5h", None)
+        g_week = getattr(quota, "gemini_weekly", None)
+        c_5h = getattr(quota, "claude_5h", None)
+        c_week = getattr(quota, "claude_weekly", None)
+
+        g_5h_rem = getattr(g_5h, "remaining_fraction", 1.0) if g_5h else 1.0
+        g_week_rem = getattr(g_week, "remaining_fraction", 1.0) if g_week else 1.0
+        c_5h_rem = getattr(c_5h, "remaining_fraction", 1.0) if c_5h else 1.0
+        c_week_rem = getattr(c_week, "remaining_fraction", 1.0) if c_week else 1.0
+
+        # Considera esgotado se a margem restante for <= 2% em 5h ou <= 1% na semana
+        google_exhausted = (g_5h_rem <= 0.02) or (g_week_rem <= 0.01)
+        third_party_exhausted = (c_5h_rem <= 0.02) or (c_week_rem <= 0.01)
+
+        return {
+            "is_live": True,
+            "google_exhausted": google_exhausted,
+            "third_party_exhausted": third_party_exhausted,
+            "google_5h_pct": round(g_5h_rem * 100.0, 1),
+            "google_weekly_pct": round(g_week_rem * 100.0, 1),
+            "third_party_5h_pct": round(c_5h_rem * 100.0, 1),
+            "third_party_weekly_pct": round(c_week_rem * 100.0, 1),
+        }
+    except Exception:
+        return {
+            "is_live": False,
+            "google_exhausted": False,
+            "third_party_exhausted": False,
+            "google_5h_pct": 100.0,
+            "google_weekly_pct": 100.0,
+            "third_party_5h_pct": 100.0,
+            "third_party_weekly_pct": 100.0,
+        }
+
+
+def resolve_model_with_failover(
+    preferred_provider: str = "google",
+    effort: str = "medium",
+    force_model: Optional[str] = None,
+) -> Tuple[str, Optional[str]]:
+    """
+    Resolve o modelo ideal a ser invocado no CLI com Smart Quota Failover.
+    Se a cota do provedor ativo acabar, chaveia automaticamente para o provedor alternativo.
+    """
+    effort_norm = effort.lower().strip() if effort else "medium"
+    if effort_norm not in ("low", "medium", "high"):
+        effort_norm = "medium"
+
+    # Se o usuário passou --model explícito, honra a escolha sem failover automático
+    if force_model:
+        return force_model.strip(), None
+
+    health = evaluate_provider_quota_health()
+    pref = preferred_provider.lower().strip()
+
+    # Caso 1: Preferência primária Google (Gemini)
+    if "google" in pref or "gemini" in pref:
+        default_model = PROVIDER_GOOGLE_MODELS.get(effort_norm, "gemini-3.8-flash-medium")
+        if health["google_exhausted"]:
+            if not health["third_party_exhausted"]:
+                reason = (
+                    f"🔄 [AGY-QUOTA-FAILOVER] Cota Google esgotada (5h: {health['google_5h_pct']}%, "
+                    f"semanal: {health['google_weekly_pct']}%). Failover Automático ativo para "
+                    f"Claude Sonnet 4.6 (3P: {health['third_party_5h_pct']}% livre)."
+                )
+                return DEFAULT_3P_MODEL, reason
+            else:
+                reason = "⚠️ [CRITICAL] Cotas Google e Terceiros simultaneamente esgotadas."
+                return default_model, reason
+        return default_model, None
+
+    # Caso 2: Preferência primária Claude / Terceiros
+    else:
+        default_model = DEFAULT_3P_MODEL
+        if health["third_party_exhausted"]:
+            fallback_google = PROVIDER_GOOGLE_MODELS.get(effort_norm, "gemini-3.8-flash-high")
+            if not health["google_exhausted"]:
+                reason = (
+                    f"🔄 [AGY-QUOTA-FAILOVER] Cota Claude/3P esgotada (5h: {health['third_party_5h_pct']}%, "
+                    f"semanal: {health['third_party_weekly_pct']}%). Failover Automático ativo para "
+                    f"Gemini 3.8 Flash ({effort_norm.capitalize()}) (Google: {health['google_5h_pct']}% livre)."
+                )
+                return fallback_google, reason
+            else:
+                reason = "⚠️ [CRITICAL] Cotas Terceiros e Google simultaneamente esgotadas."
+                return default_model, reason
+        return default_model, None
+
+
+def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], Optional[str], List[str]]:
+    """Extrai prompt, esforço explícito, modelo explícito e argumentos de repasse da linha de comando."""
     prompt_parts: List[str] = []
     explicit_effort: Optional[str] = None
+    explicit_model: Optional[str] = None
     pass_through_args: List[str] = []
     skip_next = False
     val_flags = {
-        "--mode", "--model", "-m", "--agent", "--conversation",
+        "--mode", "--agent", "--conversation",
         "--input-format", "--output-format", "--log-file", "--project",
         "--json-schema", "--print-timeout", "--add-dir", "--cwd", "-C",
         "--target", "--profile", "--config",
@@ -582,6 +719,13 @@ def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], List[st
             skip_next = True
         elif arg.startswith("--effort="):
             explicit_effort = arg.split("=", 1)[1]
+        elif arg in ("--model", "-m") and i + 1 < len(argv):
+            explicit_model = argv[i + 1]
+            pass_through_args.extend([arg, argv[i + 1]])
+            skip_next = True
+        elif arg.startswith("--model="):
+            explicit_model = arg.split("=", 1)[1]
+            pass_through_args.append(arg)
         elif arg in ("-p", "--print", "--prompt", "-i", "--prompt-interactive") and i + 1 < len(argv):
             prompt_parts.append(argv[i + 1])
             pass_through_args.extend([arg, argv[i + 1]])
@@ -594,14 +738,14 @@ def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], List[st
         else:
             prompt_parts.append(arg)
             pass_through_args.append(arg)
-    return " ".join(prompt_parts).strip(), explicit_effort, pass_through_args
+    return " ".join(prompt_parts).strip(), explicit_effort, explicit_model, pass_through_args
 
 
 def run_cli_session(argv: List[str]) -> int:
-    """Executa a sessão do agy com o esforço inteligente injetado."""
-    prompt_text, explicit_effort, pass_through_args = parse_cli_session_args(argv)
+    """Executa a sessão do agy com esforço inteligente e Smart Quota Failover injetados."""
+    prompt_text, explicit_effort, explicit_model, pass_through_args = parse_cli_session_args(argv)
 
-    # Classificação
+    # Classificação de esforço
     git_ctx = detect_git_context()
     budget = get_token_budget_status()
     decision = classify_task_effort(
@@ -611,9 +755,20 @@ def run_cli_session(argv: List[str]) -> int:
         explicit_effort=explicit_effort,
     )
 
-    # Exibe badge informativo
+    # Exibe badge informativo de esforço
     sys.stderr.write(format_badge(decision) + "\n")
     sys.stderr.flush()
+
+    # Smart Quota Failover: avalia saúde das cotas e resolve o modelo
+    resolved_model, failover_reason = resolve_model_with_failover(
+        preferred_provider="google",
+        effort=decision.effort,
+        force_model=explicit_model,
+    )
+
+    if failover_reason:
+        sys.stderr.write(f"\n{failover_reason}\n\n")
+        sys.stderr.flush()
 
     # Sincroniza settings.json silenciosamente
     sync_global_settings(decision.effort)
@@ -624,12 +779,16 @@ def run_cli_session(argv: List[str]) -> int:
         sys.stderr.write("⚠️ Binário nativo 'agy' não encontrado no PATH.\n")
         return 1
 
-    # Monta comando final com autonomia total (--dangerously-skip-permissions) e --effort
+    # Monta comando final com autonomia total (--dangerously-skip-permissions), --effort e --model
     extra_flags: List[str] = []
     if "--dangerously-skip-permissions" not in pass_through_args:
         extra_flags.append("--dangerously-skip-permissions")
     if "--mode" not in pass_through_args and not any(a.startswith("--mode=") for a in pass_through_args):
         extra_flags.extend(["--mode", "accept-edits"])
+
+    # Se o modelo não foi passado explicitamente, injeta o modelo resolvido com failover
+    if not explicit_model and resolved_model:
+        extra_flags.extend(["--model", resolved_model])
 
     final_args = [real_bin] + extra_flags + ["--effort", decision.effort] + pass_through_args
     os.execvp(real_bin, final_args)

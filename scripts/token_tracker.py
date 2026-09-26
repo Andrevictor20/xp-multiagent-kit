@@ -962,7 +962,8 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     rem_ctx_str = human_tokens(stats.remaining_tokens)
     max_out_str = human_tokens(stats.max_output)
 
-    effort_tag = f" (Effort: `{stats.effort}`)" if stats.effort else ""
+    effort_cap = stats.effort.capitalize() if stats.effort else "Medium"
+    effort_tag = f" (Effort: {effort_cap})"
     bar_ctx = make_progress_bar(stats.percent_used, 10)
 
     if stats.live_quota and stats.live_quota.is_live:
@@ -999,19 +1000,19 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         bar_5h = make_progress_bar(pct_5h_used, 10)
         bar_7d = make_progress_bar(pct_7d_used, 10)
 
-        s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
-        s_5h = f"`[{bar_5h}]` {pct_5h_used:.1f}% usado (`{tok_5h_used}`) • **{pct_5h_rem:.1f}% restante (`{tok_5h_rem}`)** de `{tok_5h_tot}`" + (f" ({desc_5h})" if desc_5h else "")
-        s_7d = f"`[{bar_7d}]` {pct_7d_used:.1f}% usado (`{tok_7d_used}`) • **{pct_7d_rem:.1f}% restante (`{tok_7d_rem}`)** de `{tok_7d_tot}`" + (f" ({desc_7d})" if desc_7d else "")
+        s_ctx = f"[{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre ({rem_ctx_str}) de {win_str}"
+        s_5h = f"[{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}" + (f" ({desc_5h})" if desc_5h else "")
+        s_7d = f"[{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}" + (f" ({desc_7d})" if desc_7d else "")
+
+        desc_5h_str = f" ({desc_5h})" if desc_5h else ""
+        desc_7d_str = f" ({desc_7d})" if desc_7d else ""
 
         return (
-            f"---\n"
-            f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
-            f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
-            f"📊 **Telemetria Acumulada ({display_model}):**\n"
-            f"  • **Contexto:** {s_ctx}\n"
-            f"  • **5h:**       {s_5h}\n"
-            f"  • **Semana:**   {s_7d}\n"
-            f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
+            f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+            f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
+            f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}  \n"
+            f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}  \n"
+            f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
         )
 
     # Fallback: sem dados ao vivo do Language Server — usa defaults por provider
@@ -1044,19 +1045,16 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     bar_5h = make_progress_bar(pct_5h, 10)
     bar_7d = make_progress_bar(pct_7d, 10)
 
-    s_ctx = f"`[{bar_ctx}]` {stats.percent_used:.1f}% usado (`{tot_str}`) • **{pct_ctx_rem:.1f}% livre (`{rem_ctx_str}`)** de `{win_str}`"
-    s_5h = f"`[{bar_5h}]` {pct_5h:.1f}% usado (`{r5h_used}`) • **{pct_5h_rem:.1f}% restante (`{r5h_rem}`)** de `{r5h_tot}` [Estimado · {provider_label}]"
-    s_7d = f"`[{bar_7d}]` {pct_7d:.1f}% usado (`{r7d_used}`) • **{pct_7d_rem:.1f}% restante (`{r7d_rem}`)** de `{r7d_tot}` [Estimado · {provider_label}]"
+    s_ctx = f"[{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre ({rem_ctx_str}) de {win_str}"
+    s_5h = f"[{bar_5h}] {pct_5h:.1f}% usado ({r5h_used}) • {pct_5h_rem:.1f}% restante (~{r5h_rem}) de {r5h_tot} [Estimado · {provider_label}]"
+    s_7d = f"[{bar_7d}] {pct_7d:.1f}% usado ({r7d_used}) • **{pct_7d_rem:.1f}% restante ({r7d_rem})** de {r7d_tot} [Estimado · {provider_label}]"
 
     return (
-        f"---\n"
-        f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
-        f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
-        f"📊 **Telemetria Acumulada ({display_model}):**\n"
-        f"  • **Contexto:** {s_ctx}\n"
-        f"  • **5h:**       {s_5h}\n"
-        f"  • **Semana:**   {s_7d}\n"
-        f"🎯 **Modelo & Limites:** `{display_model}`{effort_tag} | Janela: `{win_str}` | Saída Máx: `{max_out_str}`"
+        f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+        f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
+        f"5h:       [{bar_5h}] {pct_5h:.1f}% usado ({r5h_used}) • {pct_5h_rem:.1f}% restante (~{r5h_rem}) de {r5h_tot} [Estimado · {provider_label}]  \n"
+        f"Semana:   [{bar_7d}] {pct_7d:.1f}% usado ({r7d_used}) • **{pct_7d_rem:.1f}% restante ({r7d_rem})** de {r7d_tot} [Estimado · {provider_label}]  \n"
+        f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
     )
 
 
