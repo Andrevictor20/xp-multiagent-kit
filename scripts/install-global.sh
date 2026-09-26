@@ -156,8 +156,10 @@ ln -sf "$KIT_DIR/scripts/agy-memory-archive" "$HOME/.local/bin/agy-memory-archiv
 ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/agy-health"
 ln -sf "$KIT_DIR/scripts/agy-memory-search" "$HOME/.local/bin/agy-memory-search"
 ln -sf "$KIT_DIR/scripts/agy-resume" "$HOME/.local/bin/agy-resume"
+ln -sf "$KIT_DIR/scripts/agy-daemon" "$HOME/.local/bin/agy-daemon"
+ln -sf "$KIT_DIR/scripts/agy-dashboard" "$HOME/.local/bin/agy-dashboard"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard disponíveis no PATH!"
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."

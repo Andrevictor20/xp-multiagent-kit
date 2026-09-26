@@ -129,6 +129,48 @@ def clear_session_state(workspace: Path) -> bool:
     return False
 
 
+def auto_snapshot(
+    workspace: Path,
+    active_agent: Optional[str] = None,
+    custom_goal: Optional[str] = None,
+) -> Optional[Path]:
+    """Cria um checkpoint autônomo da sessão em segundo plano se houver arquivos modificados."""
+    workspace = workspace.resolve()
+    branch, files_changed, last_commit = get_git_status_snapshot(workspace)
+    goal = custom_goal or f"Trabalho autônomo na branch '{branch}'"
+    next_steps = f"Continuar alterações pendentes em {len(files_changed)} arquivos." if files_changed else "Pronto para próxima tarefa."
+    return save_session_state(
+        workspace,
+        goal=goal,
+        next_steps=next_steps,
+        active_agent=active_agent or "orchestrator",
+        metadata={"auto_snapshot": True, "files_count": len(files_changed)},
+    )
+
+
+def detect_interrupted_session(
+    workspace: Path,
+    max_age_hours: int = 24,
+) -> Optional[Dict[str, Any]]:
+    """Detecta se há uma sessão recente interrompida válida para retomada rápida."""
+    state = load_session_state(workspace)
+    if not state:
+        return None
+
+    # Verifica idade do snapshot
+    ts_str = state.get("timestamp")
+    if ts_str:
+        try:
+            ts = datetime.datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
+            diff = datetime.datetime.now() - ts
+            if diff.total_seconds() > max_age_hours * 3600:
+                return None
+        except Exception:
+            pass
+
+    return state
+
+
 def generate_resume_prompt(state: Dict[str, Any]) -> str:
     """Gera prompt ultracompacto (< 15 linhas / ~120 tokens) para reiniciar a sessão."""
     branch = state.get("branch", "unknown")

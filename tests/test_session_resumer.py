@@ -64,6 +64,30 @@ class TestSessionResumer(unittest.TestCase):
         self.assertTrue(cleared)
         self.assertIsNone(load_session_state(self.workspace))
 
+    def test_auto_snapshot_creates_checkpoint(self):
+        from scripts.session_resumer import auto_snapshot, load_session_state
+
+        state_path = auto_snapshot(self.workspace, active_agent="navigator")
+        self.assertIsNotNone(state_path)
+        self.assertTrue(state_path.is_file())
+
+        state = load_session_state(self.workspace)
+        self.assertIsNotNone(state)
+        self.assertEqual(state["active_agent"], "navigator")
+        self.assertIn("auto_snapshot", state.get("metadata", {}))
+
+    def test_detect_interrupted_session(self):
+        from scripts.session_resumer import save_session_state, detect_interrupted_session
+
+        # No session yet
+        self.assertIsNone(detect_interrupted_session(self.workspace))
+
+        # Save an active session
+        save_session_state(self.workspace, goal="Trabalho pendente")
+        detected = detect_interrupted_session(self.workspace)
+        self.assertIsNotNone(detected)
+        self.assertEqual(detected["goal"], "Trabalho pendente")
+
 
 if __name__ == "__main__":
     unittest.main()
