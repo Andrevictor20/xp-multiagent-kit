@@ -956,7 +956,6 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     turn_in = human_tokens(turn.user_input_tokens)
     turn_tools = human_tokens(turn.tool_tokens)
     turn_out = human_tokens(turn.model_output_tokens)
-    tool_warn = " ⚠️ [Alto Uso de Ferramentas: Auto-Sanitizado e Compactado pelo Kit]" if turn.tool_tokens > 2000 else ""
 
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
@@ -1007,7 +1006,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         return (
             f"---\n"
             f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
-            f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
+            f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
             f"📊 **Telemetria Acumulada ({display_model}):**\n"
             f"  • **Contexto:** {s_ctx}\n"
             f"  • **5h:**       {s_5h}\n"
@@ -1052,7 +1051,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     return (
         f"---\n"
         f"🪙 **Consumo Desta Mensagem:** `{turn_tot}` tokens "
-        f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}`{tool_warn} | Resposta: `{turn_out}`)\n"
+        f"(Entrada: `{turn_in}` | Ferramentas: `{turn_tools}` | Resposta: `{turn_out}`)\n"
         f"📊 **Telemetria Acumulada ({display_model}):**\n"
         f"  • **Contexto:** {s_ctx}\n"
         f"  • **5h:**       {s_5h}\n"

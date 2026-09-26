@@ -342,7 +342,8 @@ class TestTokenTracker(unittest.TestCase):
             rolling=rolling,
         )
         footer = format_message_footer(stats, turn)
-        self.assertIn("⚠️ [Alto Uso de Ferramentas", footer)
+        self.assertNotIn("⚠️ [Alto Uso de Ferramentas", footer)
+        self.assertIn("Ferramentas: `2.5k`", footer)
 
     def test_clean_refresh_text(self):
         desc1 = "You have used some of your weekly limit, it will fully refresh in 6 days, 23 hours."
