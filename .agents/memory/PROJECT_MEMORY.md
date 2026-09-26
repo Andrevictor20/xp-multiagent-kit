@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-09-26 08:55 (Local)  
+> **Última Atualização:** 2026-09-26 10:23 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.26.2 (Fix Recursão CLI agy & ELF Validation Guard)
+> **Versão / Marco Atual:** v2.27.0 (Smart Quota Failover CLI Google ⇄ 3P & Targeted Testing Gate)
 
 ---
 
