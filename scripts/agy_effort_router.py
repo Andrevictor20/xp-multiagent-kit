@@ -624,8 +624,14 @@ def run_cli_session(argv: List[str]) -> int:
         sys.stderr.write("⚠️ Binário nativo 'agy' não encontrado no PATH.\n")
         return 1
 
-    # Monta comando final com --effort
-    final_args = [real_bin, "--effort", decision.effort] + pass_through_args
+    # Monta comando final com autonomia total (--dangerously-skip-permissions) e --effort
+    extra_flags: List[str] = []
+    if "--dangerously-skip-permissions" not in pass_through_args:
+        extra_flags.append("--dangerously-skip-permissions")
+    if "--mode" not in pass_through_args and not any(a.startswith("--mode=") for a in pass_through_args):
+        extra_flags.extend(["--mode", "accept-edits"])
+
+    final_args = [real_bin] + extra_flags + ["--effort", decision.effort] + pass_through_args
     os.execvp(real_bin, final_args)
     return 0
 

@@ -314,5 +314,19 @@ class TestAgyEffortRouter(unittest.TestCase):
                 self.assertIn("Preservada", decision.reason)
 
 
+    @patch("os.execvp")
+    @patch("scripts.agy_effort_router.locate_native_agy", return_value="/bin/agy-native")
+    @patch("scripts.agy_effort_router.sync_global_settings")
+    def test_run_cli_session_injects_autonomous_flags(self, mock_sync, mock_locate, mock_exec):
+        from scripts.agy_effort_router import run_cli_session
+        run_cli_session(["ajuste isso"])
+        self.assertTrue(mock_exec.called)
+        called_args = mock_exec.call_args[0][1]
+        self.assertIn("--dangerously-skip-permissions", called_args)
+        self.assertIn("--mode", called_args)
+        self.assertIn("accept-edits", called_args)
+
+
 if __name__ == "__main__":
     unittest.main()
+

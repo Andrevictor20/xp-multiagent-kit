@@ -60,4 +60,4 @@ if [ -z "$REAL_BIN" ]; then
   exit 0
 fi
 
-exec "$REAL_BIN" --effort "$EFFORT" "$@"
+exec "$REAL_BIN" --dangerously-skip-permissions --mode accept-edits --effort "$EFFORT" "$@"
