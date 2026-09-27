@@ -193,9 +193,13 @@ class LiveQuotaBucket:
     reset_time: str = ""
 
 
+QUOTA_SNAPSHOT_FILE = Path.home() / ".gemini" / "antigravity-cli" / "last_known_quota.json"
+
+
 @dataclass
 class LiveServerQuota:
     is_live: bool = False
+    is_projected: bool = False
     plan_name: str = "Google AI Pro"
     gemini_5h: Optional[LiveQuotaBucket] = None
     gemini_weekly: Optional[LiveQuotaBucket] = None
@@ -203,9 +207,156 @@ class LiveServerQuota:
     claude_weekly: Optional[LiveQuotaBucket] = None
     description: str = ""
     error: Optional[str] = None
+    sync_timestamp: float = 0.0
+    sync_datetime: str = ""
 
 
 _LIVE_QUOTA_CACHE: Dict[str, Any] = {"timestamp": 0.0, "data": None}
+
+
+def save_quota_snapshot(
+    quota: LiveServerQuota,
+    anchor_tokens_5h: int = 0,
+    anchor_tokens_7d: int = 0,
+    target_file: Optional[Path] = None,
+) -> bool:
+    """Persiste o snapshot oficial da última consulta bem-sucedida ao Language Server."""
+    if not quota:
+        return False
+    target = target_file or QUOTA_SNAPSHOT_FILE
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        now_ts = time.time()
+        now_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now_ts))
+
+        def bucket_to_dict(b: Optional[LiveQuotaBucket]) -> Optional[Dict[str, Any]]:
+            if not b:
+                return None
+            return {
+                "bucket_id": b.bucket_id,
+                "display_name": b.display_name,
+                "description": b.description,
+                "window": b.window,
+                "remaining_fraction": b.remaining_fraction,
+                "reset_time": b.reset_time,
+            }
+
+        data = {
+            "timestamp": now_ts,
+            "datetime": now_str,
+            "is_live": quota.is_live,
+            "plan_name": quota.plan_name,
+            "gemini_5h": bucket_to_dict(quota.gemini_5h),
+            "gemini_weekly": bucket_to_dict(quota.gemini_weekly),
+            "claude_5h": bucket_to_dict(quota.claude_5h),
+            "claude_weekly": bucket_to_dict(quota.claude_weekly),
+            "description": quota.description,
+            "anchor_tokens_5h": anchor_tokens_5h,
+            "anchor_tokens_7d": anchor_tokens_7d,
+        }
+        target.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
+def load_quota_snapshot(target_file: Optional[Path] = None) -> Optional[Dict[str, Any]]:
+    """Carrega o último snapshot gravado em disco."""
+    target = target_file or QUOTA_SNAPSHOT_FILE
+    if not target.is_file():
+        return None
+    try:
+        content = target.read_text(encoding="utf-8")
+        return json.loads(content)
+    except Exception:
+        return None
+
+
+def calculate_projected_quota(
+    snapshot: Dict[str, Any],
+    current_tokens_5h: int = 0,
+    current_tokens_7d: int = 0,
+    model_name: str = "gemini-3.8-flash",
+) -> LiveServerQuota:
+    """Projeta a cota a partir do último snapshot oficial deduzindo o consumo incremental."""
+    now = time.time()
+    sync_ts = float(snapshot.get("timestamp", now))
+    sync_dt = snapshot.get("datetime", "")
+
+    p_defs = get_provider_defaults(model_name)
+    limit_5h = p_defs.get("limit_5h", DEFAULT_LIMIT_5H)
+    limit_7d = p_defs.get("limit_7d", DEFAULT_LIMIT_WEEKLY)
+
+    anchor_5h = int(snapshot.get("anchor_tokens_5h", 0))
+    anchor_7d = int(snapshot.get("anchor_tokens_7d", 0))
+
+    delta_5h = max(0, current_tokens_5h - anchor_5h)
+    delta_7d = max(0, current_tokens_7d - anchor_7d)
+
+    def project_bucket(
+        b_dict: Optional[Dict[str, Any]], delta_tokens: int, limit_tokens: int, window_type: str
+    ) -> Optional[LiveQuotaBucket]:
+        if not b_dict:
+            return None
+        orig_rem = float(b_dict.get("remaining_fraction", 1.0))
+        reset_time_str = b_dict.get("reset_time", "")
+        desc = b_dict.get("description", "")
+
+        has_reset = False
+        if reset_time_str:
+            try:
+                import datetime
+                dt = datetime.datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
+                reset_epoch = dt.timestamp()
+                if now >= reset_epoch:
+                    has_reset = True
+                else:
+                    diff = max(0.0, reset_epoch - now)
+                    if window_type == "5h":
+                        h = int(diff // 3600)
+                        m = int((diff % 3600) // 60)
+                        desc = f"refresh in {h} hours, {m} minutes"
+                    else:
+                        d = int(diff // 86400)
+                        h = int((diff % 86400) // 3600)
+                        desc = f"refresh in {d} days, {h} hours"
+            except Exception:
+                pass
+
+        if has_reset:
+            proj_rem = 1.0
+            desc = "renovado recentemente"
+        else:
+            fraction_spent = (delta_tokens / limit_tokens) if limit_tokens > 0 else 0.0
+            proj_rem = max(0.0, min(1.0, orig_rem - fraction_spent))
+
+        return LiveQuotaBucket(
+            bucket_id=b_dict.get("bucket_id", ""),
+            display_name=b_dict.get("display_name", ""),
+            description=desc,
+            window=b_dict.get("window", window_type),
+            remaining_fraction=proj_rem,
+            reset_time=reset_time_str,
+        )
+
+    g_5h = project_bucket(snapshot.get("gemini_5h"), delta_5h, limit_5h, "5h")
+    g_7d = project_bucket(snapshot.get("gemini_weekly"), delta_7d, limit_7d, "weekly")
+    c_5h = project_bucket(snapshot.get("claude_5h"), delta_5h, limit_5h, "5h")
+    c_7d = project_bucket(snapshot.get("claude_weekly"), delta_7d, limit_7d, "weekly")
+
+    return LiveServerQuota(
+        is_live=False,
+        is_projected=True,
+        plan_name=snapshot.get("plan_name", "Google AI Pro"),
+        gemini_5h=g_5h,
+        gemini_weekly=g_7d,
+        claude_5h=c_5h,
+        claude_weekly=c_7d,
+        description=snapshot.get("description", ""),
+        error=None,
+        sync_timestamp=sync_ts,
+        sync_datetime=sync_dt,
+    )
 
 
 def clean_refresh_text(desc: Optional[str]) -> str:
@@ -229,48 +380,60 @@ def clean_refresh_text(desc: Optional[str]) -> str:
     return desc
 
 
-def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota:
-    """Consulta em tempo real a API oficial de cotas do Language Server do Antigravity IDE."""
+
+def fetch_live_antigravity_quota(
+    force_refresh: bool = False,
+    rolling: Optional[RollingWindowStats] = None,
+    model_name: str = "gemini-3.8-flash",
+) -> LiveServerQuota:
+    """Consulta em tempo real a API oficial de cotas do Language Server do Antigravity IDE.
+
+    Se indisponível ou offline, recorre ao snapshot oficial persistido em disco
+    e projeta o consumo incremental desde a última sincronização.
+    """
     global _LIVE_QUOTA_CACHE
     now = time.time()
     if not force_refresh and _LIVE_QUOTA_CACHE["data"] is not None and (now - _LIVE_QUOTA_CACHE["timestamp"] < 10.0):
         return _LIVE_QUOTA_CACHE["data"]
 
-    log_dirs = glob.glob(os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main.log"))
-    if not log_dirs:
-        quota = LiveServerQuota(is_live=False, error="Nenhum log do Language Server encontrado")
-        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
-        return quota
+    # 1. Coleta caminhos de log do Language Server (múltiplas variantes e janelas)
+    log_patterns = [
+        os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main*.log"),
+        os.path.expanduser("~/.config/Antigravity IDE/logs/*/window*/exthost/google.antigravity/*.log"),
+        os.path.expanduser("~/.config/Antigravity/logs/*/ls-main*.log"),
+    ]
+    log_files = []
+    for pat in log_patterns:
+        log_files.extend(glob.glob(pat))
 
-    latest_log = max(log_dirs, key=os.path.getmtime)
     csrf_token = None
     http_port = None
     https_port = None
 
-    try:
-        with open(latest_log, "r", encoding="utf-8", errors="ignore") as f:
-            for line in f:
-                if "--csrf_token" in line and not csrf_token:
-                    m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", line)
-                    if m:
-                        csrf_token = m.group(1)
-                if "listening on random port at" in line:
-                    m_http = re.search(r"listening on random port at (\d+) for HTTP\b", line)
-                    if m_http:
-                        http_port = int(m_http.group(1))
-                    m_https = re.search(r"listening on random port at (\d+) for HTTPS", line)
-                    if m_https:
-                        https_port = int(m_https.group(1))
-                if "LS started on port" in line:
-                    m_start = re.search(r"LS started on port (\d+)", line)
-                    if m_start:
-                        https_port = int(m_start.group(1))
-    except Exception as e:
-        quota = LiveServerQuota(is_live=False, error=f"Erro ao ler log do LS: {e}")
-        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
-        return quota
+    if log_files:
+        try:
+            latest_log = max(log_files, key=os.path.getmtime)
+            with open(latest_log, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if "--csrf_token" in line and not csrf_token:
+                        m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", line)
+                        if m:
+                            csrf_token = m.group(1)
+                    if "listening on random port at" in line:
+                        m_http = re.search(r"listening on random port at (\d+) for HTTP\b", line)
+                        if m_http:
+                            http_port = int(m_http.group(1))
+                        m_https = re.search(r"listening on random port at (\d+) for HTTPS", line)
+                        if m_https:
+                            https_port = int(m_https.group(1))
+                    if "LS started on port" in line:
+                        m_start = re.search(r"LS started on port (\d+)", line)
+                        if m_start:
+                            https_port = int(m_start.group(1))
+        except Exception:
+            pass
 
-    # Descoberta resiliente de processos ativos e portas do Language Server
+    # 2. Descoberta resiliente de processos ativos e portas do Language Server via /proc
     candidates = []
     for cmd_path in glob.glob("/proc/[0-9]*/cmdline"):
         try:
@@ -284,53 +447,80 @@ def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota
         except Exception:
             pass
 
-    ports_to_try = []
+    ports_to_try: List[Tuple[int, str]] = []
     if candidates:
-        try:
-            import subprocess
-            out = subprocess.check_output(["ss", "-tulpn"], text=True, stderr=subprocess.DEVNULL)
-            for pid, token in candidates:
+        for pid, token in candidates:
+            # Tenta via lsof (mais direto e confiável)
+            try:
+                out_lsof = subprocess.check_output(
+                    ["lsof", "-Pan", "-p", pid, "-iTCP", "-sTCP:LISTEN"],
+                    text=True,
+                    stderr=subprocess.DEVNULL,
+                    timeout=1.0,
+                )
+                for m in re.finditer(r":(\d+)\s+\(LISTEN\)", out_lsof):
+                    ports_to_try.append((int(m.group(1)), token))
+            except Exception:
+                pass
+
+            # Fallback via ss
+            try:
+                import subprocess
+                out = subprocess.check_output(["ss", "-tulpn"], text=True, stderr=subprocess.DEVNULL, timeout=1.0)
                 for line in out.splitlines():
                     if f"pid={pid}," in line:
-                        m_port = re.search(r"127\.0\.0\.1:(\d+)", line)
+                        m_port = re.search(r":(\d+)\s+", line)
                         if m_port:
                             ports_to_try.append((int(m_port.group(1)), token))
-        except Exception:
-            pass
+            except Exception:
+                pass
 
     if not ports_to_try and csrf_token:
         for p in [p for p in [http_port, https_port, 44351, 39831, 36977, 43923] if p]:
             ports_to_try.append((p, csrf_token))
 
-    if not ports_to_try:
-        quota = LiveServerQuota(is_live=False, error="Nenhuma porta ativa do Language Server encontrada")
-        _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
-        return quota
+    # Remove duplicatas preservando ordem
+    ports_to_try = list(dict.fromkeys(ports_to_try))
 
     raw_data = None
-    for port, token in ports_to_try:
-        for scheme in ["https", "http"]:
-            url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
-            ctx = ssl._create_unverified_context() if scheme == "https" else None
-            req = urllib.request.Request(
-                url,
-                data=b"{}",
-                headers={
-                    "Content-Type": "application/json",
-                    "x-codeium-csrf-token": token,
-                },
-            )
-            try:
-                with urllib.request.urlopen(req, context=ctx, timeout=1.0) as resp:
-                    raw_data = json.loads(resp.read().decode("utf-8"))
-                    if raw_data and "response" in raw_data:
-                        break
-            except Exception:
-                continue
-        if raw_data and "response" in raw_data:
-            break
+    if ports_to_try:
+        for port, token in ports_to_try:
+            for scheme in ["https", "http"]:
+                url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
+                ctx = ssl._create_unverified_context() if scheme == "https" else None
+                req = urllib.request.Request(
+                    url,
+                    data=b"{}",
+                    headers={
+                        "Content-Type": "application/json",
+                        "x-codeium-csrf-token": token,
+                    },
+                )
+                try:
+                    with urllib.request.urlopen(req, context=ctx, timeout=1.0) as resp:
+                        raw_data = json.loads(resp.read().decode("utf-8"))
+                        if raw_data and "response" in raw_data:
+                            break
+                except Exception:
+                    continue
+            if raw_data and "response" in raw_data:
+                break
 
     if not raw_data or "response" not in raw_data:
+        # Tenta projetar a partir do último snapshot salvo em disco
+        snapshot = load_quota_snapshot()
+        if snapshot:
+            curr_5h = rolling.tokens_5h if rolling else 0
+            curr_7d = rolling.tokens_7d if rolling else 0
+            quota = calculate_projected_quota(
+                snapshot,
+                current_tokens_5h=curr_5h,
+                current_tokens_7d=curr_7d,
+                model_name=model_name,
+            )
+            _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+            return quota
+
         quota = LiveServerQuota(is_live=False, error="Falha ao consultar RetrieveUserQuotaSummary via RPC")
         _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
         return quota
@@ -379,6 +569,7 @@ def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota
 
     quota = LiveServerQuota(
         is_live=True,
+        is_projected=False,
         plan_name="Google AI Pro",
         gemini_5h=gem_5h,
         gemini_weekly=gem_week,
@@ -386,8 +577,19 @@ def fetch_live_antigravity_quota(force_refresh: bool = False) -> LiveServerQuota
         claude_weekly=claude_week,
         description=res.get("description", ""),
         error=None,
+        sync_timestamp=now,
+        sync_datetime=time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(now)),
     )
     _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
+
+    # Auto-persiste snapshot oficial para uso offline/CLI desacoplado
+    try:
+        a_5h = rolling.tokens_5h if rolling else 0
+        a_7d = rolling.tokens_7d if rolling else 0
+        save_quota_snapshot(quota, anchor_tokens_5h=a_5h, anchor_tokens_7d=a_7d)
+    except Exception:
+        pass
+
     return quota
 
 
@@ -887,8 +1089,13 @@ def parse_transcript_data(
     remaining = max(0, limits["context_window"] - total_tokens)
     pct = (total_tokens / limits["context_window"]) * 100.0 if limits["context_window"] else 0.0
 
+    eff_rolling = rolling or calculate_rolling_windows(
+        limit_5h=limits.get("limit_5h", DEFAULT_LIMIT_5H),
+        limit_7d=limits.get("limit_7d", DEFAULT_LIMIT_WEEKLY),
+    )
+
     if live_quota is None and fetch_live:
-        live_quota = fetch_live_antigravity_quota()
+        live_quota = fetch_live_antigravity_quota(rolling=eff_rolling, model_name=model_name)
     else:
         live_quota = live_quota or LiveServerQuota(is_live=False)
 
@@ -972,7 +1179,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     effort_tag = f" (Effort: {effort_cap})"
     bar_ctx = make_progress_bar(stats.percent_used, 10)
 
-    if stats.live_quota and stats.live_quota.is_live:
+    if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
         b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
@@ -1006,22 +1213,19 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         bar_5h = make_progress_bar(pct_5h_used, 10)
         bar_7d = make_progress_bar(pct_7d_used, 10)
 
-        s_ctx = f"[{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre ({rem_ctx_str}) de {win_str}"
-        s_5h = f"[{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}" + (f" ({desc_5h})" if desc_5h else "")
-        s_7d = f"[{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}" + (f" ({desc_7d})" if desc_7d else "")
-
+        proj_tag = " [Projetado]" if stats.live_quota.is_projected else ""
         desc_5h_str = f" ({desc_5h})" if desc_5h else ""
         desc_7d_str = f" ({desc_7d})" if desc_7d else ""
 
         return (
             f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
             f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
-            f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}  \n"
-            f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}  \n"
+            f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}{proj_tag}  \n"
+            f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
             f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
         )
 
-    # Fallback: sem dados ao vivo do Language Server — usa defaults por provider
+    # Fallback: sem dados ao vivo do Language Server e sem snapshot — usa defaults por provider
     provider_defaults = get_provider_defaults(stats.model_name)
     is_gemini = "gemini" in stats.model_name.lower()
     provider_label = (
@@ -1035,25 +1239,24 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     fallback_5h = provider_defaults["limit_5h"]
     fallback_7d = provider_defaults["limit_7d"]
 
-    r5h_used = human_tokens(stats.rolling.tokens_5h) if stats.rolling.limit_5h else "~0"
-    r5h_tot = human_tokens(stats.rolling.limit_5h or fallback_5h)
-    r5h_rem = human_tokens(stats.rolling.remaining_5h if stats.rolling.limit_5h else fallback_5h)
-    r7d_used = human_tokens(stats.rolling.tokens_7d) if stats.rolling.limit_7d else "~0"
-    r7d_tot = human_tokens(stats.rolling.limit_7d or fallback_7d)
-    r7d_rem = human_tokens(stats.rolling.remaining_7d if stats.rolling.limit_7d else fallback_7d)
+    eff_5h_limit = stats.rolling.limit_5h or fallback_5h
+    eff_7d_limit = stats.rolling.limit_7d or fallback_7d
 
-    pct_5h = stats.rolling.percent_5h if stats.rolling.limit_5h else 0.0
-    pct_7d = stats.rolling.percent_7d if stats.rolling.limit_7d else 0.0
+    r5h_used = human_tokens(stats.rolling.tokens_5h)
+    r5h_tot = human_tokens(eff_5h_limit)
+    r5h_rem = human_tokens(max(0, eff_5h_limit - stats.rolling.tokens_5h))
+    r7d_used = human_tokens(stats.rolling.tokens_7d)
+    r7d_tot = human_tokens(eff_7d_limit)
+    r7d_rem = human_tokens(max(0, eff_7d_limit - stats.rolling.tokens_7d))
+
+    pct_5h = (stats.rolling.tokens_5h / eff_5h_limit * 100.0) if eff_5h_limit else 0.0
+    pct_7d = (stats.rolling.tokens_7d / eff_7d_limit * 100.0) if eff_7d_limit else 0.0
     pct_5h_rem = max(0.0, 100.0 - pct_5h)
     pct_7d_rem = max(0.0, 100.0 - pct_7d)
     pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
 
     bar_5h = make_progress_bar(pct_5h, 10)
     bar_7d = make_progress_bar(pct_7d, 10)
-
-    s_ctx = f"[{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre ({rem_ctx_str}) de {win_str}"
-    s_5h = f"[{bar_5h}] {pct_5h:.1f}% usado ({r5h_used}) • {pct_5h_rem:.1f}% restante (~{r5h_rem}) de {r5h_tot} [Estimado · {provider_label}]"
-    s_7d = f"[{bar_7d}] {pct_7d:.1f}% usado ({r7d_used}) • **{pct_7d_rem:.1f}% restante ({r7d_rem})** de {r7d_tot} [Estimado · {provider_label}]"
 
     return (
         f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
@@ -1459,7 +1662,7 @@ def render_rich_dashboard(stats: TokenStats):
         info_text.append(f"({stats.rolling.percent_7d:.2f}%)\n", style=f"bold {c_7d}")
         info_text.append(f"   Margem Livre: {human_tokens(stats.rolling.remaining_7d)} tokens | {stats.rolling.conversations_7d} sessões (~{human_tokens(stats.rolling.tokens_7d // 7)}/dia)\n", style="dim")
 
-        if stats.live_quota and stats.live_quota.is_live:
+        if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
             is_gemini = "gemini" in stats.model_name.lower()
             b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
             b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
@@ -1467,7 +1670,11 @@ def render_rich_dashboard(stats: TokenStats):
             pct_7d = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
             d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
             d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
-            info_text.append(f"\n⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):\n", style="bold yellow")
+            if stats.live_quota.is_live:
+                info_text.append(f"\n⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):\n", style="bold yellow")
+            else:
+                sync_dt = stats.live_quota.sync_datetime or "Recente"
+                info_text.append(f"\n⚡ COTA PROJETADA (Base Real: {sync_dt} • {stats.live_quota.plan_name}):\n", style="bold cyan")
             info_text.append(f"   • Janela 5h:     {pct_5h:.1f}% restante{d_5h}\n", style="white")
             info_text.append(f"   • Cota Semanal:  {pct_7d:.1f}% restante{d_7d}\n", style="white")
 
@@ -1523,7 +1730,7 @@ def render_plain_dashboard(stats: TokenStats):
     print(f"   Margem Livre: {stats.rolling.remaining_5h:,} tokens disponíveis ({stats.rolling.conversations_5h} conversas)")
     print(f"3. Janela 7d:    {stats.rolling.tokens_7d:,} / {stats.rolling.limit_7d:,} ({stats.rolling.percent_7d:.2f}%)")
     print(f"   Margem Livre: {stats.rolling.remaining_7d:,} tokens disponíveis ({stats.rolling.conversations_7d} conversas)")
-    if stats.live_quota and stats.live_quota.is_live:
+    if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
         b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
@@ -1532,7 +1739,11 @@ def render_plain_dashboard(stats: TokenStats):
         d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
         d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
         print("-" * 70)
-        print(f"⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):")
+        if stats.live_quota.is_live:
+            print(f"⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):")
+        else:
+            sync_dt = stats.live_quota.sync_datetime or "Recente"
+            print(f"⚡ COTA PROJETADA (Base Real: {sync_dt} • {stats.live_quota.plan_name}):")
         print(f"   • Janela 5 Horas: {pct_5h:.1f}% restante{d_5h}")
         print(f"   • Cota Semanal:   {pct_7d:.1f}% restante{d_7d}")
     print("-" * 70)

@@ -50,7 +50,14 @@ class TestAgyDaemon(unittest.TestCase):
         result = run_maintenance_cycle(self.workspace, log_file=self.log_file)
         self.assertIn("memory", result)
         self.assertIn("worktree", result)
+        self.assertIn("quota", result)
         self.assertTrue(self.log_file.is_file())
+
+    def test_sync_live_quota_task(self):
+        from scripts.agy_daemon import sync_live_quota_task
+        res = sync_live_quota_task(self.workspace, log_file=self.log_file)
+        self.assertIsInstance(res, str)
+
 
 
 if __name__ == "__main__":

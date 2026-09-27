@@ -151,7 +151,7 @@ def init_memory(project_dir: Path, project_name: str, stack: str = None, dry_run
     }
 
     # Resolve o caminho do template
-    kit_root = Path(__file__).parent.parent
+    kit_root = Path(__file__).resolve().parent.parent
     template_path = kit_root / "templates" / "PROJECT_MEMORY_TEMPLATE.md"
 
     if not template_path.exists():

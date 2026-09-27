@@ -564,5 +564,102 @@ class TestProviderDefaults(unittest.TestCase):
         self.assertEqual(d["limit_5h"], 100_000)
 
 
+class TestQuotaSnapshotAndProjection(unittest.TestCase):
+    def setUp(self):
+        self.tmp_dir = tempfile.TemporaryDirectory()
+        self.snapshot_file = Path(self.tmp_dir.name) / "last_known_quota.json"
+
+    def tearDown(self):
+        self.tmp_dir.cleanup()
+
+    def test_save_and_load_quota_snapshot(self):
+        from scripts.token_tracker import (
+            save_quota_snapshot, load_quota_snapshot,
+            LiveServerQuota, LiveQuotaBucket
+        )
+        q = LiveServerQuota(
+            is_live=True,
+            plan_name="Google AI Pro",
+            gemini_5h=LiveQuotaBucket(
+                bucket_id="gemini-5h",
+                display_name="Five Hour Limit",
+                description="refresh in 2 hours",
+                window="5h",
+                remaining_fraction=0.5,
+                reset_time="2026-09-27T03:00:00Z"
+            ),
+            gemini_weekly=LiveQuotaBucket(
+                bucket_id="gemini-weekly",
+                display_name="Weekly Limit",
+                description="refresh in 3 days",
+                window="weekly",
+                remaining_fraction=0.2,
+                reset_time="2026-10-01T12:00:00Z"
+            ),
+        )
+        ok = save_quota_snapshot(q, anchor_tokens_5h=400_000, anchor_tokens_7d=8_000_000, target_file=self.snapshot_file)
+        self.assertTrue(ok)
+        self.assertTrue(self.snapshot_file.is_file())
+
+        loaded = load_quota_snapshot(target_file=self.snapshot_file)
+        self.assertIsNotNone(loaded)
+        self.assertEqual(loaded["gemini_5h"]["remaining_fraction"], 0.5)
+        self.assertEqual(loaded["anchor_tokens_5h"], 400_000)
+
+    def test_calculate_projected_quota_within_window(self):
+        from scripts.token_tracker import (
+            calculate_projected_quota, LiveServerQuota, LiveQuotaBucket
+        )
+        snapshot = {
+            "timestamp": time.time() - 3600,
+            "datetime": "2026-09-26 21:00:00",
+            "is_live": True,
+            "plan_name": "Google AI Pro",
+            "gemini_5h": {
+                "bucket_id": "gemini-5h",
+                "remaining_fraction": 0.50,
+                "reset_time": "2030-01-01T00:00:00Z", # future
+                "description": "refresh in 4 hours"
+            },
+            "gemini_weekly": {
+                "bucket_id": "gemini-weekly",
+                "remaining_fraction": 0.20,
+                "reset_time": "2030-01-01T00:00:00Z",
+                "description": "refresh in 5 days"
+            },
+            "anchor_tokens_5h": 400_000,
+            "anchor_tokens_7d": 8_000_000,
+        }
+        # 40_000 additional tokens spent since snapshot (5% of 800k)
+        projected = calculate_projected_quota(
+            snapshot,
+            current_tokens_5h=440_000,
+            current_tokens_7d=8_040_000,
+            model_name="gemini-3.8-flash"
+        )
+        self.assertTrue(projected.is_projected)
+        self.assertFalse(projected.is_live)
+        self.assertAlmostEqual(projected.gemini_5h.remaining_fraction, 0.45, places=2)
+        self.assertAlmostEqual(projected.gemini_weekly.remaining_fraction, 0.196, places=3)
+
+    def test_calculate_projected_quota_after_reset(self):
+        from scripts.token_tracker import calculate_projected_quota
+        snapshot = {
+            "timestamp": time.time() - 25000,
+            "datetime": "2026-09-26 15:00:00",
+            "is_live": True,
+            "gemini_5h": {
+                "bucket_id": "gemini-5h",
+                "remaining_fraction": 0.10,
+                "reset_time": "2020-01-01T00:00:00Z", # past
+                "description": "refresh in 1 hour"
+            },
+            "anchor_tokens_5h": 500_000,
+            "anchor_tokens_7d": 5_000_000,
+        }
+        projected = calculate_projected_quota(snapshot, current_tokens_5h=500_000, current_tokens_7d=5_000_000)
+        self.assertEqual(projected.gemini_5h.remaining_fraction, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
