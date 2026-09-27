@@ -661,5 +661,144 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         self.assertEqual(projected.gemini_5h.remaining_fraction, 1.0)
 
 
+    def test_save_and_load_active_ls_conn(self):
+        from scripts.token_tracker import save_active_ls_conn, load_active_ls_conn
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
+            conn_path = Path(tf.name)
+        try:
+            save_active_ls_conn(33825, "mock-csrf-token", "http", target_file=conn_path)
+            self.assertTrue(conn_path.is_file())
+            loaded = load_active_ls_conn(target_file=conn_path)
+            self.assertIsNotNone(loaded)
+            self.assertEqual(loaded["port"], 33825)
+            self.assertEqual(loaded["csrf_token"], "mock-csrf-token")
+            self.assertEqual(loaded["scheme"], "http")
+        finally:
+            if conn_path.is_file():
+                conn_path.unlink()
+
+    def test_fetch_live_quota_from_cli_env(self):
+        from unittest.mock import patch
+        import os
+        from scripts.token_tracker import fetch_live_antigravity_quota, _LIVE_QUOTA_CACHE
+        _LIVE_QUOTA_CACHE["timestamp"] = 0.0
+        _LIVE_QUOTA_CACHE["data"] = None
+
+        mock_response = {
+            "response": {
+                "groups": [
+                    {
+                        "displayName": "Gemini Models",
+                        "buckets": [
+                            {
+                                "bucketId": "gemini-5h",
+                                "window": "5h",
+                                "remainingFraction": 0.95,
+                                "resetTime": "2030-01-01T00:00:00Z"
+                            },
+                            {
+                                "bucketId": "gemini-weekly",
+                                "window": "weekly",
+                                "remainingFraction": 0.85,
+                                "resetTime": "2030-01-01T00:00:00Z"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        with patch.dict(os.environ, {
+            "ANTIGRAVITY_LS_ADDRESS": "localhost:33825",
+            "ANTIGRAVITY_CSRF_TOKEN": "cli-test-token"
+        }):
+            with patch("urllib.request.urlopen") as mock_urlopen:
+                from io import BytesIO
+                mock_resp = BytesIO(json.dumps(mock_response).encode("utf-8"))
+                mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+                quota = fetch_live_antigravity_quota(force_refresh=True)
+                self.assertTrue(quota.is_live)
+                self.assertFalse(quota.is_projected)
+                self.assertAlmostEqual(quota.gemini_5h.remaining_fraction, 0.95)
+                self.assertAlmostEqual(quota.gemini_weekly.remaining_fraction, 0.85)
+
+    def test_fetch_live_quota_from_active_ls_conn_file(self):
+        from unittest.mock import patch
+        import os
+        from scripts.token_tracker import (
+            fetch_live_antigravity_quota, _LIVE_QUOTA_CACHE, save_active_ls_conn, ACTIVE_LS_CONN_FILE
+        )
+        _LIVE_QUOTA_CACHE["timestamp"] = 0.0
+        _LIVE_QUOTA_CACHE["data"] = None
+
+        mock_response = {
+            "response": {
+                "groups": [
+                    {
+                        "displayName": "Gemini Models",
+                        "buckets": [
+                            {
+                                "bucketId": "gemini-5h",
+                                "window": "5h",
+                                "remainingFraction": 0.99,
+                                "resetTime": "2030-01-01T00:00:00Z"
+                            },
+                            {
+                                "bucketId": "gemini-weekly",
+                                "window": "weekly",
+                                "remainingFraction": 0.70,
+                                "resetTime": "2030-01-01T00:00:00Z"
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
+            conn_path = Path(tf.name)
+        try:
+            save_active_ls_conn(42000, "cached-csrf", "http", target_file=conn_path)
+
+            clean_env = {k: v for k, v in os.environ.items() if not k.startswith("ANTIGRAVITY_")}
+            with patch.dict(os.environ, clean_env, clear=True):
+                with patch("scripts.token_tracker.ACTIVE_LS_CONN_FILE", conn_path):
+                    with patch("urllib.request.urlopen") as mock_urlopen:
+                        from io import BytesIO
+                        mock_resp = BytesIO(json.dumps(mock_response).encode("utf-8"))
+                        mock_urlopen.return_value.__enter__.return_value = mock_resp
+
+                        quota = fetch_live_antigravity_quota(force_refresh=True)
+                        self.assertTrue(quota.is_live)
+                        self.assertFalse(quota.is_projected)
+                        self.assertAlmostEqual(quota.gemini_5h.remaining_fraction, 0.99)
+                        self.assertAlmostEqual(quota.gemini_weekly.remaining_fraction, 0.70)
+        finally:
+            if conn_path.is_file():
+                conn_path.unlink()
+
+    def test_footer_no_projetado_tag_when_live(self):
+        q = LiveServerQuota(
+            is_live=True,
+            is_projected=False,
+            plan_name="Google AI Pro",
+            gemini_5h=LiveQuotaBucket("gemini-5h", "5h", "refresh in 4 hours", "5h", 0.95, "2030-01-01T00:00:00Z"),
+            gemini_weekly=LiveQuotaBucket("gemini-weekly", "weekly", "refresh in 5 days", "weekly", 0.85, "2030-01-01T00:00:00Z")
+        )
+        stats = parse_transcript_data(
+            conversation_id="conv-1",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            fetch_live=False,
+        )
+        stats.live_quota = q
+        turn = TurnStats(user_input_tokens=100, model_output_tokens=50, tool_tokens=0, total_tokens=150)
+        footer = format_message_footer(stats, turn)
+        self.assertNotIn("[Projetado]", footer)
+        self.assertIn("5h:", footer)
+        self.assertIn("Semana:", footer)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -194,6 +194,7 @@ class LiveQuotaBucket:
 
 
 QUOTA_SNAPSHOT_FILE = Path.home() / ".gemini" / "antigravity-cli" / "last_known_quota.json"
+ACTIVE_LS_CONN_FILE = Path.home() / ".gemini" / "antigravity-cli" / "active_ls_conn.json"
 
 
 @dataclass
@@ -268,6 +269,47 @@ def load_quota_snapshot(target_file: Optional[Path] = None) -> Optional[Dict[str
     try:
         content = target.read_text(encoding="utf-8")
         return json.loads(content)
+    except Exception:
+        return None
+
+
+def save_active_ls_conn(
+    port: int,
+    token: str,
+    scheme: str = "http",
+    target_file: Optional[Path] = None,
+) -> bool:
+    """Persiste dados de conexão bem-sucedida ao Language Server para descoberta rápida em processos paralelos."""
+    if not port or not token:
+        return False
+    target = target_file or ACTIVE_LS_CONN_FILE
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        data = {
+            "port": port,
+            "csrf_token": token,
+            "scheme": scheme,
+            "timestamp": time.time(),
+            "datetime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+        }
+        target.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        return True
+    except Exception:
+        return False
+
+
+def load_active_ls_conn(target_file: Optional[Path] = None) -> Optional[Dict[str, Any]]:
+    """Carrega parâmetros da última conexão ativa ao Language Server."""
+    target = target_file or ACTIVE_LS_CONN_FILE
+    if not target.is_file():
+        return None
+    try:
+        content = target.read_text(encoding="utf-8")
+        data = json.loads(content)
+        # Conexão válida por até 12 horas caso a máquina não tenha reiniciado
+        if time.time() - float(data.get("timestamp", 0)) < 43200:
+            return data
+        return None
     except Exception:
         return None
 
@@ -396,17 +438,40 @@ def fetch_live_antigravity_quota(
     if not force_refresh and _LIVE_QUOTA_CACHE["data"] is not None and (now - _LIVE_QUOTA_CACHE["timestamp"] < 10.0):
         return _LIVE_QUOTA_CACHE["data"]
 
-    # 1. Coleta caminhos de log do Language Server (múltiplas variantes e janelas)
+    ports_to_try: List[Tuple[int, str]] = []
+    csrf_token = None
+
+    # 1. Variáveis de ambiente diretas do Antigravity CLI nativo e subprocessos
+    env_token = os.environ.get("ANTIGRAVITY_CSRF_TOKEN")
+    env_addr = os.environ.get("ANTIGRAVITY_LS_ADDRESS")
+    if env_token:
+        csrf_token = env_token
+    if env_addr and env_token:
+        m_env = re.search(r":(\d+)", env_addr)
+        if m_env:
+            ports_to_try.append((int(m_env.group(1)), env_token))
+
+    # 2. Conexão ativa persistida em disco (~/.gemini/antigravity-cli/active_ls_conn.json)
+    cached_conn = load_active_ls_conn()
+    if cached_conn:
+        c_port = cached_conn.get("port")
+        c_tok = cached_conn.get("csrf_token")
+        if c_port and c_tok:
+            ports_to_try.append((int(c_port), c_tok))
+            if not csrf_token:
+                csrf_token = c_tok
+
+    # 3. Coleta caminhos de log do Language Server (múltiplas variantes, IDE e CLI)
     log_patterns = [
         os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main*.log"),
         os.path.expanduser("~/.config/Antigravity IDE/logs/*/window*/exthost/google.antigravity/*.log"),
         os.path.expanduser("~/.config/Antigravity/logs/*/ls-main*.log"),
+        os.path.expanduser("~/.gemini/antigravity-cli/log/cli-*.log"),
     ]
     log_files = []
     for pat in log_patterns:
         log_files.extend(glob.glob(pat))
 
-    csrf_token = None
     http_port = None
     https_port = None
 
@@ -433,21 +498,49 @@ def fetch_live_antigravity_quota(
         except Exception:
             pass
 
-    # 2. Descoberta resiliente de processos ativos e portas do Language Server via /proc
+    # 4. Descoberta via /proc/*/environ (para CLI em execução noutros terminais/daemons)
+    if not csrf_token or not ports_to_try:
+        for p_env in glob.glob("/proc/[0-9]*/environ"):
+            try:
+                with open(p_env, "rb") as ef:
+                    edata = ef.read()
+                    if b"ANTIGRAVITY_CSRF_TOKEN=" in edata:
+                        items = dict(item.split(b"=", 1) for item in edata.split(b"\x00") if b"=" in item)
+                        tok = items.get(b"ANTIGRAVITY_CSRF_TOKEN", b"").decode("utf-8", "ignore")
+                        addr = items.get(b"ANTIGRAVITY_LS_ADDRESS", b"").decode("utf-8", "ignore")
+                        if tok and not csrf_token:
+                            csrf_token = tok
+                        if addr and tok:
+                            m_a = re.search(r":(\d+)", addr)
+                            if m_a:
+                                ports_to_try.append((int(m_a.group(1)), tok))
+                                break
+            except Exception:
+                pass
+
+    # 5. Descoberta resiliente de processos ativos e portas do Language Server via /proc
     candidates = []
     for cmd_path in glob.glob("/proc/[0-9]*/cmdline"):
         try:
             with open(cmd_path, "rb") as f:
                 parts = f.read().split(b"\x00")
-                if any(b"language_server" in p for p in parts) and b"--csrf_token" in parts:
+                is_match = any(
+                    any(name in p for name in [b"language_server", b"agy-native", b"agy-bin", b"antigravity"])
+                    for p in parts
+                )
+                if is_match:
                     pid = os.path.basename(os.path.dirname(cmd_path))
-                    idx = parts.index(b"--csrf_token")
-                    token = parts[idx + 1].decode("utf-8", errors="ignore")
-                    candidates.append((pid, token))
+                    tok = None
+                    if b"--csrf_token" in parts:
+                        idx = parts.index(b"--csrf_token")
+                        tok = parts[idx + 1].decode("utf-8", errors="ignore")
+                    elif csrf_token:
+                        tok = csrf_token
+                    if tok:
+                        candidates.append((pid, tok))
         except Exception:
             pass
 
-    ports_to_try: List[Tuple[int, str]] = []
     if candidates:
         for pid, token in candidates:
             # Tenta via lsof (mais direto e confiável)
@@ -483,9 +576,10 @@ def fetch_live_antigravity_quota(
     ports_to_try = list(dict.fromkeys(ports_to_try))
 
     raw_data = None
+    successful_conn: Optional[Tuple[int, str, str]] = None
     if ports_to_try:
         for port, token in ports_to_try:
-            for scheme in ["https", "http"]:
+            for scheme in ["http", "https"]:
                 url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
                 ctx = ssl._create_unverified_context() if scheme == "https" else None
                 req = urllib.request.Request(
@@ -500,11 +594,18 @@ def fetch_live_antigravity_quota(
                     with urllib.request.urlopen(req, context=ctx, timeout=1.0) as resp:
                         raw_data = json.loads(resp.read().decode("utf-8"))
                         if raw_data and "response" in raw_data:
+                            successful_conn = (port, token, scheme)
                             break
                 except Exception:
                     continue
             if raw_data and "response" in raw_data:
                 break
+
+    if successful_conn:
+        try:
+            save_active_ls_conn(successful_conn[0], successful_conn[1], successful_conn[2])
+        except Exception:
+            pass
 
     if not raw_data or "response" not in raw_data:
         # Tenta projetar a partir do último snapshot salvo em disco
