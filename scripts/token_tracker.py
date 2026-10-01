@@ -764,22 +764,26 @@ def fetch_rtk_savings(db_path: Optional[Path] = None, project_path: Optional[str
         cursor = conn.cursor()
         if project_path:
             cursor.execute(
-                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0), COALESCE(AVG(savings_pct), 0.0) FROM commands WHERE project_path = ?",
+                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0) FROM commands WHERE project_path = ?",
                 (project_path,)
             )
         else:
             cursor.execute(
-                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0), COALESCE(AVG(savings_pct), 0.0) FROM commands"
+                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0) FROM commands"
             )
         row = cursor.fetchone()
         conn.close()
         if row and row[0] > 0:
+            inp = int(row[1])
+            outp = int(row[2])
+            saved = int(row[3])
+            pct = round((float(saved) / inp * 100.0), 1) if inp > 0 else 0.0
             return {
                 "total_commands": int(row[0]),
-                "input_tokens": int(row[1]),
-                "output_tokens": int(row[2]),
-                "saved_tokens": int(row[3]),
-                "avg_savings_pct": round(float(row[4]), 1),
+                "input_tokens": inp,
+                "output_tokens": outp,
+                "saved_tokens": saved,
+                "avg_savings_pct": pct,
             }
     except Exception:
         pass
@@ -1315,12 +1319,12 @@ def format_badge(stats: TokenStats) -> str:
     )
 
 
-def _format_resend_line() -> str:
+def _format_resend_line(session_id: Optional[str] = None) -> str:
     """Gera a linha de reenvio acumulado para o rodapé, se dados disponíveis (D2/D3)."""
     if _turn_summarize is None:
         return ""
     try:
-        summary = _turn_summarize()
+        summary = _turn_summarize(session_id=session_id)
         if not summary or summary.get("turns", 0) < 2:
             return ""  # Amostra insuficiente
         resend = summary.get("resend_tokens", 0)
@@ -1388,7 +1392,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         desc_5h_str = f" ({desc_5h})" if desc_5h else ""
         desc_7d_str = f" ({desc_7d})" if desc_7d else ""
 
-        resend_line = _format_resend_line()
+        resend_line = _format_resend_line(stats.conversation_id)
         rtk_line = ""
         if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
             s = stats.rtk_savings
@@ -1440,7 +1444,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     bar_5h = make_progress_bar(pct_5h, 10)
     bar_7d = make_progress_bar(pct_7d, 10)
 
-    resend_line = _format_resend_line()
+    resend_line = _format_resend_line(stats.conversation_id)
     rtk_line = ""
     if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
         s = stats.rtk_savings

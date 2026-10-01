@@ -31,13 +31,21 @@ def record_local_turn(payload: dict) -> None:
         from scripts.turn_telemetry import record_turn
 
         tool_calls = payload.get("toolCalls") or payload.get("tool_calls") or 0
+        session_id = payload.get("sessionId") or payload.get("session_id")
+        if not session_id:
+            try:
+                from scripts.token_tracker import find_active_session
+                session_id, _, _ = find_active_session()
+            except Exception:
+                session_id = None
+
         record_turn(
             risk_level=str(payload.get("riskLevel") or payload.get("risk_level") or "L1"),
             tool_calls=int(tool_calls),
             tool_chars=int(payload.get("toolChars") or payload.get("tool_chars") or 0),
             response_chars=int(payload.get("responseChars") or payload.get("response_chars") or 0),
             history_chars=int(payload.get("historyChars") or payload.get("history_chars") or 0),
-            session_id=payload.get("sessionId") or payload.get("session_id"),
+            session_id=session_id,
         )
     except Exception:
         pass
