@@ -22,11 +22,19 @@ Mecanismo para auditoria, controle, governança preventiva e degradação gracio
 ---
 
 ## Governança de Consumo em Ferramentas (Tool Budget)
-- **Smart Tool Optimizer Ativo (PreToolUse Hook):** O hook `smart-tool-optimizer` intercepta e reescreve automaticamente argumentos via `overwrite`: aplica clamping transparente em `view_file` (máx 40 linhas) e injeta `agy-sanitize` em comandos verbosos não filtrados (`run_command`).
-- **Teto por Chamada de Ferramenta:** Máximo 1.500 caracteres / 400 tokens por retorno.
-- **Sanitização Mandatória:** Todo comando com potencial de log extenso deve rodar via `agy-sanitize` ou pipes limitadores (`| head -n 25`, `| tail -n 20`).
-- **Fatiamento Cirúrgico:** `view_file` restrito a blocos de no máximo **40 linhas** (`EndLine - StartLine <= 40`), proibindo leitura cega.
-- **Session Reset Agressivo:** Recomendado reiniciar a sessão a cada **15 turnos ou 40k tokens** para impedir que históricos de ferramentas pesadas continuem faturando nos turnos posteriores.
+
+> Modelo de custo: `custo ≈ Σ_turnos(contexto_base + histórico) + Σ saídas`.
+> **Reduzir turnos vale mais do que encolher cada saída.** Valores exatos em
+> `scripts/kit_constants.py` (fonte única; não duplicar números aqui).
+
+- **Reenvio Acumulado (métrica principal):** `agy-turn --report` expõe Σ(contexto base + histórico) por turno e o share de reenvio. É o número que explica o consumo real.
+- **Orçamento de Turnos por Risco:** `TURN_BUDGET` (L0/L1/L2 restritos; L3 com checkpoint). Exceder dispara alerta no Pre-Flight.
+- **Batching Obrigatório:** chamadas independentes no mesmo turno.
+- **Leitura em Uma Chamada:** arquivo até `WHOLE_FILE_READ_MAX_LINES` é lido inteiro; acima disso, localizar o símbolo e pedir a janela exata (`SECTION_READ_MAX_LINES`). Fatiamento contíguo repetido é sinal de abordagem errada e o hook avisa.
+- **Smart Tool Optimizer (PreToolUse):** loop detection com `deny`, proteção de `list_dir` na raiz, filtros de ruído em busca, bloqueio de `write_to_file` acima de `WRITE_TO_FILE_MAX_LINES` e injeção de `agy-sanitize` em comandos verbosos.
+- **Ruído de Shell:** banner/MOTD (fastfetch, neofetch) custa centenas de tokens por chamada e fica abaixo do limiar de flood. `agy-run` e `agy-sanitize` removem antes de medir.
+- **Enforcement Portátil:** em IDEs sem hooks (Qoder, Cursor), usar `agy-run "<cmd>"` no lugar do comando direto — regra em prosa é sugestão, regra no binário é enforcement.
+- **Session Reset Agressivo:** reiniciar a sessão a cada **15 turnos ou 40k tokens** para impedir que históricos pesados continuem faturando nos turnos seguintes.
 
 ---
 

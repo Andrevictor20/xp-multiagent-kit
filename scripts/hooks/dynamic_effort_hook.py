@@ -204,8 +204,7 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     conv_id = payload.get("conversationId", "default")
     inv_num = payload.get("invocationNum", 0)
 
-    # Evita dupla injeção se o hook for executado por múltiplos hooks.json (global e workspace)
-    # ou em sub-etapas consecutivas (invocations) dentro do mesmo turno/prompt
+    init_steps = payload.get("initialNumSteps", 0)
     tpath = payload.get("transcriptPath", "")
     tpath_hash = hashlib.md5(tpath.encode("utf-8")).hexdigest()[:8] if tpath else "notrans"
     prompt_hash = hashlib.md5(prompt_text.encode("utf-8")).hexdigest()[:8] if prompt_text else "noprompt"
@@ -215,9 +214,17 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     now = time.time()
     if dedup_file.is_file():
         try:
-            mtime = dedup_file.stat().st_mtime
-            if (now - mtime) < 600.0:
-                already_injected = True
+            content = dedup_file.read_text(encoding="utf-8").strip()
+            if content.startswith("{"):
+                data = json.loads(content)
+                last_steps = data.get("init_steps")
+                last_time = float(data.get("time", 0.0))
+                if last_steps == init_steps and (now - last_time) < 300.0:
+                    already_injected = True
+            else:
+                mtime = dedup_file.stat().st_mtime
+                if (now - mtime) < 60.0:
+                    already_injected = True
         except Exception:
             pass
 
@@ -225,7 +232,7 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         return {"injectSteps": []}
 
     try:
-        dedup_file.write_text(str(now), encoding="utf-8")
+        dedup_file.write_text(json.dumps({"init_steps": init_steps, "time": now}), encoding="utf-8")
     except Exception:
         pass
 

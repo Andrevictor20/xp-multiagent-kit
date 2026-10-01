@@ -799,6 +799,86 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         self.assertIn("5h:", footer)
         self.assertIn("Semana:", footer)
 
+    def test_fetch_rtk_savings_none_when_db_missing(self):
+        from scripts.token_tracker import fetch_rtk_savings
+        # Com path inexistente deve retornar None sem levantar exceção
+        res = fetch_rtk_savings(db_path=Path("/tmp/non_existent_rtk_history.db"))
+        self.assertIsNone(res)
+
+    def test_fetch_rtk_savings_with_sqlite_db(self):
+        import sqlite3
+        from scripts.token_tracker import fetch_rtk_savings
+        with tempfile.NamedTemporaryFile(suffix=".db") as tmp:
+            conn = sqlite3.connect(tmp.name)
+            conn.execute("""
+                CREATE TABLE commands (
+                    id INTEGER PRIMARY KEY,
+                    timestamp TEXT,
+                    original_cmd TEXT,
+                    rtk_cmd TEXT,
+                    input_tokens INTEGER,
+                    output_tokens INTEGER,
+                    saved_tokens INTEGER,
+                    savings_pct REAL
+                )
+            """)
+            conn.execute("""
+                INSERT INTO commands (timestamp, original_cmd, rtk_cmd, input_tokens, output_tokens, saved_tokens, savings_pct)
+                VALUES ('2026-10-01', 'git log', 'rtk git log', 1000, 300, 700, 70.0)
+            """)
+            conn.commit()
+            conn.close()
+
+            res = fetch_rtk_savings(db_path=Path(tmp.name))
+            self.assertIsNotNone(res)
+            self.assertEqual(res["total_commands"], 1)
+            self.assertEqual(res["saved_tokens"], 700)
+            self.assertEqual(res["avg_savings_pct"], 70.0)
+
+    def test_format_json_and_markdown_with_rtk_savings(self):
+        stats = parse_transcript_data(
+            conversation_id="conv-rtk",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            fetch_live=False,
+        )
+        stats.rtk_savings = {
+            "total_commands": 10,
+            "input_tokens": 5000,
+            "output_tokens": 2000,
+            "saved_tokens": 3000,
+            "avg_savings_pct": 60.0,
+        }
+        # JSON
+        json_str = format_json_stats(stats)
+        data = json.loads(json_str)
+        self.assertIn("rtk_savings", data)
+        self.assertEqual(data["rtk_savings"]["saved_tokens"], 3000)
+
+        # Markdown
+        report = format_markdown_report(stats)
+        self.assertIn("Rust Token Killer", report)
+        self.assertIn("3,000", report)
+
+    def test_format_message_footer_with_rtk_savings(self):
+        stats = parse_transcript_data(
+            conversation_id="conv-rtk-footer",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            fetch_live=False,
+        )
+        stats.rtk_savings = {
+            "total_commands": 15,
+            "saved_tokens": 4500,
+            "avg_savings_pct": 52.3,
+        }
+        turn = TurnStats(user_input_tokens=100, tool_tokens=200, model_output_tokens=300, total_tokens=600)
+        footer = format_message_footer(stats, turn)
+        self.assertIn("RTK:", footer)
+        self.assertIn("4.5k", footer)
+        self.assertIn("52.3%", footer)
+
 
 if __name__ == "__main__":
     unittest.main()
+

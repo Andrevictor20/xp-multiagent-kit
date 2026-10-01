@@ -44,8 +44,8 @@ Este guia apresenta as **melhores práticas operacionais e ferramentas** para ma
 - **O Problema:** Ler arquivos inteiros consome milhares de tokens, mas fatiar cegamente em múltiplos blocos contíguos sequenciais (ex: 1-40, depois 41-80, depois 81-120) gera acúmulo quadrático de histórico em sub-etapas intermediárias ($O(N^2)$), retransmitindo as saídas anteriores a cada round-trip.
 - **A Solução:**
   - Pratique **Symbol-First Navigation**: consulte o `REPO_MAP.md` e localize a linha exata do símbolo via `grep_search`.
-  - Ao inspecionar o código, solicite uma janela cirúrgica de até 60 linhas contendo o símbolo completo, evitando round-trips repetidos.
-  - O hook nativo `smart-tool-optimizer` calibra janelas em 60 linhas e detecta automaticamente leituras contíguas para evitar a armadilha do fatiamento excessivo.
+  - Ao inspecionar código, leia o arquivo **inteiro em uma chamada** quando ele couber no teto de leitura única; só acima disso peça a janela exata do símbolo. Reduzir turnos vale mais do que encolher cada saída.
+  - O hook nativo `smart-tool-optimizer` aplica esses tetos (definidos em `scripts/kit_constants.py`) e detecta leituras contíguas repetidas, que são o sintoma clássico de fatiamento cego.
 
 ---
 

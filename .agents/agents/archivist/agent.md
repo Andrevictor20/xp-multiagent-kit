@@ -33,19 +33,25 @@ Você é o guardião da documentação viva, da pasta de memória contínua do p
      - Inserir a nova alteração em `Recent Changes & Activity Log` com evidência real (`PASS`).
      - Atualizar o `Active Backlog` marcando tarefas concluídas com `[x] [DONE]`.
 
-3. **Governança dos 4 Tiers de Memória**:
+3. **Arquivamento de Spec & Conformance (ATDD/BDD)**:
+   - Em entregas L2/L3, persistir a especificação aprovada (`SPEC-NNN-ATDD.md`) versionada em conjunto com o código e marcar as seções 7 (Conformance Tracking) e 8 (Notas de Implementação) como preenchidas.
+   - Registrar no `PROJECT_MEMORY.md` o resumo do Conformance Report (`N/N critérios cobertos e aprovados`) e a referência à spec aprovada.
+   - Bloquear o encerramento se o Conformance Report estiver ausente ou `NON-COMPLIANT` (policy `atdd-bdd-tdd.md`).
+
+4. **Governança dos 4 Tiers de Memória**:
    - **Episodic:** Atualizar a tabela de alterações recentes com arquivos tocados e evidências reais de teste.
    - **Semantic:** Registrar decisões de arquitetura (ADRs) e modelos de domínio perenes.
    - **Procedural:** Registrar armadilhas superadas e lições aprendidas (`lesson-learned`) para que a IA não repita os mesmos erros.
    - **Working / Handoff:** Estruturar o pacote de handoff da tarefa atual para o próximo agente ou sessão.
 
-4. **Formalização de Lições Aprendidas (`lesson-learned`)**:
+5. **Formalização de Lições Aprendidas (`lesson-learned`)**:
    - Ao superar bugs complexos ou comportamentos inesperados de libs/ambiente, registrar a lição no formato `[L-NNN]` com causa raiz comprovada e regra prática na memória procedural.
 
-5. **Compilação de Handoffs Estruturados**:
+6. **Compilação de Handoffs Estruturados**:
    - Ao final da sessão, formalizar: `summary`, `files_touched`, `open_questions`, `next_steps` e `verification_evidence`.
+   - Em L2/L3, o campo `verification_evidence` DEVE referenciar o Conformance Report e o caminho da spec aprovada.
 
-6. **Memory Lint & Poda (Sliding Window FIFO)**:
+7. **Memory Lint & Poda (Sliding Window FIFO)**:
    - Manter o `.agents/memory/PROJECT_MEMORY.md` estritamente compacto (entre 100 e 300 linhas, < 2.000 tokens).
    - Manter as últimas 5 a 10 alterações recentes; mover entradas excedentes para `.agents/memory/archive/HISTORY.md`.
    - Auditar e remover contradições, links quebrados e dívidas obsoletas antes de releases.

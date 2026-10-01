@@ -18,6 +18,15 @@ import os
 import re
 import sqlite3
 import ssl
+
+# Integração com telemetria local de reenvio (D2/D3/D4)
+try:
+    from scripts.turn_telemetry import summarize as _turn_summarize
+except ImportError:
+    try:
+        from turn_telemetry import summarize as _turn_summarize  # type: ignore
+    except ImportError:
+        _turn_summarize = None  # type: ignore
 import sys
 import time
 import urllib.request
@@ -742,6 +751,39 @@ class TokenStats:
     live_quota: LiveServerQuota = field(default_factory=LiveServerQuota)
     top_tools: Dict[str, Dict[str, int]] = field(default_factory=dict)
     steps_count: int = 0
+    rtk_savings: Optional[Dict[str, Any]] = None
+
+
+def fetch_rtk_savings(db_path: Optional[Path] = None, project_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """Consulta o histórico de economias do RTK (Rust Token Killer) em ~/.local/share/rtk/history.db."""
+    target = db_path or (Path.home() / ".local" / "share" / "rtk" / "history.db")
+    if not target.is_file():
+        return None
+    try:
+        conn = sqlite3.connect(str(target), timeout=0.2)
+        cursor = conn.cursor()
+        if project_path:
+            cursor.execute(
+                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0), COALESCE(AVG(savings_pct), 0.0) FROM commands WHERE project_path = ?",
+                (project_path,)
+            )
+        else:
+            cursor.execute(
+                "SELECT COUNT(*), COALESCE(SUM(input_tokens), 0), COALESCE(SUM(output_tokens), 0), COALESCE(SUM(saved_tokens), 0), COALESCE(AVG(savings_pct), 0.0) FROM commands"
+            )
+        row = cursor.fetchone()
+        conn.close()
+        if row and row[0] > 0:
+            return {
+                "total_commands": int(row[0]),
+                "input_tokens": int(row[1]),
+                "output_tokens": int(row[2]),
+                "saved_tokens": int(row[3]),
+                "avg_savings_pct": round(float(row[4]), 1),
+            }
+    except Exception:
+        pass
+    return None
 
 
 @dataclass
@@ -1224,6 +1266,7 @@ def parse_transcript_data(
         live_quota=live_quota,
         top_tools=sorted_tools,
         steps_count=active_steps,
+        rtk_savings=fetch_rtk_savings(),
     )
 
 
@@ -1261,6 +1304,24 @@ def format_badge(stats: TokenStats) -> str:
         f"| **5h:** `[{bar_5h}] {r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) "
         f"| **Semana:** `[{bar_7d}] {r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
     )
+
+
+def _format_resend_line() -> str:
+    """Gera a linha de reenvio acumulado para o rodapé, se dados disponíveis (D2/D3)."""
+    if _turn_summarize is None:
+        return ""
+    try:
+        summary = _turn_summarize()
+        if not summary or summary.get("turns", 0) < 2:
+            return ""  # Amostra insuficiente
+        resend = summary.get("resend_tokens", 0)
+        share = summary.get("resend_share_pct", 0.0)
+        if resend <= 0:
+            return ""
+        resend_str = human_tokens(resend)
+        return f"Reenvio:  {resend_str} tokens acumulados ({share:.1f}% do total da sessão)  \n"
+    except Exception:
+        return ""  # Falha silenciosa — não quebra o rodapé
 
 
 def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
@@ -1318,8 +1379,19 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         desc_5h_str = f" ({desc_5h})" if desc_5h else ""
         desc_7d_str = f" ({desc_7d})" if desc_7d else ""
 
+        resend_line = _format_resend_line()
+        rtk_line = ""
+        if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+            s = stats.rtk_savings
+            tok_saved = human_tokens(s.get("saved_tokens", 0))
+            pct_saved = s.get("avg_savings_pct", 0.0)
+            n_cmds = s.get("total_commands", 0)
+            rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
+
         return (
             f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+            f"{resend_line}"
+            f"{rtk_line}"
             f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
             f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}{proj_tag}  \n"
             f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
@@ -1359,8 +1431,19 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     bar_5h = make_progress_bar(pct_5h, 10)
     bar_7d = make_progress_bar(pct_7d, 10)
 
+    resend_line = _format_resend_line()
+    rtk_line = ""
+    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+        s = stats.rtk_savings
+        tok_saved = human_tokens(s.get("saved_tokens", 0))
+        pct_saved = s.get("avg_savings_pct", 0.0)
+        n_cmds = s.get("total_commands", 0)
+        rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
+
     return (
         f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+        f"{resend_line}"
+        f"{rtk_line}"
         f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
         f"5h:       [{bar_5h}] {pct_5h:.1f}% usado ({r5h_used}) • {pct_5h_rem:.1f}% restante (~{r5h_rem}) de {r5h_tot} [Estimado · {provider_label}]  \n"
         f"Semana:   [{bar_7d}] {pct_7d:.1f}% usado ({r7d_used}) • **{pct_7d_rem:.1f}% restante ({r7d_rem})** de {r7d_tot} [Estimado · {provider_label}]  \n"
@@ -1433,6 +1516,8 @@ def format_json_stats(stats: TokenStats) -> str:
             },
         },
     }
+    if stats.rtk_savings:
+        payload["rtk_savings"] = stats.rtk_savings
     return json.dumps(payload, indent=2)
 
 
@@ -1482,7 +1567,19 @@ def format_markdown_report(stats: TokenStats) -> str:
 
 ## 3. Top Ferramentas Consumidoras
 {tools_table}
+"""
+    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+        s = stats.rtk_savings
+        report += f"""
+---
 
+## ⚡ Economia de Tokens via RTK (Rust Token Killer)
+- **Comandos interceptados:** {s.get('total_commands', 0)}
+- **Tokens economizados:** `{human_tokens(s.get('saved_tokens', 0))}` ({s.get('saved_tokens', 0):,} tokens)
+- **Taxa média de redução:** **{s.get('avg_savings_pct', 0.0):.1f}%**
+"""
+
+    report += f"""
 ---
 
 ## 4. Recomendações de Governança
@@ -1852,6 +1949,10 @@ def render_plain_dashboard(stats: TokenStats):
     print(f" - Execuções de Ferramentas: {stats.tool_tokens:,} tokens ({stats.tool_bytes:,} B)")
     print(f" - Respostas & Thinking:    {stats.model_output_tokens:,} tokens ({stats.model_output_bytes:,} B)")
     print(f" - Mensagens do Usuário:    {stats.user_input_tokens:,} tokens ({stats.user_input_bytes:,} B)")
+    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+        s = stats.rtk_savings
+        print("-" * 70)
+        print(f"⚡ ECONOMIA RTK (Rust Token Killer): {s['saved_tokens']:,} tokens poupados ({s['avg_savings_pct']:.1f}% em {s['total_commands']} comandos)")
     print("=" * 70)
 
 

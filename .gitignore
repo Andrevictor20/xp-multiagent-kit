@@ -6,3 +6,8 @@ __pycache__/
 .agents/memory/.repo_map_cache.json
 .agents/memory/.memory_index.db*
 .agents/memory/.session_state.json
+.agents/hooks.rendered.json
+.agents/runtime/*
+!.agents/runtime/evidence/
+.agents/memory/details/
+.agents/skills_disabled/

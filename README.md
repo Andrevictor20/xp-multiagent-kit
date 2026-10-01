@@ -1,6 +1,6 @@
 # XP Multi-Agent Kit v2 (Antigravity)
 
-Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco. É flexível (L0 a L3), orquestrando disciplinas essenciais: **TDD Estrito & Matriz Multi-Camadas**, **Política Anti-Test-Bypass (Proibição de Burlar Testes)**, Secure Software Development (SSDLC), **Engenharia de Causa Raiz & Anti-Workaround**, **Code Deslop & Limpeza de Código de IA**, **DevOps & Zero-Downtime Deployments**, **Engenharia de Observabilidade & SLOs**, **Cloud Security & Zero Trust Architecture**, Arquitetura de Dados, **Engenharia de Frontend Anti-Slop**, **Motor de Conversion Copywriting & SEO Semântico** e **Memória Contínua em 4 Tiers (Karpathy LLM Wiki Pattern)**.
+Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco. É flexível (L0 a L3), orquestrando disciplinas essenciais: **ATDD/BDD & Pirâmide de Especificação (Contrato Humano-IA)**, **TDD Estrito & Matriz Multi-Camadas**, **Política Anti-Test-Bypass (Proibição de Burlar Testes)**, Secure Software Development (SSDLC), **Engenharia de Causa Raiz & Anti-Workaround**, **Code Deslop & Limpeza de Código de IA**, **DevOps & Zero-Downtime Deployments**, **Engenharia de Observabilidade & SLOs**, **Cloud Security & Zero Trust Architecture**, Arquitetura de Dados, **Engenharia de Frontend Anti-Slop**, **Motor de Conversion Copywriting & SEO Semântico** e **Memória Contínua em 4 Tiers (Karpathy LLM Wiki Pattern)**.
 
 > **Regra de Ouro**: Use o menor número de agentes, skills e etapas capaz de produzir uma mudança correta, testada, segura, acessível, observável e sustentável.
 
@@ -10,14 +10,14 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 .agents/
 ├── agents/                 # Agentes responsáveis pela execução de papéis específicos
 │   ├── orchestrator        # Roteamento baseado em risco e Fast Context Bootstrap
-│   ├── navigator           # Analisa intenção, arquitetura, público, SEO e critérios de aceite
+│   ├── navigator           # Analisa intenção, arquitetura, público, SEO e formaliza a Pirâmide de Especificação (AC + SbE + Gherkin)
 │   ├── designer            # Direção estética Anti-Slop, Copywriting, CRO, QA de UI e acessibilidade
 │   ├── sentinel            # Modelagem de ameaças, CloudSec Zero Trust, IaC Governance e SSDLC
-│   ├── test-guardian       # TDD: Matriz multi-testes, debugging sistemático, anti-test-bypass e GREEN
+│   ├── test-guardian       # ATDD/TDD: acceptance tests parametrizados, matriz multi-testes, debugging sistemático, anti-test-bypass e Conformance Report
 │   ├── builder             # Implementa código (somente o necessário para o GREEN, sem workarounds)
 │   ├── refactor-warden     # Refatorações (Code Deslop, No God Files, eliminação de workarounds)
 │   ├── archivist           # Memória contínua em 4 Tiers, Handoffs, Lições Aprendidas e Memory Lint
-│   ├── release-gatekeeper  # Valida CI, scans de segurança, auditoria anti-test-bypass e commits
+│   ├── release-gatekeeper  # Valida CI, scans de segurança, Conformance Report, auditoria anti-test-bypass e commits
 │   ├── shipper             # CD, Zero-Downtime (Blue/Green/Canary), Telemetria e Rollback
 │   └── genesis             # Setup inicial no momento zero (Scaffold, Test Harness, CI e Memory)
 │
@@ -31,7 +31,11 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │
 ├── hooks.json              # Configuração nativa de hooks do ciclo de vida
 │
-├── skills/                 # Capabilities granulares que os agentes utilizam (71 Skills)
+├── skills/                 # Capabilities granulares que os agentes utilizam (74 Skills)
+│   ├── acceptance-test-driven            # ATDD: contrato humano-IA, Acceptance Criteria verificáveis e Pirâmide de Especificação
+│   ├── specification-by-example          # SbE: regras vagas convertidas em tabelas de exemplos parametrizados e executáveis
+│   ├── conformance-tracker               # Rastreabilidade AC → teste → status e emissão do Conformance Report
+│   ├── spec-driven-development           # SDD: especificação executável (Gherkin BDD) como fonte da verdade
 │   ├── tdd-safety-net                  # Matriz de testes (Unit, Integration, Contract, E2E, Fuzzing) e Anti-Test-Bypass
 │   ├── test-evidence-walkthrough       # Exigência de evidências reais L0 a L4
 │   ├── integration-testing             # Testes de integração em fronteiras de dados e APIs
@@ -76,10 +80,10 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │
 ├── workflows/              # Definições das rotas de execução
 │   ├── trivial.md          # L0: Alterações mínimas (ex: typo). Pula TDD e validações pesadas.
-│   ├── small.md            # L1: Alterações simples. Foco no TDD básico.
-│   ├── feature.md          # L2: Funcionalidade média. Avaliações de design e segurança condicionais.
-│   ├── critical.md         # L3: Auth, Dados, Pagamentos. Threat model e gates rigorosos.
-│   ├── spec-driven.md      # SDD: Especificação executável formal (Gherkin BDD) como fonte da verdade.
+│   ├── small.md            # L1: Alterações simples. Acceptance Criteria informais + TDD básico + Conformance resumido.
+│   ├── feature.md          # L2: Funcionalidade média. Pirâmide de Especificação obrigatória, Stop Gate humano e Conformance Report.
+│   ├── critical.md         # L3: Auth, Dados, Pagamentos. Threat model, ATDD/BDD integral e gates rigorosos.
+│   ├── spec-driven.md      # SDD/ATDD: Acceptance Criteria + SbE + Gherkin como fonte da verdade antes de qualquer código.
 │   ├── migration.md        # Migração estrutural segura com Expand-and-Contract e Zero Downtime.
 │   ├── performance-benchmark.md # Otimização de performance com profiling e baseline de SLOs.
 │   ├── bugfix.md           # Debugging sistemático, no-workarounds e regressão provada antes de corrigir.
@@ -87,18 +91,45 @@ Kit de skills, agentes, workflows e políticas para desenvolvimento em pair prog
 │   └── release.md          # Conexão CI/CD com zero-downtime, telemetria e rollback automatizado.
 │
 ├── policies/               # Diretrizes globais baseadas no risco e impacto
+│   ├── atdd-bdd-tdd.md     # Pirâmide de Especificação, contrato humano-IA, Anti-Self-Test e Hard Gate de conformidade
 │   ├── tdd.md              # Matriz de 8 tipos de testes, ciclo RED-GREEN e regras Anti-Test-Bypass
 │   ├── release.md          # Deploy sem downtime, autenticação OIDC, telemetria e rollback imediato
 │   ├── memory.md           # Política de 4 Tiers, Untrusted History, token budget e handoffs
 │   ├── frontend.md         # Política de frontend anti-slop, copywriting, WCAG AA, dials e viewport
 │   ├── design-system.md    # Locks de consistência de cores, formas e raios concêntricos
+│   ├── agent-handoff.md    # Contrato estruturado de transição entre agentes e sessões
 │   ├── security.md
 │   ├── database.md
 │   └── evidence.md
 │
 └── templates/              # Templates reutilizáveis para novos projetos
-    └── PROJECT_MEMORY_TEMPLATE.md
+    ├── PROJECT_MEMORY_TEMPLATE.md
+    └── SPEC-NNN-ATDD.md    # Spec ATDD: Contexto, Acceptance Criteria, SbE Tables, Gherkin, Invariantes e Conformance
 ```
+
+---
+
+## 📐 Pirâmide de Especificação (ATDD/BDD) & Contrato Humano-IA
+
+Resolve o problema central do desenvolvimento assistido por IA: **"100% dos testes passando, mas os testes não representam o requisito correto"**. Governado pela policy `atdd-bdd-tdd.md`.
+
+```text
+👤 HUMANO — "O que deve acontecer?"
+   Intent → Acceptance Criteria (ATDD) → Specification by Example (tabelas) → Cenários Gherkin (BDD)
+                                    ↓
+                    ⏸️ STOP GATE: aprovação humana da spec
+                                    ↓
+🤖 IA — "Como implementar corretamente?"
+   Acceptance Tests (RED) → Integration Tests (RED) → Unit Tests (RED) → Implementação (GREEN) → Refactor
+                                    ↓
+✅ VALIDAÇÃO — Conformance Report (AC → teste → status) → Review humano
+```
+
+- **Separação de contrato:** o humano define os Acceptance Criteria e valida as tabelas de exemplos; a IA converte a spec em testes e código. **Regra Anti-Self-Test:** a IA nunca define critérios E testes sem aprovação humana intermediária.
+- **Specification by Example (`specification-by-example`):** cada linha da tabela vira exatamente um caso de teste parametrizado (`pytest.mark.parametrize`, `test.each`, `#[rstest]`), cobrindo happy path, limites, erros e edge cases.
+- **Conformance Report (`conformance-tracker`):** matriz de rastreabilidade `AC → SbE Lines → Test File → Test Name → Status` com resumo "N/N critérios cobertos e aprovados". Critério sem teste ou teste RED = `NON-COMPLIANT` = entrega **bloqueada**.
+- **Ativação por risco:** L0 dispensado • L1 Acceptance Criteria informais + Conformance resumido • L2/L3 pirâmide completa com Stop Gate e Conformance Report obrigatórios (L3 adiciona cross-reference com o Threat Model STRIDE).
+- **Template:** `.agents/templates/SPEC-NNN-ATDD.md` (Contexto, AC, SbE, Gherkin, Contratos, Invariantes, Conformance Tracking e Notas de Implementação).
 
 ---
 
@@ -161,9 +192,9 @@ Implementado via `.agents/hooks.json` com interceptação em tempo de execução
   - **Loop Detection & Anti-Repetição:** Bloqueia automaticamente com `deny` ferramentas executadas 3x consecutivas com os mesmos argumentos.
   - **Proteção de Workspace (`list_dir`):** Bloqueia listagens na raiz do projeto; exige uso do `REPO_MAP.md` ou caminhos específicos.
   - **Filtro de Ruído em Busca (`grep_search`):** Injeta exclusão automática de diretórios ruidosos (`node_modules`, `.git`, `dist`, `__pycache__`, etc.).
-  - **Clamp Cirúrgico (`view_file`):** Teto estrito de no máximo 40 linhas por leitura (`EndLine - StartLine <= 40`).
+  - **Leitura em Uma Chamada (`view_file`):** arquivos até `WHOLE_FILE_READ_MAX_LINES` são lidos inteiros em **uma** chamada (reduzir turnos vale mais do que encolher a saída); acima disso, janela de `SECTION_READ_MAX_LINES`. Valores em `scripts/kit_constants.py`.
   - **Sanitização Mandatória (`run_command`):** Injeção automática de `agy-sanitize` em comandos verbosos sem limitador.
-- **PostToolUse (`tool-size-guard`):** Trunca saídas volumosas de ferramentas (> 2.5KB / 15 linhas) com aviso explicativo, impedindo poluição do contexto.
+- **PostToolUse (`tool-size-guard`):** Trunca saídas volumosas de ferramentas (acima dos limites definidos em `scripts/kit_constants.py`) com aviso explicativo, impedindo poluição do contexto.
 - **PostInvocation (`token-badge`):** Injeta crachá de telemetria no encerramento de cada turno.
 - **PreInvocation (`dynamic-effort-router`):** Auto-modulação dinâmica turno a turno para CLI (`agy-smart`, `agy-effort`).
 

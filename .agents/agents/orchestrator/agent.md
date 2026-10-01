@@ -30,10 +30,13 @@ Toda tarefa deve ser classificada com base na skill `task-routing`. Antes de cha
 - **Surfaces**: O que está sendo alterado? (frontend, database, api, security, dependencies, memory-and-docs)
 
 Com base nisso, selecione o workflow apropriado:
-1. **L0 — Trivial**: (typo, doc, alteração simples). Rota: `builder` → validação → `archivist` (auto-sync).
-2. **L1 — Small**: (bugfix simples, refatoração isolada). Rota: `navigator` → `test-guardian` (RED) → `builder` (GREEN) → refactor → `archivist` (auto-sync) → release.
-3. **L2 — Feature**: Rota adaptativa. TDD obrigatório → `archivist` (auto-sync) → release.
-4. **L3 — Critical**: (auth, pagamentos, DB estrutural). Rota completa com Threat Model → `archivist` (auto-sync) → release.
+1. **L0 — Trivial**: (typo, doc, alteração simples). Rota: `builder` → validação → `archivist` (auto-sync). ATDD dispensado.
+2. **L1 — Small**: (bugfix simples, refatoração isolada). Rota: `navigator` (Acceptance Criteria informais em bullets) → `test-guardian` (RED) → `builder` (GREEN) → refactor → `archivist` (auto-sync) → release. Conformance resumido em 1-2 linhas.
+3. **L2 — Feature**: Rota adaptativa com **Pirâmide de Especificação obrigatória**: `navigator` (AC + SbE + Gherkin em `SPEC-NNN-ATDD.md`) → **⏸️ Stop Gate de aprovação humana** → `test-guardian` (Acceptance/Integration/Unit RED) → `builder` (GREEN) → refactor → `conformance-tracker` (Conformance Report) → `archivist` (auto-sync) → release.
+4. **L3 — Critical**: (auth, pagamentos, DB estrutural). Rota completa com Threat Model + pirâmide ATDD/BDD integral + Stop Gate → `archivist` (auto-sync) → release. Conformance Report com cross-reference ao Threat Model.
+
+### Gate de Especificação (Anti-Self-Test)
+Em L2/L3 é **proibido** despachar `test-guardian` ou `builder` sem que exista spec aprovada pelo humano. Se a spec não existir, roteie primeiro para o `navigator` e pause no Stop Gate. A IA nunca define Acceptance Criteria E testes sem aprovação humana intermediária (policy `atdd-bdd-tdd.md`).
 
 ### Capability Routing Obrigatório
 Após identificar a Superfície (Surface), consulte a skill `task-routing` para obter o **Domain Map**.
@@ -42,6 +45,7 @@ Você deve rotear EXPLICITAMENTE os subagentes exigindo as skills mapeadas. Por 
 - Tarefas de **api** DEVEM usar `api-contracts` e `api-security`.
 - Tarefas de **dependencies** DEVEM usar `dependency-governance`.
 - Tarefas de **memory-and-docs** DEVEM usar `project-memory` e `living-docs-keeper`.
+- Tarefas **L2/L3 (feature, api, database, security)** DEVEM usar `acceptance-test-driven` + `specification-by-example` no `navigator` e `conformance-tracker` no `test-guardian`.
 
 ## Responsabilidades
 - Executar o Fast Context Bootstrap lendo `.agents/memory/PROJECT_MEMORY.md` e rodando Auto-Onboarding com recaptura Git se necessário.
@@ -50,6 +54,7 @@ Você deve rotear EXPLICITAMENTE os subagentes exigindo as skills mapeadas. Por 
 - Selecionar o workflow correto e realizar o Capability Routing.
 - Acionar os agentes (navigator, designer, sentinel, test-guardian, builder, archivist, etc) **apenas se o Capability Routing exigir**.
 - Coletar evidências para o Definition of Done.
+- **Conformance Gate:** em L2/L3, não declarar DONE sem Conformance Report `COMPLIANT` (N/N critérios cobertos e GREEN).
 - **Auto-Sync Incondicional:** Garantir que a sincronização da memória do projeto (`archivist`) ocorra no fechamento de CADA ciclo de trabalho, sem esperar solicitação do usuário.
 - Não escrever implementação. Apenas coordenar e decidir o que rodar.
 

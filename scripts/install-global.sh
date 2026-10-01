@@ -68,7 +68,31 @@ ln -sfn "$KIT_DIR/.agents/rules" "$GLOBAL_CONFIG_DIR/rules"
 ln -sfn "$KIT_DIR/.agents/templates" "$GLOBAL_CONFIG_DIR/templates"
 ln -sfn "$KIT_DIR/.agents/memory" "$GLOBAL_CONFIG_DIR/memory"
 
-# 4.2. Garantir paridade com Antigravity CLI
+# 4.2. Renderizar hooks.json: materializa ${KIT_ROOT} em hooks.rendered.json (C2)
+if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
+  echo "🔗 Renderizando hooks.json com caminhos absolutos..."
+  python3 -c "
+import json
+src = '$KIT_DIR/.agents/hooks.json'
+dst = '$KIT_DIR/.agents/hooks.rendered.json'
+kit = '$KIT_DIR'
+try:
+    with open(src) as f:
+        raw = f.read()
+    d = json.loads(raw.replace('\${KIT_ROOT}', kit).replace('\$KIT_ROOT', kit))
+    d.pop('orca-status', None)
+    with open(dst, 'w') as f:
+        json.dump(d, f, indent=2)
+        f.write('\n')
+except Exception:
+    pass
+" 2>/dev/null || true
+fi
+HOOKS_SRC="$KIT_DIR/.agents/hooks.rendered.json"
+[ -f "$HOOKS_SRC" ] || HOOKS_SRC="$KIT_DIR/.agents/hooks.json"
+ln -sf "$HOOKS_SRC" "$GLOBAL_CONFIG_DIR/hooks.json"
+
+# 4.3. Garantir paridade com Antigravity CLI
 CLI_DIR="$HOME/.gemini/antigravity-cli"
 if [ -d "$CLI_DIR" ]; then
   echo "🔗 Sincronizando paridade com Antigravity CLI ($CLI_DIR)..."
@@ -81,28 +105,11 @@ if [ -d "$CLI_DIR" ]; then
   ln -sfn "$KIT_DIR/.agents/memory" "$CLI_DIR/memory"
   ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
   rm -f "$CLI_DIR/GEMINI.md"
-  # Garantir sanitização de hooks contra bloqueio de ferramentas
-  if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
-    python3 -c "
-import json
-p = '$KIT_DIR/.agents/hooks.json'
-try:
-    with open(p) as f:
-        d = json.load(f)
-    if 'orca-status' in d:
-        d.pop('orca-status', None)
-        with open(p, 'w') as f:
-            json.dump(d, f, indent=2)
-except Exception:
-    pass
-" 2>/dev/null || true
-  fi
+  ln -sf "$HOOKS_SRC" "$CLI_DIR/hooks.json"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$CLI_DIR/mcp_config.json"
-  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$CLI_DIR/hooks.json"
-  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$GLOBAL_CONFIG_DIR/hooks.json"
 fi
 
-# 4.3. Garantir paridade com Antigravity IDE
+# 4.4. Garantir paridade com Antigravity IDE
 IDE_DIR="$HOME/.gemini/antigravity-ide"
 if [ -d "$IDE_DIR" ]; then
   echo "🔗 Sincronizando paridade com Antigravity IDE ($IDE_DIR)..."
@@ -116,7 +123,7 @@ if [ -d "$IDE_DIR" ]; then
   ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$IDE_DIR/AGENTS.md"
   rm -f "$IDE_DIR/GEMINI.md"
   [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$IDE_DIR/mcp_config.json"
-  [ -f "$KIT_DIR/.agents/hooks.json" ] && ln -sf "$KIT_DIR/.agents/hooks.json" "$IDE_DIR/hooks.json"
+  ln -sf "$HOOKS_SRC" "$IDE_DIR/hooks.json"
   rm -rf "$CLI_DIR/mcp"/* "$IDE_DIR/mcp"/* 2>/dev/null || true
   if [ -f "$CLI_DIR/settings.json" ] && [ ! -f "$IDE_DIR/settings.json" ]; then
     cp "$CLI_DIR/settings.json" "$IDE_DIR/settings.json"
@@ -137,6 +144,12 @@ chmod +x "$KIT_DIR/scripts"/* "$KIT_DIR/scripts/hooks"/* "$KIT_DIR/scripts/globa
 ln -sf "$KIT_DIR/scripts/token_tracker.py" "$HOME/.local/bin/xp-tokens"
 ln -sf "$KIT_DIR/scripts/token_tracker.py" "$HOME/.local/bin/agy-tokens"
 ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/agy-sanitize"
+# Enforcement portátil (C1) + telemetria local (D) + evidência/conformance (E1/E2)
+ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/agy-run"
+ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$HOME/.local/bin/agy-turn"
+ln -sf "$KIT_DIR/scripts/evidence_recorder.py" "$HOME/.local/bin/agy-evidence"
+ln -sf "$KIT_DIR/scripts/conformance_report.py" "$HOME/.local/bin/agy-conformance"
+ln -sf "$KIT_DIR/scripts/skill_index.py" "$HOME/.local/bin/agy-skill-index"
 ln -sf "$KIT_DIR/scripts/agy-handoff" "$HOME/.local/bin/agy-handoff"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit-config"
 ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit"
@@ -152,8 +165,9 @@ ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/agy-effort"
 ln -sf "$KIT_DIR/scripts/agy-init-memory" "$HOME/.local/bin/agy-init-memory"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/agy-ci-heal"
 ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/xp-ci-heal"
-ln -sf "$KIT_DIR/scripts/agy-repo-map" "$HOME/.local/bin/agy-repo-map"
 ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/agy-worktree"
+ln -sf "$KIT_DIR/scripts/agy-skills-profile" "$HOME/.local/bin/agy-skills-profile"
+ln -sf "$KIT_DIR/scripts/agy-skills-profile" "$HOME/.local/bin/agy-skills"
 ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/xp-worktree"
 ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/agy-compact"
 ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/xp-compact"
@@ -166,7 +180,24 @@ ln -sf "$KIT_DIR/scripts/agy-daemon" "$HOME/.local/bin/agy-daemon"
 ln -sf "$KIT_DIR/scripts/agy-dashboard" "$HOME/.local/bin/agy-dashboard"
 ln -sf "$KIT_DIR/scripts/agy-session-compact" "$HOME/.local/bin/agy-session-compact"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact disponíveis no PATH!"
+
+# 5.1. Instalação e verificação do RTK (Rust Token Killer)
+if [ -f "$KIT_DIR/rtk-develop/target/release/rtk" ]; then
+  echo "🦀 Instalando RTK compilado em $HOME/.local/bin/rtk..."
+  cp "$KIT_DIR/rtk-develop/target/release/rtk" "$HOME/.local/bin/rtk"
+  chmod +x "$HOME/.local/bin/rtk"
+elif command -v cargo >/dev/null 2>&1 && [ -d "$KIT_DIR/rtk-develop" ]; then
+  echo "🦀 Compilando RTK (Rust Token Killer) para alto desempenho..."
+  cargo build --release --manifest-path "$KIT_DIR/rtk-develop/Cargo.toml" || true
+  if [ -f "$KIT_DIR/rtk-develop/target/release/rtk" ]; then
+    cp "$KIT_DIR/rtk-develop/target/release/rtk" "$HOME/.local/bin/rtk"
+    chmod +x "$HOME/.local/bin/rtk"
+  fi
+fi
+if command -v rtk >/dev/null 2>&1; then
+  echo "   ✅ RTK ativo: $(rtk --version 2>/dev/null || echo 'instalado')"
+fi
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
 echo "🔗 Configurando Git Hooks globais (post-push watcher)..."

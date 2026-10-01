@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# scripts/agy-skills-profile
+# Wrapper para o gerenciador de perfis de skills (A2 / D3).
+set -euo pipefail
+
+TARGET="${BASH_SOURCE[0]}"
+while [ -L "$TARGET" ]; do
+  TARGET_DIR="$(cd -P "$(dirname "$TARGET")" && pwd)"
+  TARGET="$(readlink "$TARGET")"
+  [[ $TARGET != /* ]] && TARGET="$TARGET_DIR/$TARGET"
+done
+SCRIPT_DIR="$(cd -P "$(dirname "$TARGET")" && pwd)"
+
+exec python3 "$SCRIPT_DIR/skill_profiles.py" "$@"

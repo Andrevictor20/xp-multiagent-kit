@@ -1,0 +1,114 @@
+#!/usr/bin/env python3
+"""
+agy-run: executor de comandos com enforcement portátil (C1).
+
+Em IDEs/CLIs sem sistema de hooks (Qoder, Cursor, CI), as regras do kit seriam
+apenas prosa de adesão probabilística. Este wrapper aplica mecanicamente, para
+qualquer comando:
+
+  1. compatibilidade de shell (B5) - comandos POSIX rodam em bash mesmo quando
+     o shell do usuário é fish/csh, evitando retry caro por erro de sintaxe
+  2. remoção de ruído de banner/MOTD (B4)
+  3. truncamento head/tail dentro do orçamento de saída
+  4. registro do turno na telemetria local (D)
+
+Uso:
+    agy-run "pytest tests/test_x.py -q"
+    agy-run --risk L1 "git diff --stat"
+    agy-run --no-sanitize "comando-interativo"
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from kit_constants import (  # noqa: E402
+    SANITIZE_HEAD_LINES,
+    SANITIZE_TAIL_LINES,
+    TOOL_OUTPUT_MAX_LINES,
+    needs_posix_wrapper,
+    posix_wrapper,
+)
+from output_noise import clean_output, noise_stats  # noqa: E402
+from turn_telemetry import record_turn  # noqa: E402
+
+
+def build_argv(command: str) -> list:
+    """Escolhe o interpretador: bash para sintaxe POSIX quando o shell diverge."""
+    if os.environ.get("AGY_NO_SHELL_WRAP") or not needs_posix_wrapper():
+        return [os.environ.get("SHELL", "/bin/sh"), "-c", command]
+    return [posix_wrapper(), "-c", command]
+
+
+def truncate(lines, max_lines, head, tail):
+    total = len(lines)
+    if total <= max_lines:
+        return lines
+    omitted = total - head - tail
+    if omitted <= 0:
+        return lines
+    marker = f"[... {omitted} linhas omitidas pelo agy-run para poupar tokens ...]"
+    return lines[:head] + [marker] + lines[-tail:]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Executor de comandos com enforcement do XP Kit")
+    parser.add_argument("command", help="Comando shell a executar")
+    parser.add_argument("--risk", default="L1", choices=["L0", "L1", "L2", "L3"])
+    parser.add_argument("--max-lines", type=int, default=TOOL_OUTPUT_MAX_LINES)
+    parser.add_argument("--no-sanitize", action="store_true", help="Desativa truncamento")
+    parser.add_argument("--no-telemetry", action="store_true", help="Não registra o turno")
+    parser.add_argument("--session", default=os.environ.get("AGY_SESSION", "cli"))
+    args = parser.parse_args()
+
+    try:
+        proc = subprocess.run(
+            build_argv(args.command),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+        )
+    except Exception as exc:
+        sys.stderr.write(f"agy-run execution error: {exc}\n")
+        return 1
+
+    raw = proc.stdout or ""
+    noise = noise_stats(raw)
+    cleaned = clean_output(raw) if noise["noise_lines"] else raw
+
+    lines = cleaned.splitlines()
+    if not args.no_sanitize:
+        lines = truncate(lines, args.max_lines, SANITIZE_HEAD_LINES, SANITIZE_TAIL_LINES)
+
+    output_text = "\n".join(lines)
+    sys.stdout.write(output_text)
+    if output_text and not output_text.endswith("\n"):
+        sys.stdout.write("\n")
+    sys.stdout.flush()
+
+    if not args.no_telemetry:
+        try:
+            record_turn(
+                risk_level=args.risk,
+                tool_calls=1,
+                tool_chars=len(raw),
+                session_id=args.session,
+            )
+        except Exception:
+            pass
+
+    if noise["noise_lines"]:
+        sys.stderr.write(
+            f"[agy-run] {noise['noise_lines']} linhas de banner removidas "
+            f"({noise['saved_chars']} chars / ~{noise['saved_chars'] // 4} tokens economizados)\n"
+        )
+
+    return proc.returncode
+
+
+if __name__ == "__main__":
+    sys.exit(main())

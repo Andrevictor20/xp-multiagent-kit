@@ -3,7 +3,7 @@
     "PostInvocation": [
       {
         "type": "command",
-        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/token-badge-hook.py",
+        "command": "python3 ${KIT_ROOT}/scripts/hooks/token-badge-hook.py",
         "timeout": 10
       }
     ]
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/tool-size-guard.py",
+            "command": "python3 ${KIT_ROOT}/scripts/hooks/tool-size-guard.py",
             "timeout": 5
           }
         ]
@@ -29,7 +29,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/smart_tool_optimizer.py",
+            "command": "python3 ${KIT_ROOT}/scripts/hooks/smart_tool_optimizer.py",
             "timeout": 5
           }
         ]
@@ -40,7 +40,7 @@
     "PreInvocation": [
       {
         "type": "command",
-        "command": "python3 /home/andrevmp/Downloads/xp-multiagent-kit/scripts/hooks/dynamic_effort_hook.py",
+        "command": "python3 ${KIT_ROOT}/scripts/hooks/dynamic_effort_hook.py",
         "timeout": 5
       }
     ]

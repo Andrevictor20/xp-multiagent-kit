@@ -4,11 +4,25 @@ agy-sanitize: Universal tool output sanitizer to prevent terminal flood and toke
 Can be used as a command wrapper or in pipes:
     agy-sanitize pytest -v
     cat big_log.txt | agy-sanitize
+
+Ordem de processamento (B4 antes do truncamento):
+    1. strip de ruído de shell (banner/MOTD/ASCII art) - barato e sempre aplicável
+    2. truncamento head/tail apenas se ainda exceder o orçamento de linhas
 """
 
 import os
-import sys
 import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from kit_constants import (  # noqa: E402
+    SANITIZE_HEAD_LINES,
+    SANITIZE_TAIL_LINES,
+    TOOL_OUTPUT_MAX_LINES,
+)
+from output_noise import clean_output, noise_stats  # noqa: E402
 
 
 def sanitize_lines(lines, max_lines, head_count, tail_count):
@@ -28,14 +42,21 @@ def sanitize_lines(lines, max_lines, head_count, tail_count):
     return lines[:head_count] + [marker] + lines[-tail_count:]
 
 
+def report_noise(stats, stream):
+    if stats["noise_lines"]:
+        stream.write(
+            f"[agy-sanitize] {stats['noise_lines']} linhas de banner removidas "
+            f"({stats['saved_chars']} chars economizados)\n"
+        )
+
+
 def main():
-    max_lines = int(os.environ.get("AGY_MAX_LINES", 40))
-    head_count = int(os.environ.get("AGY_HEAD_LINES", 10))
-    tail_count = int(os.environ.get("AGY_TAIL_LINES", 20))
+    max_lines = int(os.environ.get("AGY_MAX_LINES", TOOL_OUTPUT_MAX_LINES))
+    head_count = int(os.environ.get("AGY_HEAD_LINES", SANITIZE_HEAD_LINES))
+    tail_count = int(os.environ.get("AGY_TAIL_LINES", SANITIZE_TAIL_LINES))
 
     args = sys.argv[1:]
 
-    # Parse optional --max-lines argument
     if len(args) >= 2 and args[0] in ("-m", "--max-lines"):
         try:
             max_lines = int(args[1])
@@ -44,10 +65,9 @@ def main():
             pass
 
     exit_code = 0
-    raw_lines = []
+    raw_text = ""
 
     if args:
-        # Running as a command wrapper
         try:
             proc = subprocess.run(
                 args,
@@ -56,18 +76,22 @@ def main():
                 text=True,
             )
             exit_code = proc.returncode
-            raw_lines = proc.stdout.splitlines(keepends=True)
+            raw_text = proc.stdout
         except Exception as e:
             sys.stderr.write(f"agy-sanitize execution error: {e}\n")
             sys.exit(1)
     else:
-        # Reading from stdin / pipe
         try:
-            raw_lines = sys.stdin.readlines()
+            raw_text = sys.stdin.read()
         except KeyboardInterrupt:
             sys.exit(130)
 
-    sanitized = sanitize_lines(raw_lines, max_lines, head_count, tail_count)
+    cleaned = clean_output(raw_text)
+    report_noise(noise_stats(raw_text), sys.stderr)
+
+    sanitized = sanitize_lines(
+        cleaned.splitlines(keepends=True), max_lines, head_count, tail_count
+    )
     for line in sanitized:
         sys.stdout.write(line)
         if not line.endswith("\n"):

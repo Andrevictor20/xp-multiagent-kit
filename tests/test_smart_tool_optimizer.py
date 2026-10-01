@@ -15,7 +15,11 @@ from scripts.hooks.smart_tool_optimizer import (
     optimize_tool_call,
     optimize_view_file,
     optimize_run_command,
-    MAX_VIEW_LINES,
+)
+from scripts.kit_constants import (
+    SECTION_READ_MAX_LINES,
+    WHOLE_FILE_READ_MAX_LINES,
+    WRITE_TO_FILE_MAX_LINES,
 )
 
 
@@ -24,6 +28,8 @@ class TestSmartToolOptimizer(unittest.TestCase):
     def setUp(self):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
+        self._orig_runtime = os.environ.get("KIT_RUNTIME_DIR")
+        os.environ["KIT_RUNTIME_DIR"] = str(self.temp_path / "runtime")
 
         # Create a large file (100 lines)
         self.large_file = self.temp_path / "large_file.txt"
@@ -33,17 +39,34 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.small_file = self.temp_path / "small_file.txt"
         self.small_file.write_text("\n".join(f"Line {i}" for i in range(1, 16)) + "\n", encoding="utf-8")
 
+        # Create a huge file (acima do teto de leitura única)
+        self.huge_file = self.temp_path / "huge_file.txt"
+        self.huge_file.write_text(
+            "\n".join(f"Line {i}" for i in range(1, WHOLE_FILE_READ_MAX_LINES + 201)) + "\n",
+            encoding="utf-8",
+        )
+
     def tearDown(self):
+        if self._orig_runtime is not None:
+            os.environ["KIT_RUNTIME_DIR"] = self._orig_runtime
+        else:
+            os.environ.pop("KIT_RUNTIME_DIR", None)
         self.temp_dir.cleanup()
 
-    def test_view_file_unbounded_large_file_is_clamped(self):
-        args = {"AbsolutePath": str(self.large_file)}
+    def test_view_file_within_whole_read_budget_is_not_sliced(self):
+        """B1: arquivo de 100 linhas cabe em UMA leitura; fatiar custaria mais turnos."""
+        decision, reason, overwrite = optimize_view_file({"AbsolutePath": str(self.large_file)})
+        self.assertEqual(decision, "allow")
+        self.assertIsNone(overwrite)
+
+    def test_view_file_above_whole_read_budget_uses_section_window(self):
+        args = {"AbsolutePath": str(self.huge_file)}
         decision, reason, overwrite = optimize_view_file(args)
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
         self.assertEqual(overwrite.get("StartLine"), 1)
-        self.assertEqual(overwrite.get("EndLine"), MAX_VIEW_LINES)
-        self.assertIn("clamped", reason.lower())
+        self.assertEqual(overwrite.get("EndLine"), SECTION_READ_MAX_LINES)
+        self.assertIn(str(WHOLE_FILE_READ_MAX_LINES), reason)
 
     def test_view_file_small_file_is_unmodified(self):
         args = {"AbsolutePath": str(self.small_file)}
@@ -51,23 +74,23 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(decision, "allow")
         self.assertIsNone(overwrite)
 
-    def test_view_file_range_exceeding_max_lines_is_clamped(self):
+    def test_view_file_range_exceeding_section_window_is_clamped(self):
         args = {
-            "AbsolutePath": str(self.large_file),
+            "AbsolutePath": str(self.huge_file),
             "StartLine": 10,
-            "EndLine": 90,
+            "EndLine": 10 + SECTION_READ_MAX_LINES + 50,
         }
         decision, reason, overwrite = optimize_view_file(args)
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
         self.assertEqual(overwrite.get("StartLine"), 10)
-        self.assertEqual(overwrite.get("EndLine"), 10 + MAX_VIEW_LINES)
+        self.assertEqual(overwrite.get("EndLine"), 10 + SECTION_READ_MAX_LINES)
 
-    def test_view_file_range_within_max_lines_is_preserved(self):
+    def test_view_file_range_within_section_window_is_preserved(self):
         args = {
             "AbsolutePath": str(self.large_file),
             "StartLine": 10,
-            "EndLine": 35,
+            "EndLine": 90,
         }
         decision, reason, overwrite = optimize_view_file(args)
         self.assertEqual(decision, "allow")
@@ -87,7 +110,7 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
         new_cmd = overwrite.get("CommandLine", "")
-        self.assertTrue("agy-sanitize" in new_cmd or "head" in new_cmd)
+        self.assertTrue("agy-sanitize" in new_cmd or "head" in new_cmd or "rtk " in new_cmd)
 
     def test_run_command_verbose_git_log_is_sanitized(self):
         cmd = "git log"
@@ -95,7 +118,7 @@ class TestSmartToolOptimizer(unittest.TestCase):
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
         new_cmd = overwrite.get("CommandLine", "")
-        self.assertTrue("agy-sanitize" in new_cmd or "head" in new_cmd or "-n" in new_cmd)
+        self.assertTrue("agy-sanitize" in new_cmd or "head" in new_cmd or "-n" in new_cmd or "rtk " in new_cmd)
 
     def test_run_command_gh_run_and_workflows_are_sanitized(self):
         cmds = [
@@ -109,7 +132,8 @@ class TestSmartToolOptimizer(unittest.TestCase):
             decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
             self.assertEqual(decision, "allow", f"Failed for {cmd}")
             self.assertIsNotNone(overwrite, f"Expected overwrite for {cmd}")
-            self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+            target_cmd = overwrite.get("CommandLine", "")
+            self.assertTrue("agy-sanitize" in target_cmd or "rtk " in target_cmd, f"Expected optimization for: {cmd}")
 
     def test_run_command_already_piped_or_limited_is_preserved(self):
         cmds = [
@@ -127,12 +151,9 @@ class TestSmartToolOptimizer(unittest.TestCase):
 
     def test_run_command_safe_short_commands_are_preserved(self):
         cmds = [
-            "git status",
-            "git branch",
             "pwd",
             "which python3",
             "mkdir -p src/foo",
-            "ls -la",
             "echo 'hello world'",
         ]
         for cmd in cmds:
@@ -167,45 +188,57 @@ class TestSmartToolOptimizer(unittest.TestCase):
         decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
-        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+        target_cmd = overwrite.get("CommandLine", "")
+        self.assertTrue("agy-sanitize" in target_cmd or "rtk " in target_cmd)
 
     def test_run_command_chained_commands_are_sanitized(self):
         cmd = "cd /tmp && pytest"
         decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
-        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+        target_cmd = overwrite.get("CommandLine", "")
+        self.assertTrue("agy-sanitize" in target_cmd or "rtk " in target_cmd)
 
     def test_run_command_pipeline_without_limiter_is_sanitized(self):
         cmd = "cat log.txt | grep ERROR"
         decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
-        self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+        target_cmd = overwrite.get("CommandLine", "")
+        self.assertTrue("agy-sanitize" in target_cmd or "rtk " in target_cmd)
 
     def test_run_command_linters_and_tools_are_sanitized(self):
         cmds = ["mypy src/", "flake8 .", "ruff check", "eslint .", "npm run lint", "cargo clippy"]
         for cmd in cmds:
             decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
             self.assertEqual(decision, "allow")
-            self.assertIsNotNone(overwrite, f"Expected sanitization for: {cmd}")
-            self.assertIn("agy-sanitize", overwrite.get("CommandLine", ""))
+            self.assertIsNotNone(overwrite, f"Expected sanitization or rtk rewrite for: {cmd}")
+            target_cmd = overwrite.get("CommandLine", "")
+            self.assertTrue("agy-sanitize" in target_cmd or "rtk " in target_cmd, f"Expected token optimization for: {cmd}")
 
     def test_run_command_preserves_exit_code_pipefail(self):
-        cmd = "pytest tests/"
+        cmd = "python3 -m unittest discover tests"
         decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
         self.assertEqual(decision, "allow")
         self.assertIsNotNone(overwrite)
         new_cmd = overwrite.get("CommandLine", "")
         self.assertIn("pipefail", new_cmd)
+        self.assertIn("agy-sanitize", new_cmd)
+
+    def test_run_command_rewrites_via_rtk_when_supported(self):
+        cmd = "git status"
+        decision, reason, overwrite = optimize_run_command({"CommandLine": cmd})
+        self.assertEqual(decision, "allow")
+        self.assertIsNotNone(overwrite)
+        self.assertEqual(overwrite.get("CommandLine"), "rtk git status")
 
     def test_hook_cli_subprocess_contract(self):
-        script_path = ROOT_DIR / "scripts" / "hooks" / "smart-tool-optimizer.py"
+        script_path = ROOT_DIR / "scripts" / "hooks" / "smart_tool_optimizer.py"
         payload = {
             "toolCall": {
                 "name": "view_file",
                 "args": {
-                    "AbsolutePath": str(self.large_file),
+                    "AbsolutePath": str(self.huge_file),
                 },
             },
             "stepIdx": 42,
@@ -217,11 +250,11 @@ class TestSmartToolOptimizer(unittest.TestCase):
             stderr=subprocess.PIPE,
             text=True,
         )
-        self.assertEqual(proc.returncode, 0)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
         output_data = json.loads(proc.stdout)
         self.assertEqual(output_data.get("decision"), "allow")
         self.assertIn("overwrite", output_data)
-        self.assertEqual(output_data["overwrite"].get("EndLine"), MAX_VIEW_LINES)
+        self.assertEqual(output_data["overwrite"].get("EndLine"), SECTION_READ_MAX_LINES)
 
 
     def test_loop_detection_allows_first_and_second_call_then_blocks_third(self):
@@ -320,6 +353,46 @@ class TestSmartToolOptimizer(unittest.TestCase):
             "ArtifactMetadata": {"Summary": "summary", "UserFacing": True, "RequestFeedback": False},
         }
         decision, reason, overwrite = optimize_write_to_file(args)
+        self.assertEqual(decision, "allow")
+
+    def test_optimize_manage_task_allows_first_status(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_manage_task
+        args = {"Action": "status", "TaskId": "task-100"}
+        decision, reason, overwrite = optimize_manage_task(args)
+        self.assertEqual(decision, "allow")
+
+    def test_optimize_manage_task_blocks_consecutive_status(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_manage_task
+        args = {"Action": "status", "TaskId": "task-100"}
+        # First call: allow
+        optimize_manage_task(args)
+        # Second consecutive call: deny
+        decision, reason, overwrite = optimize_manage_task(args)
+        self.assertEqual(decision, "deny")
+        self.assertIn("manage_task", reason)
+        self.assertIn("status", reason)
+
+    def test_optimize_manage_task_allows_kill_and_send_input(self):
+        from scripts.hooks.smart_tool_optimizer import optimize_manage_task
+        decision1, _, _ = optimize_manage_task({"Action": "kill", "TaskId": "task-100"})
+        self.assertEqual(decision1, "allow")
+        decision2, _, _ = optimize_manage_task({"Action": "send_input", "TaskId": "task-100", "Input": "y\n"})
+        self.assertEqual(decision2, "allow")
+
+    def test_optimize_view_file_blocks_immediate_reread_after_replace(self):
+        from scripts.hooks.smart_tool_optimizer import record_file_edit, optimize_view_file
+        record_file_edit(str(self.small_file))
+        args = {"AbsolutePath": str(self.small_file)}
+        decision, reason, _ = optimize_view_file(args)
+        self.assertEqual(decision, "deny")
+        self.assertIn("Releitura desnecessária", reason)
+
+    def test_optimize_view_file_allows_read_after_test_command(self):
+        from scripts.hooks.smart_tool_optimizer import record_file_edit, record_command_run, optimize_view_file
+        record_file_edit(str(self.small_file))
+        record_command_run("npm test")
+        args = {"AbsolutePath": str(self.small_file)}
+        decision, reason, _ = optimize_view_file(args)
         self.assertEqual(decision, "allow")
 
 

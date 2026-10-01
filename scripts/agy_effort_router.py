@@ -33,6 +33,15 @@ except ImportError:
                 is_live = False
             return Dummy()
 
+# Integração com telemetria local de reenvio (D5 — Pre-Flight portátil)
+try:
+    from scripts.turn_telemetry import preflight as _local_preflight
+except ImportError:
+    try:
+        from turn_telemetry import preflight as _local_preflight  # type: ignore
+    except ImportError:
+        _local_preflight = None  # type: ignore
+
 # Constantes de esforço
 EFFORT_LOW = "low"
 EFFORT_MEDIUM = "medium"
@@ -408,6 +417,32 @@ def classify_task_effort(
     rolling_5h = budget.get("rolling_5h_percent", 0.0)
     weekly = budget.get("weekly_percent", 0.0)
 
+    # 9a. Fallback local: quando não há budget do Language Server, usa turn_telemetry
+    # Requer: session_id do conversa atual (para não agregar sessões passadas),
+    # token_budget não fornecido, e env var de bloqueio não definida
+    active_session = conv_ctx.get("session_id") or conv_ctx.get("conversation_id")
+    if (not rolling_5h and not weekly
+            and _local_preflight is not None
+            and token_budget is None
+            and active_session
+            and not os.environ.get("KIT_DISABLE_LOCAL_PREFLIGHT")):
+        try:
+            pf = _local_preflight(session_id=active_session)
+            if pf.get("alerts") and pf.get("turns", 0) >= 3:
+                # Pre-Flight local disparou alerta (contexto >70% ou turnos excedidos)
+                if raw_effort == EFFORT_HIGH:
+                    raw_effort = EFFORT_MEDIUM
+                    throttled = True
+                    reason += f" | ⚠️ [LOCAL PRE-FLIGHT] {'; '.join(pf['alerts'])}: reduzido HIGH -> MEDIUM"
+                elif raw_effort == EFFORT_MEDIUM:
+                    raw_effort = EFFORT_LOW
+                    throttled = True
+                    savings += 3000
+                    reason += f" | ⚠️ [LOCAL PRE-FLIGHT] {'; '.join(pf['alerts'])}: reduzido MEDIUM -> LOW"
+        except Exception:
+            pass  # Falha silenciosa — não quebra o roteamento
+
+    # 9b. Budget do Language Server (original)
     if rolling_5h > 80.0 or weekly > 80.0:
         critical_quota = rolling_5h if rolling_5h > 80.0 else weekly
         quota_type = "5h" if rolling_5h > 80.0 else "semanal"
@@ -544,12 +579,13 @@ def is_real_binary(path_str: str) -> bool:
 
 def locate_native_agy() -> Optional[str]:
     """Encontra o binário nativo compilado do agy ou antigravity."""
+    local_bin = str(Path.home() / ".local" / "bin")
     # 1. Verifica binários nativos dedicados com prioridade
     for bin_name in ("agy-native", "agy-bin", "antigravity-native", "agy.real"):
         p = shutil.which(bin_name)
         if p and is_real_binary(p):
             return p
-        for p_str in (f"/home/andrevmp/.local/bin/{bin_name}", f"/usr/local/bin/{bin_name}"):
+        for p_str in (f"{local_bin}/{bin_name}", f"/usr/local/bin/{bin_name}"):
             if os.path.isfile(p_str) and is_real_binary(p_str):
                 return p_str
 
@@ -559,7 +595,7 @@ def locate_native_agy() -> Optional[str]:
         if p and is_real_binary(p):
             return p
 
-    for path_str in ("/home/andrevmp/.local/bin/agy", "/usr/local/bin/agy"):
+    for path_str in (f"{local_bin}/agy", "/usr/local/bin/agy"):
         if os.path.isfile(path_str) and is_real_binary(path_str):
             return path_str
     return None
