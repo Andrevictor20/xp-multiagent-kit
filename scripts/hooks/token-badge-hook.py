@@ -49,9 +49,9 @@ def run_live_report() -> None:
     if not tracker_script.is_file():
         return
     try:
+        # Executa no workspace atual para atualizar o TOKEN_TELEMETRY.md do projeto ativo
         subprocess.run(
             [sys.executable, str(tracker_script), "--report"],
-            cwd=str(tracker_script.parent.parent),
             capture_output=True,
             text=True,
             timeout=5,

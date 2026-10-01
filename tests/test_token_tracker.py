@@ -143,6 +143,26 @@ class TestTokenTracker(unittest.TestCase):
         self.assertIn("Semana:", badge)
         self.assertIn("/10.00M", badge)
 
+    def test_format_badge_includes_rtk_savings_when_present(self):
+        sample_steps = [{"type": "USER_INPUT", "content": "Hello world"}]
+        stats = parse_transcript_data(
+            conversation_id="c1",
+            model_name="gemini-3.8-flash",
+            steps=sample_steps,
+            system_prompt_bytes=4000,
+        )
+        stats.rtk_savings = {
+            "total_commands": 15,
+            "input_tokens": 5000,
+            "output_tokens": 3000,
+            "saved_tokens": 2000,
+            "avg_savings_pct": 40.0,
+        }
+        badge = format_badge(stats)
+        self.assertIn("RTK:", badge)
+        self.assertIn("2.0k", badge)
+        self.assertIn("-40.0%", badge)
+
     def test_format_json_stats(self):
         sample_steps = [{"type": "USER_INPUT", "content": "Test input"}]
         rolling = RollingWindowStats(

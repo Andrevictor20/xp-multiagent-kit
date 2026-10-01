@@ -1277,6 +1277,13 @@ def format_badge(stats: TokenStats) -> str:
     win_str = human_tokens(stats.context_window)
     bar_ctx = make_progress_bar(stats.percent_used, 8)
 
+    rtk_badge = ""
+    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+        s = stats.rtk_savings
+        tok_saved = human_tokens(s.get("saved_tokens", 0))
+        pct_saved = s.get("avg_savings_pct", 0.0)
+        rtk_badge = f" | **RTK:** `⚡ {tok_saved} (-{pct_saved:.1f}%)`"
+
     if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
@@ -1290,6 +1297,7 @@ def format_badge(stats: TokenStats) -> str:
             f"`[{bar_ctx}] {tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
             f"| **5h:** `[{bar_5h}] {pct_5h_rem:.1f}% restante` "
             f"| **Semana:** `[{bar_7d}] {pct_7d_rem:.1f}% restante`"
+            f"{rtk_badge}"
         )
 
     r5h_used = human_tokens(stats.rolling.tokens_5h)
@@ -1303,6 +1311,7 @@ def format_badge(stats: TokenStats) -> str:
         f"`[{bar_ctx}] {tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
         f"| **5h:** `[{bar_5h}] {r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) "
         f"| **Semana:** `[{bar_7d}] {r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
+        f"{rtk_badge}"
     )
 
 
