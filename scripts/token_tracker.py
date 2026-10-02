@@ -1344,6 +1344,16 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     turn_in = human_tokens(turn.user_input_tokens)
     turn_tools = human_tokens(turn.tool_tokens)
     turn_out = human_tokens(turn.model_output_tokens)
+    pct_turn_ctx = (turn.total_tokens / stats.context_window * 100.0) if stats.context_window else 0.0
+    pct_str = f"{pct_turn_ctx:.1f}% da janela" if pct_turn_ctx >= 0.1 else "<0.1% da janela"
+    if turn.total_tokens > 0:
+        pct_in = round(turn.user_input_tokens / turn.total_tokens * 100.0)
+        pct_tools = round(turn.tool_tokens / turn.total_tokens * 100.0)
+        pct_out = round(turn.model_output_tokens / turn.total_tokens * 100.0)
+        breakdown_str = f"Entrada: {turn_in} ({pct_in}%) | Ferramentas: {turn_tools} ({pct_tools}%) | Resposta: {turn_out} ({pct_out}%)"
+    else:
+        breakdown_str = f"Entrada: {turn_in} (0%) | Ferramentas: {turn_tools} (0%) | Resposta: {turn_out} (0%)"
+    consumo_line = f"Consumo:  {turn_tot} tokens ({pct_str}) • {breakdown_str}  \n"
 
     tot_str = human_tokens(stats.total_tokens)
     win_str = human_tokens(stats.context_window)
@@ -1409,7 +1419,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
             line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
 
         return (
-            f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+            f"{consumo_line}"
             f"{resend_line}"
             f"{rtk_line}"
             f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
@@ -1461,7 +1471,7 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
 
     return (
-        f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
+        f"{consumo_line}"
         f"{resend_line}"
         f"{rtk_line}"
         f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
