@@ -64,4 +64,4 @@
 
 ## 7. Technical Debts & Known Blockers
 
-- **Nenhum bloqueio ativo.** CI/CD Auto-Healer operacional, 274/274 testes unitários aprovados, RTK v0.49.0 ativo em `~/.local/bin/rtk`, comandos integrados em `~/.local/bin/`, git hooks ativos e persistência de disco rigorosamente cumprida.
+- **Nenhum bloqueio ativo.** CI/CD Auto-Healer operacional, 276/276 testes unitários aprovados, RTK v0.49.0 ativo em `~/.local/bin/rtk`, comandos integrados em `~/.local/bin/`, git hooks ativos e persistência de disco rigorosamente cumprida.

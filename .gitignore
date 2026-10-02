@@ -11,3 +11,4 @@ __pycache__/
 !.agents/runtime/evidence/
 .agents/memory/details/
 .agents/skills_disabled/
+ponytail*/
