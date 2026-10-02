@@ -59,3 +59,13 @@ Antes de tocar no código ou nos estilos, faça o **Design Read** e calibre os 3
 
 1. **Passada 1 — Plano de Design:** Defina os Dials, a paleta (valores hex e papéis), tipografia de destaque/corpo, conceito estrutural e o elemento-assinatura único da página.
 2. **Passada 2 — Crítica Anti-Slop:** Revise contra os clichês de IA antes de codificar. Valide que o design resolve o problema real do usuário com distinção e refinamento.
+
+---
+
+## 7. Catálogo de Arquétipos & Presets de Estilo
+
+Para identidades específicas, ative os presets especializados sob demanda:
+- **`minimalist-ui` (Linear/Notion):** Alta densidade, monochromatic, bordas finas sutis (1px), ausência de sombras pesadas e foco em produtividade.
+- **`industrial-brutalist-ui` (Grid 90°):** Tipografia monoespaçada/bold, bordas pretas duras, contrastes agressivos e ausência de cantos arredondados.
+- **`high-end-visual-design` ($150k+ Tier):** Double-bezel, física de mola tátil, micro-gradientes e refinamento editorial de altíssimo nível.
+

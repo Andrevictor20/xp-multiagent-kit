@@ -1,6 +1,6 @@
 ---
 name: observability-and-slo-engineering
-description: Engenharia de observabilidade: logs JSON, métricas RED e SLOs.
+description: Engenharia de observabilidade: logs JSON, métricas RED, tracing, SLOs e pós-deploy.
 ---
 
 # Observability, Telemetry & SLO Engineering
@@ -11,18 +11,9 @@ description: Engenharia de observabilidade: logs JSON, métricas RED e SLOs.
 
 ## 1. Os 3 Pilares da Observabilidade
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Logs Estruturados (JSON + Correlation ID)               │
-│    Contexto rico, rastreável e indexável                     │
-├─────────────────────────────────────────────────────────────┤
-│ 2. Métricas RED (Rate, Errors, Duration)                    │
-│    Telemetria em tempo real via OpenTelemetry e Prometheus  │
-├─────────────────────────────────────────────────────────────┤
-│ 3. Distributed Tracing (OpenTelemetry)                      │
-│    Grafo visual de latência e chamadas entre serviços       │
-└─────────────────────────────────────────────────────────────┘
-```
+1. **Logs Estruturados:** JSON em linha única com `correlation_id` e contexto rico.
+2. **Métricas RED & Filas:** Rate, Errors, Duration (p50/p90/p99) e monitoramento de fila (*queue lag*).
+3. **Distributed Tracing:** OpenTelemetry Trace Context (`traceparent`) entre serviços.
 
 ---
 
@@ -78,10 +69,15 @@ SLI (O que é medido) → SLO (A meta combinada) → Error Budget (A margem perm
 
 ---
 
-## 3. Alertas Acionáveis (*Actionable Alerting*)
+## 3. Alertas Acionáveis & Prevenção de Fadiga (*Alert Fatigue*)
 
-- **Regra de Ouro:** Alertas que acionam plantonistas (PagerDuty, Slack) devem indicar **SINTOMAS REAIS QUE IMPACTAM O USUÁRIO**, não causas internas transitórias.
-- Alerte em:
-  - Consumo acelerado do Error Budget (*Multi-window multi-burn-rate alerts*).
-  - Taxa de erro 5xx elevada ou picos anômalos de latência p99.
-- Não envie alertas de alta prioridade para uso de CPU pontual se o SLO e o tempo de resposta continuam saudáveis.
+- **Regra de Ouro:** Alertas que acionam plantonistas (PagerDuty, Slack) devem indicar **SINTOMAS REAIS QUE IMPACTAM O USUÁRIO** (consumo de Error Budget, 5xx elevado, P99 degradado), nunca métricas internas transitórias (como CPU momentânea).
+- **Combate à Fadiga:** Alertas que disparam com frequência e são ignorados por rotina criam falsa sensação de cobertura. Devem ser excluídos ou recalibrados imediatamente.
+
+---
+
+## 4. Janela de Monitoramento Pós-Deploy
+
+O health check do deploy responde apenas se a aplicação subiu. A saúde real é validada na janela pós-deploy:
+1. Mantenha acompanhamento ativo de taxa de erro e latência P95/P99 por **5 a 15 minutos** após qualquer deploy em produção.
+2. Se houver degradação anormal ou aceleração de queima de Error Budget nessa janela, inicie rollback imediatamente, mesmo que o health check inicial tenha sido aprovado.

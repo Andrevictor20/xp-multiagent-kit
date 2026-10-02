@@ -1,7 +1,7 @@
 # Índice de Skills (carregamento sob demanda)
 
 > Catálogo compacto. O corpo de cada skill só entra no contexto quando ativada.
-> 74 skills • teto por skill: 5 KB
+> 76 skills • teto por skill: 5 KB
 
 | Skill | Gatilho |
 |-------|---------|
@@ -10,11 +10,14 @@
 | `adr-architect-tracker` | ADRs MADR 3.0 e detecção de desvio arquitetural. |
 | `api-contracts` | Design e versionamento de contratos OpenAPI e schemas. |
 | `api-security` | Segurança de APIs e OWASP API Security Top 10. |
+| `async-messaging-and-resilience` | Mensageria assíncrona, EDA, Outbox Pattern, DLQ, idempotência e Circuit Breaker. |
 | `atomic-commit-discipline` | Commits atômicos, categorizados e testados. |
 | `authentication-security` | Auditoria de autenticação, JWT, sessões e MFA. |
 | `authorization-security` | Controle de acesso, permissões e prevenção BOLA/IDOR. |
 | `availability-security` | Proteção contra DoS, Rate Limiting e sobrecarga. |
+| `backend-performance-testing` | Testes de carga, estresse, benchmark de backend, profiling e detecção de gargalos. |
 | `browser-e2e-playwright` | Testes E2E headless com Playwright e traces. |
+| `caching-architecture` | Arquitetura de cache, Redis/Memcached, Cache-Aside e mitigação de stampede/avalanche. |
 | `ci-auto-heal` | Monitoramento de CI/CD e autocorreção autônoma (máx 3). |
 | `ci-security-gate` | Pipeline CI com lint, testes, auditoria e SAST. |
 | `cloud-security-and-zero-trust` | Zero Trust, OIDC federado, Cosign e mTLS. |
@@ -50,8 +53,7 @@
 | `minimalist-ui` | Interfaces minimalistas, Linear/Notion e whitespace. |
 | `mutation-testing-sentinel` | Auditoria de robustez de testes via injeção de mutações. |
 | `no-workarounds` | Correção na causa raiz, proibindo remendos e casts. |
-| `observability-and-slo-engineering` | Engenharia de observabilidade: logs JSON, métricas RED e SLOs. |
-| `observability-instrumentation` | Instrumentação de telemetria pós-deploy. |
+| `observability-and-slo-engineering` | Engenharia de observabilidade: logs JSON, métricas RED, tracing, SLOs e pós-deploy. |
 | `pair-navigator` | Navegação em pair programming e combate ao over-engineering. |
 | `privacy-review` | Revisão de privacidade, LGPD/GDPR e proteção de PII. |
 | `project-brief-architect` | Entrevista técnica e requisitos no Momento Zero. |
