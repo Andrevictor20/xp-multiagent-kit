@@ -1401,13 +1401,20 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
             n_cmds = s.get("total_commands", 0)
             rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
 
+        if stats.live_quota.is_live:
+            line_5h = f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado • {pct_5h_rem:.1f}% restante{desc_5h_str}{proj_tag}  \n"
+            line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado • **{pct_7d_rem:.1f}% restante**{desc_7d_str}{proj_tag}  \n"
+        else:
+            line_5h = f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}{proj_tag}  \n"
+            line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
+
         return (
             f"Consumo:  {turn_tot} tokens (Entrada: {turn_in} | Ferramentas: {turn_tools} | Resposta: {turn_out})  \n"
             f"{resend_line}"
             f"{rtk_line}"
             f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
-            f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}{proj_tag}  \n"
-            f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
+            f"{line_5h}"
+            f"{line_7d}"
             f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
         )
 
