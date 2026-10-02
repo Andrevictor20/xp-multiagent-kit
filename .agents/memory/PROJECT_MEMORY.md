@@ -2,7 +2,7 @@
 
 > **Última Atualização:** 2026-10-02 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.40.0 (Skill Suite Modernization: Consolidação de Observabilidade, Resiliência Assíncrona, Arquitetura de Cache e Testes de Carga de Backend)
+> **Versão / Marco Atual:** v2.41.0 (Skill Suite Expansion: Software Evolution, Strategic Technical Roadmapping & Capacity Planning, 77 skills)
 
 ---
 
@@ -10,7 +10,7 @@
 
 - **Propósito:** Kit modular de governança, agentes, skills, workflows e políticas para pair programming com IA (XP, Task Routing L0-L3, Pirâmide de Especificação ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Engenharia de Causa Raiz, Otimização de Tokens, Memória Contínua em 4 Tiers e Escada de Simplificação Ponytail).
 - **Tech Stack:** Antigravity Agent Framework (Markdown + YAML Frontmatter), Python, Bash, Git, GitHub Actions CLI (`gh`). Agnóstico de linguagem de produção.
-- **Arquitetura Chave:** Estrutura modular em `.agents/` (11 agentes, 76 skills, 10 workflows, 11 policies, 2 templates e memória viva em 4 tiers). Suíte global em `~/.local/bin/` e espelhamento em `~/.gemini/config/`.
+- **Arquitetura Chave:** Estrutura modular em `.agents/` (11 agentes, 77 skills, 10 workflows, 11 policies, 2 templates e memória viva em 4 tiers). Suíte global em `~/.local/bin/` e espelhamento em `~/.gemini/config/`.
 - **Comandos Essenciais:** (Catálogo completo em [details/commands.md](details/commands.md))
   - Instalação Única / Gestão do Kit: `./install.sh` / `agy-kit [doctor|init|sync]`
   - Instalação / Re-sincronização Global: `./scripts/install-global.sh`
@@ -24,9 +24,9 @@
 
 ## 2. Current Health & System Status
 
-- **Agent Suite Status:** OPERATIONAL (11 Agentes, 76 Skills, 10 Workflows, 11 Policies, 2 Templates, CI/CD Auto-Healer, Rastreador de Débito `agy-debt`, Utilitário CLI `agy-kit` / `xp-kit`, Suíte Global de Tokens e Health Scanner em `~/.local/bin/`).
+- **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills, 10 Workflows, 11 Policies, 2 Templates, CI/CD Auto-Healer, Rastreador de Débito `agy-debt`, Utilitário CLI `agy-kit` / `xp-kit`, Suíte Global de Tokens e Health Scanner em `~/.local/bin/`).
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (Pirâmide ATDD/BDD com Stop Gate, TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Root-Cause Debugging, No Workarounds, Code Deslop, 4-Tier Memory e Telemetria de Tokens).
-- **Última Execução / Evidência:** `EV-UNIFIED-INSTALLER-20261002-01` (SPEC-002 aprovada com Stop Gate humano, script único install.sh com suporte a one-liner curl, motor kit_installer.py, injeção de projeto com symlinks, CLI agy-kit doctor/init/sync, 6/6 ACs COMPLIANT, 303/303 testes unitários aprovados)
+- **Última Execução / Evidência:** `EV-SKILL-EXPANSION-20261002-02` (Skill software-evolution-and-roadmapping criada, sincronizada em 56 projetos e aprovada com 20/20 testes de perfis e índice)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI.
 - **⚠️ Alerta de Cota (Pre-Flight Gate):** Operar em Modo Cirúrgico Atômico (`agy-fast` / effort low) sob alta utilização de cota.
 
@@ -34,12 +34,12 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-10-02 | `FEAT` | Planejamento a Longo Prazo & Roadmapping Estratégico (v2.41.0): skill software-evolution-and-roadmapping (horizontes Now/Next/Later, padrão Strangler Fig para modernização de legados, capacity planning, FinOps e governança de EOL/Sunset de APIs RFC 8594), integração em skill_profiles.py (33 skills no backend) e regeneração do SKILLS_INDEX.md | `.agents/skills/*`, `scripts/skill_profiles.py`, `scripts/prune_skills.py` | `PASS (EV-SKILL-EXPANSION-20261002-02)` |
 | 2026-10-02 | `FEAT` | Modernização da Suíte de Skills (v2.40.0): fusão canônica de `observability-instrumentation` em `observability-and-slo-engineering`, criação das skills `async-messaging-and-resilience`, `caching-architecture` e `backend-performance-testing`, catálogo de presets em `visual-direction-studio`, sincronização de `skill_profiles.py` e regeneração de `SKILLS_INDEX.md` | `.agents/skills/*`, `scripts/skill_profiles.py`, `scripts/prune_skills.py` | `PASS (EV-SKILL-MODERNIZATION-20261002-01)` |
 | 2026-10-02 | `FEAT` | Instalador Unificado & Portabilidade do Kit (v2.39.0): script único install.sh (suporte a one-liner curl e execução local), motor kit_installer.py com DependencyChecker, GlobalInstaller e ProjectInstaller (modo symlinks aprovado no Stop Gate), utilitário CLI agy-kit / xp-kit com doctor/init/sync, documentação no README.md, SPEC-002 aprovada com 6/6 ACs COMPLIANT e 303/303 testes aprovados | `install.sh`, `scripts/kit_installer.py`, `scripts/agy-kit`, `README.md`, `tests/test_kit_installer.py` | `PASS (EV-UNIFIED-INSTALLER-20261002-01)` |
 | 2026-10-02 | `FEAT` | Integração Ponytail & Rastreador agy-debt (v2.38.0): Incorporação da Escada de 7 Degraus de Simplificação, política platform-native.md, gramática cirúrgica de 1 linha no diff-simplifier-review e refactor-warden, motor CLI agy-debt com detecção de rot [NO-TRIGGER] e gate de CI, SPEC-001 aprovada com 6/6 ACs COMPLIANT e 288/288 testes aprovados | `.agents/policies/*`, `scripts/debt_tracker.py`, `tests/test_debt_tracker.py` | `PASS (EV-PONYTAIL-INTEGRATION-20261002-01)` |
 | 2026-10-01 | `FEAT` | Consumo Híbrido Ponderado & Eliminação de Tetos Artificiais (v2.37.3): linha de consumo híbrida com tokens absolutos, impacto na janela de contexto (% da janela) e distribuição percentual por categoria (Entrada, Ferramentas, Resposta), eliminação de tetos fictícios na cota da Google exibindo métricas oficiais exatas, correção ponderada do RTK e 276/276 testes aprovados | `scripts/token_tracker.py`, `tests/*` | `PASS (EV-HYBRID-CONSUMPTION-PERCENTAGE-20261001-01)` |
 | 2026-10-01 | `FEAT` | Integração Nativa RTK v0.49.0 (v2.37.0): delegação semântica em smart_tool_optimizer para comandos elegíveis git/cargo/pytest/gh, invariante never_worse, agregação e exibição de ganhos do RTK no rodapé canônico (agy-tokens --turn) e 275/275 testes aprovados | `scripts/hooks/*`, `scripts/token_tracker.py`, `scripts/output_noise.py`, `tests/*` | `PASS (EV-RTK-INTEGRATION-COMPLETE-20261001-01)` |
-| 2026-10-01 | `FEAT` | Governança Mecânica Anti-Tool-Spamming (v2.36.0): renderização incondicional de hooks com paths absolutos no IDE/CLI, interceptação e bloqueio de polling em manage_task(status), bloqueio de releitura pós-edição em smart_tool_optimizer, Turno 1 batching no AGENTS.md/token-economy.md e 268/268 testes unitários aprovados | `scripts/hooks/*`, `scripts/install-global.sh`, `AGENTS.md`, `tests/*` | `PASS (EV-ANTI-TOOL-SPAM-COMPLETE-20261001-01)` |
 
 ---
 

@@ -1,7 +1,7 @@
 # Índice de Skills (carregamento sob demanda)
 
 > Catálogo compacto. O corpo de cada skill só entra no contexto quando ativada.
-> 76 skills • teto por skill: 5 KB
+> 77 skills • teto por skill: 5 KB
 
 | Skill | Gatilho |
 |-------|---------|
@@ -67,6 +67,7 @@
 | `security-sentinel-review` | Revisão proativa de segurança e superfícies sensíveis. |
 | `security-testing` | Casos de teste SAST/DAST contra injeções e falhas. |
 | `seo-content-engine` | SEO On-Page, Schema.org JSON-LD e AI Search (GEO/AEO). |
+| `software-evolution-and-roadmapping` | Planejamento a longo prazo, roadmapping Now/Next/Later, Strangler Fig e ciclo de vida (EOL). |
 | `spec-driven-development` | Engenharia guiada por especificação formal (SDD) com ATDD/BDD integrado. |
 | `specification-by-example` | Transformação de regras vagas em tabelas de exemplos concretos e executáveis. |
 | `supply-chain-security` | Segurança de dependências e integridade de cadeia (SCA). |

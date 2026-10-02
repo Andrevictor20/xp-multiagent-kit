@@ -74,6 +74,7 @@ CONCISE_DESCRIPTIONS: Dict[str, str] = {
     "security-sentinel-review": "Revisão proativa de segurança e superfícies sensíveis.",
     "security-testing": "Casos de teste SAST/DAST contra injeções e falhas.",
     "seo-content-engine": "SEO On-Page, Schema.org JSON-LD e AI Search (GEO/AEO).",
+    "software-evolution-and-roadmapping": "Roadmapping técnico, horizontes Now/Next/Later e Strangler Fig.",
     "spec-driven-development": "Engenharia guiada por especificação formal (SDD).",
     "supply-chain-security": "Segurança de dependências e integridade de cadeia (SCA).",
     "systematic-debugging": "Debugging sistemático em 4 fases e investigação de causa raiz.",

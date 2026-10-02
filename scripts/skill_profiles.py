@@ -82,6 +82,7 @@ PROFILES: Dict[str, Set[str]] = {
         "migration-safety",
         "observability-and-slo-engineering",
         "security-testing",
+        "software-evolution-and-roadmapping",
         "zero-downtime-deployment",
     },
     "frontend": {
