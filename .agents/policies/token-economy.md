@@ -152,7 +152,30 @@ papel quando ele agrega decisão, não cerimônia.
 Ao atingir 15 turnos ou 40k tokens na sessão, gravar checkpoint no
 `PROJECT_MEMORY.md` e abrir chat limpo via Fast Bootstrap (Passo 0).
 
-## 11. Binários do kit
+## 11. Escada de Simplificação & Governança de Débitos Técnicos
+
+O melhor código é o código nunca escrito. Menos código = menos tokens de leitura, menos tokens de teste e menor superfície de bugs.
+
+1. **Escada de 7 Degraus de Simplificação:**
+   - 1. *Precisa existir? (YAGNI)* → Se especulativo, descarte e avise em 1 linha.
+   - 2. *Já existe no repositório?* → Reutilize utilitários e tipos antes de criar novos.
+   - 3. *A Standard Library resolve?* → Use os módulos embutidos da linguagem.
+   - 4. *A plataforma nativa cobre?* → Consulte `.agents/policies/platform-native.md` (HTML5, CSS moderno, Web APIs) antes de adicionar bibliotecas de interface ou utilitários pesados.
+   - 5. *Dependência instalada resolve?* → Proibido adicionar novas dependências se algo no manifesto já resolve.
+   - 6. *Pode ser uma linha?* → Faça em 1 linha idiomática.
+   - 7. *Apenas se nenhum anterior servir:* O código mínimo que resolve o problema.
+
+2. **Regra de Concisão de Resposta:**
+   - Em alterações de código de produção: **Código primeiro**, seguido de no máximo 2-3 linhas de justificativa (*o que foi pulado e quando adicionar*).
+   - Se a explicação for mais longa do que o diff gerado, corte a explicação. Toda explicação desnecessária é complexidade reintroduzida como prosa.
+
+3. **Governança de Débitos Técnicos Auditáveis (`agy-debt`):**
+   - Ao introduzir simplificações ou atalhos deliberados com limites conhecidos (ex: lock global, scan O(N)), marque-os no código com:
+     `// debt: <teto da simplificação>, <gatilho para refatorar>`
+     (ou `# debt: <teto>, <gatilho>` em Python/Shell).
+   - Débitos sem gatilho de upgrade são marcados como `[NO-TRIGGER]` pelo `agy-debt` e representam risco de apodrecimento (*rot risk*).
+
+## 12. Binários do kit
 
 | Comando | Papel |
 |---------|-------|
@@ -170,3 +193,5 @@ Ao atingir 15 turnos ou 40k tokens na sessão, gravar checkpoint no
 | `agy-git-ops` | operações Git compactas (`status`, `ci-status`) |
 | `agy-smart` / `agy-effort` | roteamento de reasoning effort |
 | `agy-health` / `agy-audit-config` | integridade do kit e auditoria de bloat global |
+| `agy-debt` | auditoria in-code de débitos técnicos e detecção de rot (`no-trigger`) |
+

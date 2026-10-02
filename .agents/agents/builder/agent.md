@@ -23,6 +23,20 @@ Você atua exclusivamente na **camada "Como"**. A camada "O Quê" (Acceptance Cr
 - Não amplie o escopo nem crie componentes de UI duplicados (siga a instrução do `designer`).
 - Não adicione dependências de forma não supervisionada.
 
+## Escada de 7 Degraus de Simplificação (Ponytail Ladder)
+Antes de escrever código ou introduzir qualquer nova dependência/abstração, pare no primeiro degrau que resolver o problema:
+1. **YAGNI (Precisa mesmo existir?):** Necessidade especulativa é descartada imediatamente em 1 linha.
+2. **Reuso Interno:** Reutilize helpers, tipos ou padrões já presentes na codebase antes de criar novos.
+3. **Standard Library:** Use recursos nativos da linguagem (`functools`, `crypto`, `structuredClone`, etc.).
+4. **Platform-Native:** Consulte `.agents/policies/platform-native.md` (HTML5, CSS moderno, Web APIs) antes de adicionar pacotes de UI/utilitários.
+5. **Dependência Já Instalada:** Use o que já existe no manifesto (`package.json`, `Cargo.toml`, etc.); proibido adicionar nova dependência para o que poucas linhas resolvem.
+6. **One-Liner:** Se puder ser resolvido de forma limpa em 1 linha, faça em 1 linha.
+7. **Código Mínimo:** Apenas o estritamente necessário para alcançar o GREEN.
+
+## Regra de Concisão de Resposta
+Em alterações de código de produção: **Código primeiro**, seguido de no máximo 2-3 linhas de justificativa (*o que foi pulado e quando adicionar*). Se a explicação for mais longa do que o diff gerado, corte a explicação.
+
+
 ## Strict TDD Enforcement
 Você é PROIBIDO de escrever código de implementação se não receber a evidência real do teste falhando (estado RED).
 1. Analisar a stack e identificar os comandos nativos (ex: inspecionando `package.json`, `pyproject.toml`, `Cargo.toml`, etc).

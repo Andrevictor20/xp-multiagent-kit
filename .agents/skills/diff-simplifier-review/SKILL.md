@@ -25,7 +25,27 @@ Esta skill governa o passo sistemático de **auto-revisão e simplificação de 
 
 ---
 
-## 3. Protocolo de Ação do Refactor-Warden
+## 3. Gramática Cirúrgica de Findings (1 Linha por Item)
+
+Ao emitir o parecer de simplificação, reporte cada apontamento estritamente em uma única linha:
+`L<linha>: <tag> <o que cortar>. <o que substitui>.`  
+*(ou `<arquivo>:L<linha>: <tag> ...` para diffs multi-arquivos).*
+
+### Tags Padronizadas:
+- `delete:` código morto, flexibilidade não utilizada ou feature especulativa. Substituto: nada.
+- `stdlib:` reimplementação artesanal que a Standard Library já fornece. Nomeie a função nativa.
+- `native:` dependência externa fazendo o que a plataforma/HTML5/CSS3 já cobre. Consulte `platform-native.md`.
+- `yagni:` abstração com implementação única, config que ninguém altera, camada com um único chamador.
+- `shrink:` mesma lógica, menos linhas. Mostre a forma reduzida.
+
+### Saldo Final de Revisão:
+Toda revisão de simplificação deve terminar com o saldo líquido de corte:
+`net: -<N> lines, -<M> deps possible.`  
+Se o diff já estiver ótimo e minimalista: `Lean already. Ship.`
+
+---
+
+## 4. Protocolo de Ação do Refactor-Warden
 ```bash
 # Inspecione o diff compacto
 git diff --stat
@@ -34,4 +54,5 @@ git diff
 # Remova arquivos e alterações não intencionais
 git checkout -- <arquivo-acidental>
 ```
-Após o simplificador validar o diff, o Handoff Packet é emitido para o `release-gatekeeper`.
+Após o simplificador validar o diff e aplicar o corte, o Handoff Packet é emitido para o `release-gatekeeper`.
+

@@ -17,3 +17,5 @@
 - **Anti-Repetição de Seções**: Páginas multi-seções devem usar pelo menos 4 famílias de layout distintas, com no máximo 2 seções de zigzag consecutivas e no máximo 1 eyebrow a cada 3 seções.
 - **Acessibilidade Inegociável (WCAG AA)**: Contraste mínimo de 4.5:1 para texto e botões, foco visível de teclado, navegação em 1 linha (altura ≤ 80px) e respeito estrito a `prefers-reduced-motion`.
 - **Estados Completos**: Componentes devem implementar ciclo completo de estados (Default, Hover/Focus, Active, Loading com skeleton real, Empty e Error).
+- **Plataforma Nativa Primeiro (`platform-native.md`)**: Antes de sugerir ou instalar bibliotecas de componentes (como datepicker, colorpicker, range slider, modal/dialog, accordions) ou utilitários JavaScript pesados para tarefas que o browser ou CSS já resolvem, consulte obrigatoriamente `.agents/policies/platform-native.md`. Prefira tags HTML5 nativas (`<input type="date">`, `<dialog>`, `<details><summary>`), CSS moderno (`clamp()`, `@container`, `:has()`) e Web APIs nativas (`structuredClone`, `Intl`, `AbortSignal.timeout`).
+

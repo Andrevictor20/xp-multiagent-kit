@@ -48,7 +48,9 @@ EXPECTED_TOOLS = [
     "agy-resume",
     "agy-daemon",
     "agy-dashboard",
+    "agy-debt",
 ]
+
 
 
 def check_plugin_directories(target_dir: Optional[Path] = None) -> Dict[str, Any]:

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Wrapper executável para o rastreador de débitos técnicos (agy-debt)
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
+python3 "${SCRIPT_DIR}/debt_tracker.py" "$@"
