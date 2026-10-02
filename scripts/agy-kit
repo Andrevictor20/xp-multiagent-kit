@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# agy-kit: Utilitário CLI de Gestão e Portabilidade do XP Multi-Agent Kit (SPEC-002)
+# ==============================================================================
+set -euo pipefail
+
+REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
+exec python3 "${SCRIPT_DIR}/kit_installer.py" "$@"

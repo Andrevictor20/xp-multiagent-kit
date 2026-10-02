@@ -243,26 +243,80 @@ Implementado via `.agents/hooks.json` com interceptação em tempo de execução
 
 ## 🚀 Instalação e Configuração
 
-### 1. No Projeto (Local)
-Copie o diretório `.agents/` e o arquivo `AGENTS.md` para a raiz de qualquer projeto (novo ou existente):
-```bash
-cp -r /caminho/para/xp-multiagent-kit/.agents ./
-cp /caminho/para/xp-multiagent-kit/AGENTS.md ./
-```
-O Antigravity IDE descobre automaticamente as `skills`, `agents`, `workflows`, `policies`, `hooks` e a governança de memória. O kit executará a **Recaptura Retroativa de Histórico Git e Auto-Onboarding** de forma totalmente autônoma logo na primeira interação.
+### 1. Instalação com Comando Único (One-Liner Portátil)
 
-### 2. Instalação Global de Ferramentas CLI & Hooks
-Para instalar os utilitários CLI e sincronizar os hooks com a instalação global do Antigravity (`~/.gemini/antigravity-cli/`):
+Para instalar ou portar o kit para qualquer máquina com Antigravity (IDE e CLI):
+
 ```bash
-./scripts/install-global.sh
+# Instalação remota direta via terminal:
+curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | bash
 ```
-Isso disponibiliza em seu `PATH` (`~/.local/bin`):
+
+Se você já clonou o repositório, basta executar o instalador na raiz:
+
+```bash
+./install.sh
+```
+
+O instalador abre um **wizard interativo** permitindo escolher entre:
+1. **Global (Recomendado):** Instala todas as ferramentas no `PATH` (`~/.local/bin/`), sincroniza agentes, skills e workflows com o Antigravity IDE & CLI (`~/.gemini/config/`), configura git hooks e adiciona ao shell RC.
+2. **Projeto Específico (Local):** Injeta `.agents/` (com symlinks para políticas e regras), `AGENTS.md`, `.geminiignore` e inicializa uma memória viva `PROJECT_MEMORY.md` isolada apenas no projeto escolhido.
+3. **Ambos:** Realiza a instalação global completa E já injeta o kit no projeto atual.
+
+---
+
+### 2. Modos Não-Interativos & Flags CLI
+
+Para automação, scripts ou CI/CD:
+
+```bash
+# Instalação 100% global silenciosa:
+./install.sh --global --yes
+
+# Injetar o kit apenas em um projeto específico:
+./install.sh --project /caminho/do/meu-projeto --yes
+
+# Instalação global + injeção imediata em um projeto:
+./install.sh --both /caminho/do/meu-projeto --yes
+
+# Simulação segura sem alterações no disco (Dry-run):
+./install.sh --dry-run
+```
+
+---
+
+### 3. Utilitário CLI Unificado de Gestão (`agy-kit` / `xp-kit`)
+
+Após a instalação, o comando `agy-kit` fica disponível globalmente no seu terminal:
+
+```bash
+# Diagnóstico completo de integridade e dependências:
+agy-kit doctor
+
+# Injetar o kit em um novo projeto qualquer:
+agy-kit init /caminho/do/novo-projeto
+
+# Re-sincronizar atualizações da instalação global:
+agy-kit sync
+
+# Verificar versão instalada:
+agy-kit version
+```
+
+---
+
+### 4. Ferramentas CLI Disponíveis no PATH (`~/.local/bin`)
+
+- `agy-kit` / `xp-kit`: Instalador, inicializador de projetos e diagnóstico de integridade.
+- `agy-tokens`: Relatório ao vivo de telemetria em 3 camadas e auditoria de cotas.
 - `agy-smart`: Roteador inteligente de raciocínio baseado no prompt.
 - `agy-effort`: Executor com esforço parametrizado (`low`, `medium`, `high`).
-- `agy-tokens`: Relatório ao vivo de telemetria em 3 camadas.
+- `agy-debt`: Scanner de débitos técnicos e atalhos com alerta de apodrecimento (`rot risk`).
+- `agy-health`: Scanner de integridade das ferramentas, diretórios e links do kit.
 - `agy-repo-map`: Gerador e atualizador de AST Repo Map.
-- `agy-ci-heal`: Scanner e auto-healer de pipelines CI/CD.
-- `agy-sanitize`: Sanitizador de saídas verbosas para ferramentas.
-- `agy-handoff`: Gerador de pacotes de transição e handoff estruturado.
+- `agy-ci-heal`: Scanner e auto-healer autônomo de pipelines CI/CD.
+- `agy-sanitize`: Sanitizador de saídas verbosas para redução drástica de tokens.
+- `agy-handoff`: Gerador de pacotes de transição e handoff estruturado entre sessões.
+
 
 

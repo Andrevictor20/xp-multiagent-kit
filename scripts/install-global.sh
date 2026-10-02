@@ -179,8 +179,13 @@ ln -sf "$KIT_DIR/scripts/agy-resume" "$HOME/.local/bin/agy-resume"
 ln -sf "$KIT_DIR/scripts/agy-daemon" "$HOME/.local/bin/agy-daemon"
 ln -sf "$KIT_DIR/scripts/agy-dashboard" "$HOME/.local/bin/agy-dashboard"
 ln -sf "$KIT_DIR/scripts/agy-session-compact" "$HOME/.local/bin/agy-session-compact"
+ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/agy-debt"
+ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/xp-debt"
+ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/agy-kit"
+ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/xp-kit"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit disponíveis no PATH!"
+
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)
 if [ -f "$KIT_DIR/rtk-develop/target/release/rtk" ]; then
