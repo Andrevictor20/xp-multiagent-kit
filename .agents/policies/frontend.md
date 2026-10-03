@@ -15,7 +15,17 @@
   - O hero deve caber na viewport inicial do desktop e usar `min-h-[100dvh]` em seções cheias (proibido `h-screen`).
   - Top padding do hero limitado a `pt-24` no desktop.
 - **Anti-Repetição de Seções**: Páginas multi-seções devem usar pelo menos 4 famílias de layout distintas, com no máximo 2 seções de zigzag consecutivas e no máximo 1 eyebrow a cada 3 seções.
-- **Acessibilidade Inegociável (WCAG AA)**: Contraste mínimo de 4.5:1 para texto e botões, foco visível de teclado, navegação em 1 linha (altura ≤ 80px) e respeito estrito a `prefers-reduced-motion`.
-- **Estados Completos**: Componentes devem implementar ciclo completo de estados (Default, Hover/Focus, Active, Loading com skeleton real, Empty e Error).
+- **Acessibilidade Inegociável (WCAG AA)**: Contraste mínimo de 4.5:1 para texto e botões, foco visível de teclado (`focus-visible:ring-2`), navegação em 1 linha (altura ≤ 80px), alvos de toque mínimos de 48x48px no mobile e respeito estrito a `prefers-reduced-motion`.
+- **Máquina de 6 Estados Obrigatória**: Todo componente interativo ou dependente de dados deve implementar explicitamente os 6 estados:
+  1. *Default*: visual limpo e alinhado ao design system.
+  2. *Hover / Focus*: realce sutil + anel de foco acessível.
+  3. *Active / Pressed*: feedback tátil imediato (`scale(0.98)` ou transição suave ≤ 150ms).
+  4. *Loading*: Skeleton / Shimmer fiel ao layout original (nunca spinner solto no vazio).
+  5. *Empty State*: ícone semântico, mensagem amigável e CTA de primeira ação.
+  6. *Error State*: borda de alerta sutil, mensagem explicativa e botão de reintento (*Retry*).
+- **Ergonomia Móvel & Estabilidade de Viewport**:
+  - Em telas móveis (React Native/Expo/Web Mobile), formulários e inputs devem ser protegidos contra sobreposição do teclado virtual (`KeyboardAvoidingView` + `paddingBottom` compensatório para docks flutuantes).
+  - Respeito estrito às áreas seguras (`useSafeAreaInsets` no topo e base).
+  - Uso de `min-h-[100dvh]` em seções cheias (proibido `h-screen`).
 - **Plataforma Nativa Primeiro (`platform-native.md`)**: Antes de sugerir ou instalar bibliotecas de componentes (como datepicker, colorpicker, range slider, modal/dialog, accordions) ou utilitários JavaScript pesados para tarefas que o browser ou CSS já resolvem, consulte obrigatoriamente `.agents/policies/platform-native.md`. Prefira tags HTML5 nativas (`<input type="date">`, `<dialog>`, `<details><summary>`), CSS moderno (`clamp()`, `@container`, `:has()`) e Web APIs nativas (`structuredClone`, `Intl`, `AbortSignal.timeout`).
 

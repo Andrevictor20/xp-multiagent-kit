@@ -16,10 +16,11 @@ Infira o risco automaticamente (zero-prompt) e declare risco + workflow na prime
 | **L1** | ajuste/refatoração isolada | AC informais → RED → GREEN → conformidade resumida | `navigator` → `builder` → `archivist` → `release-gatekeeper` |
 | **L2** | feature/API | Pirâmide de Especificação + **⏸️ Stop Gate humano** → RED → GREEN → Conformance Report | pirâmide completa |
 | **L3** | auth, pagamentos, migração | Threat Modeling (STRIDE) + Stop Gate + TDD/segurança + Zero-Downtime Plan | pirâmide + `sentinel` + `shipper` |
+| **Design/UI** | telas, componentes, UX | Token Discovery → 6 Estados → Ergonomia Mobile → Polish Gate (`/design`) | `designer` → `builder` → `archivist` |
 | **Bugfix** | falha reproduzível | debugging sistemático → regressão RED → causa raiz → GREEN → `lesson-learned` | — |
 | **Incident/Release** | produção | mitigação + rollback, ou CI gate + Canary/Blue-Green | `shipper` |
 
-Workflows completos em `.agents/workflows/`.
+Workflows completos em `.agents/workflows/` (incluindo `design.md`).
 
 **Esforço de raciocínio:** L0/L1 direto e conciso (CLI: `agy-effort low`); L2/L3 elabora o plano, emite **Stop Gate** pedindo elevação para `high` e pausa até confirmação. Código no Flash (effort por risco); Pro reservado a planos arquiteturais e STRIDE.
 

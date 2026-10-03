@@ -267,7 +267,8 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         steps = load_transcript(t_path) if t_path else []
         turn = calculate_turn_stats(steps)
         model_name = detect_model_name(conv_id, steps)
-        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=True, effort=decision.effort)
+        # Usa fetch_live=False para responder instantaneamente via cache/snapshot sem bloquear na rede
+        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=False, effort=decision.effort)
         live_footer = format_message_footer(stats, turn)
     except Exception:
         live_footer = ""

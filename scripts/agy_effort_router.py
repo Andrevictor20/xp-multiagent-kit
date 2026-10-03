@@ -222,24 +222,16 @@ def detect_git_context(repo_path: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def get_token_budget_status() -> Dict[str, float]:
-    """Consulta estimativas de cota de tokens via token_tracker."""
+    """Consulta estimativas de cota de tokens via snapshot local (instantâneo) ou token_tracker."""
     status = {"rolling_5h_percent": 0.0, "weekly_percent": 0.0}
     try:
-        tracker_script = Path(__file__).resolve().parent / "token_tracker.py"
-        if tracker_script.is_file():
-            proc = subprocess.run(
-                [sys.executable, str(tracker_script), "--json"],
-                cwd=str(tracker_script.parent.parent),
-                capture_output=True,
-                text=True,
-                timeout=3,
-            )
-            if proc.returncode == 0:
-                data = json.loads(proc.stdout)
-                # Extrair limites
-                rolling = data.get("rolling_windows", {})
-                status["rolling_5h_percent"] = float(rolling.get("window_5h", {}).get("percent_used", 0.0))
-                status["weekly_percent"] = float(rolling.get("window_weekly", {}).get("percent_used", 0.0))
+        from scripts.token_tracker import load_quota_snapshot
+        snapshot = load_quota_snapshot()
+        if snapshot:
+            rolling = snapshot.get("rolling_windows", {})
+            status["rolling_5h_percent"] = float(rolling.get("window_5h", {}).get("percent_used", snapshot.get("gemini_5h_percent", 0.0)))
+            status["weekly_percent"] = float(rolling.get("window_weekly", {}).get("percent_used", snapshot.get("gemini_weekly_percent", 0.0)))
+            return status
     except Exception:
         pass
     return status
@@ -544,15 +536,18 @@ def update_settings_effort(settings_path: Path, target_effort: str) -> Tuple[boo
         return False, "", ""
 
 
-def sync_global_settings(target_effort: str) -> List[str]:
-    """Sincroniza os arquivos de settings da CLI e da IDE."""
+def sync_global_settings(target_effort: str, force_ide: bool = False) -> List[str]:
+    """Sincroniza os arquivos de settings da CLI e, se solicitado explicitamente, da IDE."""
     updated = []
-    settings_paths = (
+    settings_paths = [
         Path.home() / ".gemini" / "antigravity-cli" / "settings.json",
-        Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
-        Path.home() / ".gemini" / "settings.json",
-        Path.home() / ".gemini" / "config" / "settings.json",
-    )
+    ]
+    if force_ide:
+        settings_paths.extend([
+            Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
+            Path.home() / ".gemini" / "settings.json",
+            Path.home() / ".gemini" / "config" / "settings.json",
+        ])
 
     for p in settings_paths:
         if p.is_file():
@@ -886,7 +881,7 @@ def main() -> int:
             target_effort = decision.effort
             print(format_badge(decision))
 
-        updated = sync_global_settings(target_effort)
+        updated = sync_global_settings(target_effort, force_ide=True)
         print(f"✅ Esforço '{target_effort.upper()}' aplicado nos arquivos de configuração:")
         for u in updated:
             print(f"   - {u}")

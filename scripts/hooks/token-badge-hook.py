@@ -32,19 +32,44 @@ def record_local_turn(payload: dict) -> None:
 
         tool_calls = payload.get("toolCalls") or payload.get("tool_calls") or 0
         session_id = payload.get("sessionId") or payload.get("session_id")
-        if not session_id:
+        transcript_path = None
+        try:
+            from scripts.token_tracker import find_active_session
+            s_id, t_path, _ = find_active_session()
+            if not session_id:
+                session_id = s_id
+            transcript_path = t_path
+        except Exception:
+            pass
+
+        tool_chars = int(payload.get("toolChars") or payload.get("tool_chars") or 0)
+        response_chars = int(payload.get("responseChars") or payload.get("response_chars") or 0)
+        history_chars = int(payload.get("historyChars") or payload.get("history_chars") or 0)
+
+        # Se o hook não recebeu os caracteres via stdin, extrai do transcript da IDE
+        if (tool_chars == 0 and response_chars == 0) and transcript_path and Path(transcript_path).is_file():
             try:
-                from scripts.token_tracker import find_active_session
-                session_id, _, _ = find_active_session()
+                from scripts.token_tracker import load_transcript, calculate_turn_stats
+                from scripts.kit_constants import CHARS_PER_TOKEN
+                steps = load_transcript(Path(transcript_path))
+                turn = calculate_turn_stats(steps)
+                tool_calls = tool_calls or len([
+                    s for s in steps
+                    if s.get("type") not in ("USER_INPUT", "PLANNER_RESPONSE", "EPHEMERAL_MESSAGE", "SYSTEM_MESSAGE")
+                ])
+                tool_chars = turn.tool_tokens * CHARS_PER_TOKEN
+                response_chars = turn.model_output_tokens * CHARS_PER_TOKEN
+                total_chars = sum(len(str(s.get("content", ""))) for s in steps)
+                history_chars = max(0, total_chars - tool_chars - response_chars)
             except Exception:
-                session_id = None
+                pass
 
         record_turn(
             risk_level=str(payload.get("riskLevel") or payload.get("risk_level") or "L1"),
             tool_calls=int(tool_calls),
-            tool_chars=int(payload.get("toolChars") or payload.get("tool_chars") or 0),
-            response_chars=int(payload.get("responseChars") or payload.get("response_chars") or 0),
-            history_chars=int(payload.get("historyChars") or payload.get("history_chars") or 0),
+            tool_chars=tool_chars,
+            response_chars=response_chars,
+            history_chars=history_chars,
             session_id=session_id,
         )
     except Exception:
