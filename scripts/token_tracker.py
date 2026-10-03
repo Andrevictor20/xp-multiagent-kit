@@ -120,13 +120,16 @@ def get_model_display_name(model_name: Optional[str]) -> str:
         return "Unknown Model"
     clean_name = model_name.lower().strip()
     for key, display in MODEL_DISPLAY_NAMES.items():
-        if key in clean_name:
+        # Verifica a chave original ou chave com espaços (ex: gemini 3.1 pro)
+        if key in clean_name or key.replace("-", " ") in clean_name or key.replace("-", "") in clean_name:
             if "(high)" in clean_name:
                 return f"{display} (High)"
             elif "(low)" in clean_name:
                 return f"{display} (Low)"
             elif "(medium)" in clean_name:
                 return f"{display} (Medium)"
+            elif "thinking" in clean_name:
+                return f"{display} (Thinking)"
             return display
     return model_name
 
@@ -843,6 +846,7 @@ def calculate_turn_stats(steps: List[Dict[str, Any]]) -> TurnStats:
     tool_bytes = 0
     model_bytes = 0
     ephemeral_bytes = 0
+    seen_ephemerals = set()
 
     for step in turn_steps:
         stype = step.get("type", "UNKNOWN")
@@ -859,7 +863,10 @@ def calculate_turn_stats(steps: List[Dict[str, Any]]) -> TurnStats:
                 step_len += len(thinking)
             model_bytes += step_len
         elif stype in ("EPHEMERAL_MESSAGE", "SYSTEM_MESSAGE", "ERROR_MESSAGE"):
-            ephemeral_bytes += step_len
+            digest = hash(content)
+            if digest not in seen_ephemerals:
+                seen_ephemerals.add(digest)
+                ephemeral_bytes += step_len
         else:
             tool_bytes += step_len
 
@@ -1052,7 +1059,7 @@ def get_model_limits(model_name: Optional[str]) -> Dict[str, int]:
 
     clean_name = model_name.lower().strip()
     for key, limits in MODEL_LIMITS.items():
-        if key in clean_name:
+        if key in clean_name or key.replace("-", " ") in clean_name or key.replace("-", "") in clean_name:
             return limits
 
     return MODEL_LIMITS["default"]
@@ -1236,9 +1243,14 @@ def parse_transcript_data(
     remaining = max(0, limits["context_window"] - total_tokens)
     pct = (total_tokens / limits["context_window"]) * 100.0 if limits["context_window"] else 0.0
 
+    # Determina limites móveis de 5h e semanal de acordo com o provedor do modelo (Gemini, Claude, OpenAI, DeepSeek)
+    provider_limits = get_provider_defaults(model_name)
+    limit_5h = limits.get("limit_5h") or provider_limits.get("limit_5h", DEFAULT_LIMIT_5H)
+    limit_7d = limits.get("limit_7d") or provider_limits.get("limit_7d", DEFAULT_LIMIT_WEEKLY)
+
     eff_rolling = rolling or calculate_rolling_windows(
-        limit_5h=limits.get("limit_5h", DEFAULT_LIMIT_5H),
-        limit_7d=limits.get("limit_7d", DEFAULT_LIMIT_WEEKLY),
+        limit_5h=limit_5h,
+        limit_7d=limit_7d,
     )
 
     if live_quota is None and fetch_live:
@@ -1266,7 +1278,7 @@ def parse_transcript_data(
         total_tokens=total_tokens,
         remaining_tokens=remaining,
         percent_used=pct,
-        rolling=rolling or RollingWindowStats(),
+        rolling=eff_rolling,
         live_quota=live_quota,
         top_tools=sorted_tools,
         steps_count=active_steps,
@@ -1341,15 +1353,16 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     """Gera rodapé markdown elegante e padronizado com ferramentas de ponta (Cursor, Claude Code, AGY)."""
     display_model = get_model_display_name(stats.model_name)
     turn_tot = human_tokens(turn.total_tokens)
-    turn_in = human_tokens(turn.user_input_tokens)
+    input_total = turn.user_input_tokens + turn.ephemeral_tokens
+    turn_in = human_tokens(input_total)
     turn_tools = human_tokens(turn.tool_tokens)
     turn_out = human_tokens(turn.model_output_tokens)
     pct_turn_ctx = (turn.total_tokens / stats.context_window * 100.0) if stats.context_window else 0.0
     pct_str = f"{pct_turn_ctx:.1f}% da janela" if pct_turn_ctx >= 0.1 else "<0.1% da janela"
     if turn.total_tokens > 0:
-        pct_in = round(turn.user_input_tokens / turn.total_tokens * 100.0)
+        pct_in = round(input_total / turn.total_tokens * 100.0)
         pct_tools = round(turn.tool_tokens / turn.total_tokens * 100.0)
-        pct_out = round(turn.model_output_tokens / turn.total_tokens * 100.0)
+        pct_out = max(0, 100 - pct_in - pct_tools)
         breakdown_str = f"Entrada: {turn_in} ({pct_in}%) | Ferramentas: {turn_tools} ({pct_tools}%) | Resposta: {turn_out} ({pct_out}%)"
     else:
         breakdown_str = f"Entrada: {turn_in} (0%) | Ferramentas: {turn_tools} (0%) | Resposta: {turn_out} (0%)"

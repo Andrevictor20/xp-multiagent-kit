@@ -17,16 +17,18 @@ description: Commits atômicos, categorizados e testados.
 
 ## Convenção de mensagem (categorização por prefixo)
 
-Use prefixos que tornem o histórico auditável por categoria:
+Use **Conventional Commits** (`<tipo>(<escopo opcional>): <mensagem>`) para que o histórico seja legível e auditável:
 
 | Prefixo | Quando usar |
 |---|---|
-| `Add ...` | Feature nova |
-| `Fix ...` | Correção de bug |
-| `Harden ...` | Tornar algo mais robusto a falhas/edge cases, sem mudar comportamento principal |
-| `Extract ...` | Refactor que isola/move código para um novo módulo/serviço |
-| `DRY ...` | Refactor que remove duplicação |
-| `Rework ...` / `Replace ...` | Reescrita ou substituição de abordagem existente |
+| `feat:` | Feature nova (pode incluir escopo, ex: `feat(api):`) |
+| `fix:` | Correção de bug |
+| `refactor:` | Refatoração de código que não adiciona feature nem corrige bug (inclui reescritas e remoção de duplicação) |
+| `perf:` | Alteração de código com foco na melhoria de performance |
+| `test:` | Adição, correção ou manutenção de testes (sem alterar código de produção) |
+| `docs:` | Atualizações exclusivas de documentação |
+| `chore:` | Ajustes de configuração, linting, dependências ou tarefas secundárias |
+| `build:` / `ci:` | Mudanças no pipeline de CI/CD, scripts de build ou infraestrutura |
 
 Mensagens devem ser específicas o suficiente para que alguém (ou outro agente) entenda o que mudou sem abrir o diff — evite mensagens genéricas como "updates" ou "fixes".
 

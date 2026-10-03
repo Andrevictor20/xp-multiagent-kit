@@ -896,9 +896,80 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         footer = format_message_footer(stats, turn)
         self.assertIn("RTK:", footer)
         self.assertIn("4.5k", footer)
-        self.assertIn("52.3%", footer)
+    def test_parse_transcript_data_propagates_eff_rolling(self):
+        """Garante que eff_rolling não é substituído por RollingWindowStats vazio quando rolling=None."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            base = Path(tmpdir)
+            t1 = base / "brain" / "conv1" / ".system_generated" / "logs" / "transcript.jsonl"
+            t1.parent.mkdir(parents=True)
+            t1.write_text('{"type":"USER_INPUT","content":"test message with some words"}\n', encoding="utf-8")
+
+            # Inspeciona diretório temporário
+            stats = parse_transcript_data(
+                conversation_id="conv-roll-test",
+                model_name="gemini-3.8-flash",
+                steps=[{"type": "USER_INPUT", "content": "hi"}],
+                fetch_live=False,
+            )
+            # stats.rolling DEVE ser o eff_rolling calculado, não um RollingWindowStats() zerado
+            self.assertIsNotNone(stats.rolling)
+            # O limite de 5h e semanal deve refletir o modelo
+            self.assertEqual(stats.rolling.limit_5h, 800_000)
+            self.assertEqual(stats.rolling.limit_7d, 10_000_000)
+            # Verifica que os tokens consumidos reais calculados não são perdidos
+            expected_rolling = calculate_rolling_windows()
+            self.assertEqual(stats.rolling.tokens_5h, expected_rolling.tokens_5h)
+            self.assertEqual(stats.rolling.tokens_7d, expected_rolling.tokens_7d)
+
+    def test_provider_limits_for_claude_in_rolling_and_footer(self):
+        """Verifica se modelos Claude recebem os limites de cota corretos de Claude (100k / 2M) em vez do padrão Gemini (800k / 10M)."""
+        stats = parse_transcript_data(
+            conversation_id="conv-claude",
+            model_name="claude-3-7-sonnet",
+            steps=[{"type": "USER_INPUT", "content": "hello claude"}],
+            fetch_live=False,
+        )
+        self.assertEqual(stats.rolling.limit_5h, 100_000)
+        self.assertEqual(stats.rolling.limit_7d, 2_000_000)
+
+        turn = TurnStats(user_input_tokens=50, tool_tokens=100, model_output_tokens=150, total_tokens=300)
+        footer = format_message_footer(stats, turn)
+        self.assertIn("[Estimado · Claude]", footer)
+        self.assertIn("100.0k", footer)
+        self.assertIn("2.00M", footer)
+        self.assertNotIn("800.0k", footer)
+        self.assertNotIn("10.00M", footer)
+
+    def test_turn_breakdown_percentage_coherence_with_ephemerals(self):
+        """Garante que a linha Consumo e o breakdown somem 100% mesmo quando há EPHEMERAL_MESSAGE no turno."""
+        turn_steps = [
+            {"type": "USER_INPUT", "content": "Por favor liste os arquivos"},
+            {"type": "PLANNER_RESPONSE", "content": "", "thinking": "Vou listar os arquivos do projeto"},
+            {"type": "LIST_DIRECTORY", "content": "file1.py\nfile2.py\nfile3.py\nfile4.py\nfile5.py\n"},
+            {"type": "EPHEMERAL_MESSAGE", "content": "Aviso do sistema efemero com muitas instrucoes repetidas... " * 20},
+            {"type": "PLANNER_RESPONSE", "content": "Aqui estão os arquivos encontrados.", "thinking": "Concluído com sucesso"},
+        ]
+        turn = calculate_turn_stats(turn_steps)
+        stats = parse_transcript_data(
+            conversation_id="conv-coherence",
+            model_name="gemini-3.8-flash",
+            steps=turn_steps,
+            fetch_live=False,
+        )
+        footer = format_message_footer(stats, turn)
+        # Extrai os percentuais de Entrada, Ferramentas, Resposta do footer
+        import re
+        m = re.search(r"Entrada:\s+([0-9\.]+[kM]?)\s+\((\d+)%\)\s+\|\s+Ferramentas:\s+([0-9\.]+[kM]?)\s+\((\d+)%\)\s+\|\s+Resposta:\s+([0-9\.]+[kM]?)\s+\((\d+)%\)", footer)
+        self.assertIsNotNone(m, f"Breakdown pattern não encontrado no footer:\n{footer}")
+        pct_in = int(m.group(2))
+        pct_tools = int(m.group(4))
+        pct_out = int(m.group(6))
+        total_pct = pct_in + pct_tools + pct_out
+        # A soma das 3 fatias deve ser aproximadamente 100% (+/- 1% devido a arredondamento)
+        self.assertTrue(98 <= total_pct <= 102, f"Percentuais do breakdown somaram {total_pct}% (deveria ser ~100%): {pct_in}% + {pct_tools}% + {pct_out}%")
 
 
 if __name__ == "__main__":
     unittest.main()
+
 

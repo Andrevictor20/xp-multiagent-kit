@@ -259,7 +259,7 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
         from scripts.token_tracker import (
             find_active_session, load_transcript, calculate_turn_stats,
-            detect_model_name, parse_transcript_data, format_message_footer
+            detect_model_name, detect_effort, parse_transcript_data, format_message_footer
         )
         t_path = Path(transcript_path) if transcript_path and os.path.isfile(transcript_path) else None
         if not t_path:
@@ -267,8 +267,11 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         steps = load_transcript(t_path) if t_path else []
         turn = calculate_turn_stats(steps)
         model_name = detect_model_name(conv_id, steps)
+        user_effort = detect_effort(conv_id, steps=steps)
+        # Se o usuário selecionou explicitamente no IDE (High, Thinking, etc.), prioriza a seleção real do modelo
+        active_effort = user_effort if user_effort and user_effort.lower() != "medium" else decision.effort
         # Usa fetch_live=False para responder instantaneamente via cache/snapshot sem bloquear na rede
-        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=False, effort=decision.effort)
+        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=False, effort=active_effort)
         live_footer = format_message_footer(stats, turn)
     except Exception:
         live_footer = ""
