@@ -42,6 +42,7 @@ for existing_skill in "$GLOBAL_SKILLS_DIR"/*; do
   if [ -d "$existing_skill" ] && [ ! -L "$existing_skill" ]; then
     sname="$(basename "$existing_skill")"
     echo "📦 Isolando skill legado em plugins_disabled: $sname"
+    rm -rf "$GCP_PLUGIN_SKILLS/$sname"
     mv "$existing_skill" "$GCP_PLUGIN_SKILLS/"
   fi
 done
