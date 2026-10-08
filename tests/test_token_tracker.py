@@ -120,28 +120,28 @@ class TestTokenTracker(unittest.TestCase):
 
     def test_format_badge_shows_used_and_total_for_all_limits(self):
         sample_steps = [{"type": "USER_INPUT", "content": "Hello world"}]
-        rolling = RollingWindowStats(
-            tokens_5h=30000,
-            conversations_5h=1,
-            limit_5h=500000,
-            tokens_7d=1200000,
-            conversations_7d=5,
-            limit_7d=10000000
-        )
         stats = parse_transcript_data(
             conversation_id="c1",
             model_name="gemini-3.8-flash",
             steps=sample_steps,
             system_prompt_bytes=4000,
-            rolling=rolling
+            fetch_live=False,
         )
+        # Quando offline / não aferível
         badge = format_badge(stats)
         self.assertIn("📊 **Token Telemetry (gemini-3.8-flash):**", badge)
-        # Verify used/total for 5h and weekly
-        self.assertIn("5h:", badge)
-        self.assertIn("/500.0k", badge)
-        self.assertIn("Semana:", badge)
-        self.assertIn("/10.00M", badge)
+        self.assertIn("5h:** `Não está sendo possível aferir no momento`", badge)
+        self.assertIn("Semana:** `Não está sendo possível aferir no momento`", badge)
+
+        # Quando com cota ao vivo
+        stats.live_quota = LiveServerQuota(
+            is_live=True,
+            gemini_5h=LiveQuotaBucket(window="5h", remaining_fraction=0.90),
+            gemini_weekly=LiveQuotaBucket(window="weekly", remaining_fraction=0.80),
+        )
+        badge_live = format_badge(stats)
+        self.assertIn("90.0% restante", badge_live)
+        self.assertIn("80.0% restante", badge_live)
 
     def test_format_badge_includes_rtk_savings_when_present(self):
         sample_steps = [{"type": "USER_INPUT", "content": "Hello world"}]
@@ -626,10 +626,9 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         self.assertEqual(loaded["gemini_5h"]["remaining_fraction"], 0.5)
         self.assertEqual(loaded["anchor_tokens_5h"], 400_000)
 
-    def test_calculate_projected_quota_within_window(self):
-        from scripts.token_tracker import (
-            calculate_projected_quota, LiveServerQuota, LiveQuotaBucket
-        )
+    def test_calculate_projected_quota_disabled_returns_unavailable(self):
+        """Garante que a projeção/estimativa foi desativada e retorna indisponibilidade."""
+        from scripts.token_tracker import calculate_projected_quota
         snapshot = {
             "timestamp": time.time() - 3600,
             "datetime": "2026-09-26 21:00:00",
@@ -638,47 +637,19 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
             "gemini_5h": {
                 "bucket_id": "gemini-5h",
                 "remaining_fraction": 0.50,
-                "reset_time": "2030-01-01T00:00:00Z", # future
+                "reset_time": "2030-01-01T00:00:00Z",
                 "description": "refresh in 4 hours"
             },
-            "gemini_weekly": {
-                "bucket_id": "gemini-weekly",
-                "remaining_fraction": 0.20,
-                "reset_time": "2030-01-01T00:00:00Z",
-                "description": "refresh in 5 days"
-            },
-            "anchor_tokens_5h": 400_000,
-            "anchor_tokens_7d": 8_000_000,
         }
-        # 40_000 additional tokens spent since snapshot (5% of 800k)
         projected = calculate_projected_quota(
             snapshot,
             current_tokens_5h=440_000,
             current_tokens_7d=8_040_000,
             model_name="gemini-3.8-flash"
         )
-        self.assertTrue(projected.is_projected)
+        self.assertFalse(projected.is_projected)
         self.assertFalse(projected.is_live)
-        self.assertAlmostEqual(projected.gemini_5h.remaining_fraction, 0.45, places=2)
-        self.assertAlmostEqual(projected.gemini_weekly.remaining_fraction, 0.196, places=3)
-
-    def test_calculate_projected_quota_after_reset(self):
-        from scripts.token_tracker import calculate_projected_quota
-        snapshot = {
-            "timestamp": time.time() - 25000,
-            "datetime": "2026-09-26 15:00:00",
-            "is_live": True,
-            "gemini_5h": {
-                "bucket_id": "gemini-5h",
-                "remaining_fraction": 0.10,
-                "reset_time": "2020-01-01T00:00:00Z", # past
-                "description": "refresh in 1 hour"
-            },
-            "anchor_tokens_5h": 500_000,
-            "anchor_tokens_7d": 5_000_000,
-        }
-        projected = calculate_projected_quota(snapshot, current_tokens_5h=500_000, current_tokens_7d=5_000_000)
-        self.assertEqual(projected.gemini_5h.remaining_fraction, 1.0)
+        self.assertEqual(projected.error, "Não está sendo possível aferir no momento")
 
 
     def test_save_and_load_active_ls_conn(self):
@@ -922,7 +893,7 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
             self.assertEqual(stats.rolling.tokens_7d, expected_rolling.tokens_7d)
 
     def test_provider_limits_for_claude_in_rolling_and_footer(self):
-        """Verifica se modelos Claude recebem os limites de cota corretos de Claude (100k / 2M) em vez do padrão Gemini (800k / 10M)."""
+        """Verifica se modelos Claude recebem os limites de cota corretos de Claude (100k / 2M) em rolling, e não geram dados estimados falsos no footer quando offline."""
         stats = parse_transcript_data(
             conversation_id="conv-claude",
             model_name="claude-3-7-sonnet",
@@ -934,9 +905,23 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
 
         turn = TurnStats(user_input_tokens=50, tool_tokens=100, model_output_tokens=150, total_tokens=300)
         footer = format_message_footer(stats, turn)
-        self.assertIn("[Estimado · Claude]", footer)
-        self.assertIn("100.0k", footer)
-        self.assertIn("2.00M", footer)
+        self.assertNotIn("[Estimado", footer)
+        self.assertIn("5h:       Não está sendo possível aferir no momento", footer)
+        self.assertIn("Semana:   Não está sendo possível aferir no momento", footer)
+
+    def test_format_message_footer_when_quota_unavailable_says_nao_possivel_aferir(self):
+        """Garante que quando a cota oficial não está disponível, não se estima uso com dados errados e sim informa indisponibilidade."""
+        turn = TurnStats(user_input_tokens=100, tool_tokens=200, model_output_tokens=300, total_tokens=600)
+        stats = parse_transcript_data(
+            conversation_id="conv-offline",
+            model_name="gemini-3.8-flash",
+            steps=[{"type": "USER_INPUT", "content": "hi"}],
+            fetch_live=False,
+        )
+        footer = format_message_footer(stats, turn)
+        self.assertIn("5h:       Não está sendo possível aferir no momento", footer)
+        self.assertIn("Semana:   Não está sendo possível aferir no momento", footer)
+        self.assertNotIn("[Estimado", footer)
         self.assertNotIn("800.0k", footer)
         self.assertNotIn("10.00M", footer)
 

@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-02 (Local)  
+> **Última Atualização:** 2026-10-08 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.41.0 (Skill Suite Expansion: Software Evolution, Strategic Technical Roadmapping & Capacity Planning, 77 skills)
+> **Versão / Marco Atual:** v2.44.1 (Fast Path RPC do Language Server e Ativação de Aferição no Hook PreInvocation)
 
 ---
 
@@ -26,7 +26,7 @@
 
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills, 10 Workflows, 11 Policies, 2 Templates, CI/CD Auto-Healer, Rastreador de Débito `agy-debt`, Utilitário CLI `agy-kit` / `xp-kit`, Suíte Global de Tokens e Health Scanner em `~/.local/bin/`).
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (Pirâmide ATDD/BDD com Stop Gate, TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Root-Cause Debugging, No Workarounds, Code Deslop, 4-Tier Memory e Telemetria de Tokens).
-- **Última Execução / Evidência:** `EV-SKILL-EXPANSION-20261002-02` (Skill software-evolution-and-roadmapping criada, sincronizada em 56 projetos e aprovada com 20/20 testes de perfis e índice)
+- **Última Execução / Evidência:** `EV-LIVE-QUOTA-HOOK-FAST-PATH-20261008-01` (Aferição ao vivo de cotas oficiais 5h/semanal ativada no hook com Fast Path de 5ms e 306/306 testes aprovados)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI.
 - **⚠️ Alerta de Cota (Pre-Flight Gate):** Operar em Modo Cirúrgico Atômico (`agy-fast` / effort low) sob alta utilização de cota.
 
@@ -34,6 +34,8 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-10-08 | `FIX` | Fast Path RPC do Language Server e Ativação no Hook (v2.44.1): resolução da causa raiz que gerava constantemente 'Não está sendo possível aferir no momento' no chat; ativação de `fetch_live=True` em `dynamic_effort_hook.py`, acelerado pelo Fast Path direto (~5ms) via `active_ls_conn.json` e variáveis de ambiente; exibição em tempo real das barras oficiais de progresso e renovação (5h e semanal) com 306/306 testes unitários aprovados | `scripts/hooks/dynamic_effort_hook.py`, `scripts/token_tracker.py`, `tests/test_dynamic_effort_hook.py` | `PASS (EV-LIVE-QUOTA-HOOK-FAST-PATH-20261008-01)` |
+| 2026-10-08 | `FIX` | Remoção de Estimativa Inacurada de Quotas (v2.44.0): remoção da função e projeção de estimativas heurísticas de cotas (5h e semanal) quando a conexão direta via RPC ao Language Server estiver offline ou indisponível; exibição direta e transparente de 'Não está sendo possível aferir no momento' no rodapé (format_message_footer), badge e dashboards sem forçar dados errados ([Estimado]); ajuste de alertas de orçamento para não disparar falsos positivos críticos; validado com 306/306 testes unitários | `scripts/token_tracker.py`, `tests/test_token_tracker.py` | `PASS (EV-QUOTA-NO-ESTIMATION-20261008-01)` |
 | 2026-10-03 | `FIX` | Contabilização Exata de Telemetria e Multimodelo (v2.43.0): correção do bug de propagação de `eff_rolling` em `parse_transcript_data` eliminando o falso `0.0% usado (0)` nas janelas de 5h e semanal, fechamento matemático estrito de 100% no breakdown de consumo do turno (Entrada, Ferramentas, Resposta) com deduplicação de mensagens efêmeras, suporte fiel a limites móveis de outros provedores (Claude 100k/2M, OpenAI, DeepSeek) e priorização do raciocínio explicitamente selecionado pelo usuário no IDE (Effort: High/Thinking) em `dynamic_effort_hook.py`, aprovado com 306/306 testes | `scripts/token_tracker.py`, `scripts/hooks/dynamic_effort_hook.py`, `tests/test_token_tracker.py` | `PASS (EV-TOKEN-TELEMETRY-ACCURACY-20261003-01)` |
 | 2026-10-02 | `FEAT` | Modernização de Design & Workflow Dedicado /design (v2.42.0): criação do workflow .agents/workflows/design.md (4 fases: Token Discovery, 6-State Blueprint, Implementation & Micro-Interactions, Polish Gate), atualização das políticas design-system.md e frontend.md com Token Anchoring First, escala de 8pt estrita, máquina de 6 estados obrigatória, ergonomia móvel com alvos de toque ≥ 48px e teclado seguro, atualização da skill component-architecture e registro no AGENTS.md | `.agents/workflows/design.md`, `.agents/policies/*`, `.agents/skills/*`, `AGENTS.md` | `PASS (EV-DESIGN-V2-20261002-01)` |
 | 2026-10-02 | `FEAT` | Planejamento a Longo Prazo & Roadmapping Estratégico (v2.41.0): skill software-evolution-and-roadmapping (horizontes Now/Next/Later, padrão Strangler Fig para modernização de legados, capacity planning, FinOps e governança de EOL/Sunset de APIs RFC 8594), integração em skill_profiles.py (33 skills no backend) e regeneração do SKILLS_INDEX.md | `.agents/skills/*`, `scripts/skill_profiles.py`, `scripts/prune_skills.py` | `PASS (EV-SKILL-EXPANSION-20261002-02)` |

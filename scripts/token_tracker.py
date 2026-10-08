@@ -332,85 +332,13 @@ def calculate_projected_quota(
     current_tokens_7d: int = 0,
     model_name: str = "gemini-3.8-flash",
 ) -> LiveServerQuota:
-    """Projeta a cota a partir do último snapshot oficial deduzindo o consumo incremental."""
-    now = time.time()
-    sync_ts = float(snapshot.get("timestamp", now))
-    sync_dt = snapshot.get("datetime", "")
-
-    p_defs = get_provider_defaults(model_name)
-    limit_5h = p_defs.get("limit_5h", DEFAULT_LIMIT_5H)
-    limit_7d = p_defs.get("limit_7d", DEFAULT_LIMIT_WEEKLY)
-
-    anchor_5h = int(snapshot.get("anchor_tokens_5h", 0))
-    anchor_7d = int(snapshot.get("anchor_tokens_7d", 0))
-
-    delta_5h = max(0, current_tokens_5h - anchor_5h)
-    delta_7d = max(0, current_tokens_7d - anchor_7d)
-
-    def project_bucket(
-        b_dict: Optional[Dict[str, Any]], delta_tokens: int, limit_tokens: int, window_type: str
-    ) -> Optional[LiveQuotaBucket]:
-        if not b_dict:
-            return None
-        orig_rem = float(b_dict.get("remaining_fraction", 1.0))
-        reset_time_str = b_dict.get("reset_time", "")
-        desc = b_dict.get("description", "")
-
-        has_reset = False
-        if reset_time_str:
-            try:
-                import datetime
-                dt = datetime.datetime.fromisoformat(reset_time_str.replace("Z", "+00:00"))
-                reset_epoch = dt.timestamp()
-                if now >= reset_epoch:
-                    has_reset = True
-                else:
-                    diff = max(0.0, reset_epoch - now)
-                    if window_type == "5h":
-                        h = int(diff // 3600)
-                        m = int((diff % 3600) // 60)
-                        desc = f"refresh in {h} hours, {m} minutes"
-                    else:
-                        d = int(diff // 86400)
-                        h = int((diff % 86400) // 3600)
-                        desc = f"refresh in {d} days, {h} hours"
-            except Exception:
-                pass
-
-        if has_reset:
-            proj_rem = 1.0
-            desc = "renovado recentemente"
-        else:
-            fraction_spent = (delta_tokens / limit_tokens) if limit_tokens > 0 else 0.0
-            proj_rem = max(0.0, min(1.0, orig_rem - fraction_spent))
-
-        return LiveQuotaBucket(
-            bucket_id=b_dict.get("bucket_id", ""),
-            display_name=b_dict.get("display_name", ""),
-            description=desc,
-            window=b_dict.get("window", window_type),
-            remaining_fraction=proj_rem,
-            reset_time=reset_time_str,
-        )
-
-    g_5h = project_bucket(snapshot.get("gemini_5h"), delta_5h, limit_5h, "5h")
-    g_7d = project_bucket(snapshot.get("gemini_weekly"), delta_7d, limit_7d, "weekly")
-    c_5h = project_bucket(snapshot.get("claude_5h"), delta_5h, limit_5h, "5h")
-    c_7d = project_bucket(snapshot.get("claude_weekly"), delta_7d, limit_7d, "weekly")
-
+    """Função de estimativa desativada: não projeta quotas a partir de snapshots para evitar dados imprecisos."""
     return LiveServerQuota(
         is_live=False,
-        is_projected=True,
-        plan_name=snapshot.get("plan_name", "Google AI Pro"),
-        gemini_5h=g_5h,
-        gemini_weekly=g_7d,
-        claude_5h=c_5h,
-        claude_weekly=c_7d,
-        description=snapshot.get("description", ""),
-        error=None,
-        sync_timestamp=sync_ts,
-        sync_datetime=sync_dt,
+        is_projected=False,
+        error="Não está sendo possível aferir no momento",
     )
+
 
 
 def clean_refresh_text(desc: Optional[str]) -> str:
@@ -435,6 +363,28 @@ def clean_refresh_text(desc: Optional[str]) -> str:
 
 
 
+def _query_quota_endpoint(port: int, token: str, scheme: str = "http", timeout: float = 0.5) -> Optional[Dict[str, Any]]:
+    """Consulta rápida ao endpoint oficial de cotas do Language Server."""
+    url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
+    ctx = ssl._create_unverified_context() if scheme == "https" else None
+    req = urllib.request.Request(
+        url,
+        data=b"{}",
+        headers={
+            "Content-Type": "application/json",
+            "x-codeium-csrf-token": token,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, context=ctx, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            if data and "response" in data:
+                return data
+    except Exception:
+        return None
+    return None
+
+
 def fetch_live_antigravity_quota(
     force_refresh: bool = False,
     rolling: Optional[RollingWindowStats] = None,
@@ -442,176 +392,177 @@ def fetch_live_antigravity_quota(
 ) -> LiveServerQuota:
     """Consulta em tempo real a API oficial de cotas do Language Server do Antigravity IDE.
 
-    Se indisponível ou offline, recorre ao snapshot oficial persistido em disco
-    e projeta o consumo incremental desde a última sincronização.
+    Utiliza Fast Path (conexão ativa em disco e variáveis de ambiente) respondendo em ~5ms.
+    Se offline ou desconectado, recorre à descoberta resiliente de processos.
     """
     global _LIVE_QUOTA_CACHE
     now = time.time()
     if not force_refresh and _LIVE_QUOTA_CACHE["data"] is not None and (now - _LIVE_QUOTA_CACHE["timestamp"] < 10.0):
         return _LIVE_QUOTA_CACHE["data"]
 
-    ports_to_try: List[Tuple[int, str]] = []
-    csrf_token = None
+    raw_data: Optional[Dict[str, Any]] = None
+    successful_conn: Optional[Tuple[int, str, str]] = None
 
-    # 1. Variáveis de ambiente diretas do Antigravity CLI nativo e subprocessos
-    env_token = os.environ.get("ANTIGRAVITY_CSRF_TOKEN")
-    env_addr = os.environ.get("ANTIGRAVITY_LS_ADDRESS")
-    if env_token:
-        csrf_token = env_token
-    if env_addr and env_token:
-        m_env = re.search(r":(\d+)", env_addr)
-        if m_env:
-            ports_to_try.append((int(m_env.group(1)), env_token))
-
-    # 2. Conexão ativa persistida em disco (~/.gemini/antigravity-cli/active_ls_conn.json)
+    # 1. Fast Path: Conexão ativa persistida em disco (~/.gemini/antigravity-cli/active_ls_conn.json)
     cached_conn = load_active_ls_conn()
     if cached_conn:
         c_port = cached_conn.get("port")
         c_tok = cached_conn.get("csrf_token")
+        c_scheme = cached_conn.get("scheme", "http")
         if c_port and c_tok:
-            ports_to_try.append((int(c_port), c_tok))
-            if not csrf_token:
-                csrf_token = c_tok
+            res_cached = _query_quota_endpoint(int(c_port), c_tok, c_scheme, timeout=0.5)
+            if res_cached and "response" in res_cached:
+                raw_data = res_cached
+                successful_conn = (int(c_port), c_tok, c_scheme)
 
-    # 3. Coleta caminhos de log do Language Server (múltiplas variantes, IDE e CLI)
-    log_patterns = [
-        os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main*.log"),
-        os.path.expanduser("~/.config/Antigravity IDE/logs/*/window*/exthost/google.antigravity/*.log"),
-        os.path.expanduser("~/.config/Antigravity/logs/*/ls-main*.log"),
-        os.path.expanduser("~/.gemini/antigravity-cli/log/cli-*.log"),
-    ]
-    log_files = []
-    for pat in log_patterns:
-        log_files.extend(glob.glob(pat))
+    # 2. Fast Path: Variáveis de ambiente diretas (CLI e terminais filhos)
+    if not raw_data:
+        env_token = os.environ.get("ANTIGRAVITY_CSRF_TOKEN")
+        env_addr = os.environ.get("ANTIGRAVITY_LS_ADDRESS")
+        if env_token and env_addr:
+            m_env = re.search(r":(\d+)", env_addr)
+            if m_env:
+                e_port = int(m_env.group(1))
+                for s in ["http", "https"]:
+                    res_env = _query_quota_endpoint(e_port, env_token, s, timeout=0.5)
+                    if res_env and "response" in res_env:
+                        raw_data = res_env
+                        successful_conn = (e_port, env_token, s)
+                        break
 
-    http_port = None
-    https_port = None
+    # 3. Fallback Discovery: apenas se os atalhos rápidos falharem (servidor reiniciou ou porta mudou)
+    if not raw_data:
+        ports_to_try: List[Tuple[int, str]] = []
+        csrf_token = None
 
-    if log_files:
-        try:
-            latest_log = max(log_files, key=os.path.getmtime)
-            with open(latest_log, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if "--csrf_token" in line and not csrf_token:
-                        m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", line)
-                        if m:
-                            csrf_token = m.group(1)
-                    if "listening on random port at" in line:
-                        m_http = re.search(r"listening on random port at (\d+) for HTTP\b", line)
-                        if m_http:
-                            http_port = int(m_http.group(1))
-                        m_https = re.search(r"listening on random port at (\d+) for HTTPS", line)
-                        if m_https:
-                            https_port = int(m_https.group(1))
-                    if "LS started on port" in line:
-                        m_start = re.search(r"LS started on port (\d+)", line)
-                        if m_start:
-                            https_port = int(m_start.group(1))
-        except Exception:
-            pass
+        env_token = os.environ.get("ANTIGRAVITY_CSRF_TOKEN")
+        env_addr = os.environ.get("ANTIGRAVITY_LS_ADDRESS")
+        if env_token:
+            csrf_token = env_token
+        if env_addr and env_token:
+            m_env = re.search(r":(\d+)", env_addr)
+            if m_env:
+                ports_to_try.append((int(m_env.group(1)), env_token))
 
-    # 4. Descoberta via /proc/*/environ (para CLI em execução noutros terminais/daemons)
-    if not csrf_token or not ports_to_try:
-        for p_env in glob.glob("/proc/[0-9]*/environ"):
+        # Coleta caminhos de log do Language Server (múltiplas variantes, IDE e CLI)
+        log_patterns = [
+            os.path.expanduser("~/.config/Antigravity IDE/logs/*/ls-main*.log"),
+            os.path.expanduser("~/.config/Antigravity IDE/logs/*/window*/exthost/google.antigravity/*.log"),
+            os.path.expanduser("~/.config/Antigravity/logs/*/ls-main*.log"),
+            os.path.expanduser("~/.gemini/antigravity-cli/log/cli-*.log"),
+        ]
+        log_files = []
+        for pat in log_patterns:
+            log_files.extend(glob.glob(pat))
+
+        http_port = None
+        https_port = None
+
+        if log_files:
             try:
-                with open(p_env, "rb") as ef:
-                    edata = ef.read()
-                    if b"ANTIGRAVITY_CSRF_TOKEN=" in edata:
-                        items = dict(item.split(b"=", 1) for item in edata.split(b"\x00") if b"=" in item)
-                        tok = items.get(b"ANTIGRAVITY_CSRF_TOKEN", b"").decode("utf-8", "ignore")
-                        addr = items.get(b"ANTIGRAVITY_LS_ADDRESS", b"").decode("utf-8", "ignore")
-                        if tok and not csrf_token:
-                            csrf_token = tok
-                        if addr and tok:
-                            m_a = re.search(r":(\d+)", addr)
-                            if m_a:
-                                ports_to_try.append((int(m_a.group(1)), tok))
-                                break
+                latest_log = max(log_files, key=os.path.getmtime)
+                with open(latest_log, "r", encoding="utf-8", errors="ignore") as f:
+                    for line in f:
+                        if "--csrf_token" in line and not csrf_token:
+                            m = re.search(r"--csrf_token\s+([a-f0-9\-]+)", line)
+                            if m:
+                                csrf_token = m.group(1)
+                        if "listening on random port at" in line:
+                            m_http = re.search(r"listening on random port at (\d+) for HTTP\b", line)
+                            if m_http:
+                                http_port = int(m_http.group(1))
+                            m_https = re.search(r"listening on random port at (\d+) for HTTPS", line)
+                            if m_https:
+                                https_port = int(m_https.group(1))
+                        if "LS started on port" in line:
+                            m_start = re.search(r"LS started on port (\d+)", line)
+                            if m_start:
+                                https_port = int(m_start.group(1))
             except Exception:
                 pass
 
-    # 5. Descoberta resiliente de processos ativos e portas do Language Server via /proc
-    candidates = []
-    for cmd_path in glob.glob("/proc/[0-9]*/cmdline"):
-        try:
-            with open(cmd_path, "rb") as f:
-                parts = f.read().split(b"\x00")
-                is_match = any(
-                    any(name in p for name in [b"language_server", b"agy-native", b"agy-bin", b"antigravity"])
-                    for p in parts
-                )
-                if is_match:
-                    pid = os.path.basename(os.path.dirname(cmd_path))
-                    tok = None
-                    if b"--csrf_token" in parts:
-                        idx = parts.index(b"--csrf_token")
-                        tok = parts[idx + 1].decode("utf-8", errors="ignore")
-                    elif csrf_token:
-                        tok = csrf_token
-                    if tok:
-                        candidates.append((pid, tok))
-        except Exception:
-            pass
-
-    if candidates:
-        for pid, token in candidates:
-            # Tenta via lsof (mais direto e confiável)
-            try:
-                out_lsof = subprocess.check_output(
-                    ["lsof", "-Pan", "-p", pid, "-iTCP", "-sTCP:LISTEN"],
-                    text=True,
-                    stderr=subprocess.DEVNULL,
-                    timeout=1.0,
-                )
-                for m in re.finditer(r":(\d+)\s+\(LISTEN\)", out_lsof):
-                    ports_to_try.append((int(m.group(1)), token))
-            except Exception:
-                pass
-
-            # Fallback via ss
-            try:
-                import subprocess
-                out = subprocess.check_output(["ss", "-tulpn"], text=True, stderr=subprocess.DEVNULL, timeout=1.0)
-                for line in out.splitlines():
-                    if f"pid={pid}," in line:
-                        m_port = re.search(r":(\d+)\s+", line)
-                        if m_port:
-                            ports_to_try.append((int(m_port.group(1)), token))
-            except Exception:
-                pass
-
-    if not ports_to_try and csrf_token:
-        for p in [p for p in [http_port, https_port, 44351, 39831, 36977, 43923] if p]:
-            ports_to_try.append((p, csrf_token))
-
-    # Remove duplicatas preservando ordem
-    ports_to_try = list(dict.fromkeys(ports_to_try))
-
-    raw_data = None
-    successful_conn: Optional[Tuple[int, str, str]] = None
-    if ports_to_try:
-        for port, token in ports_to_try:
-            for scheme in ["http", "https"]:
-                url = f"{scheme}://127.0.0.1:{port}/exa.language_server_pb.LanguageServerService/RetrieveUserQuotaSummary"
-                ctx = ssl._create_unverified_context() if scheme == "https" else None
-                req = urllib.request.Request(
-                    url,
-                    data=b"{}",
-                    headers={
-                        "Content-Type": "application/json",
-                        "x-codeium-csrf-token": token,
-                    },
-                )
+        # Descoberta via /proc/*/environ
+        if not csrf_token or not ports_to_try:
+            for p_env in glob.glob("/proc/[0-9]*/environ"):
                 try:
-                    with urllib.request.urlopen(req, context=ctx, timeout=1.0) as resp:
-                        raw_data = json.loads(resp.read().decode("utf-8"))
-                        if raw_data and "response" in raw_data:
-                            successful_conn = (port, token, scheme)
-                            break
+                    with open(p_env, "rb") as ef:
+                        edata = ef.read()
+                        if b"ANTIGRAVITY_CSRF_TOKEN=" in edata:
+                            items = dict(item.split(b"=", 1) for item in edata.split(b"\x00") if b"=" in item)
+                            tok = items.get(b"ANTIGRAVITY_CSRF_TOKEN", b"").decode("utf-8", "ignore")
+                            addr = items.get(b"ANTIGRAVITY_LS_ADDRESS", b"").decode("utf-8", "ignore")
+                            if tok and not csrf_token:
+                                csrf_token = tok
+                            if addr and tok:
+                                m_a = re.search(r":(\d+)", addr)
+                                if m_a:
+                                    ports_to_try.append((int(m_a.group(1)), tok))
+                                    break
                 except Exception:
-                    continue
-            if raw_data and "response" in raw_data:
-                break
+                    pass
+
+        # Descoberta via /proc cmdline
+        candidates = []
+        for cmd_path in glob.glob("/proc/[0-9]*/cmdline"):
+            try:
+                with open(cmd_path, "rb") as f:
+                    parts = f.read().split(b"\x00")
+                    is_match = any(
+                        any(name in p for name in [b"language_server", b"agy-native", b"agy-bin", b"antigravity"])
+                        for p in parts
+                    )
+                    if is_match:
+                        pid = os.path.basename(os.path.dirname(cmd_path))
+                        tok = None
+                        if b"--csrf_token" in parts:
+                            idx = parts.index(b"--csrf_token")
+                            tok = parts[idx + 1].decode("utf-8", errors="ignore")
+                        elif csrf_token:
+                            tok = csrf_token
+                        if tok:
+                            candidates.append((pid, tok))
+            except Exception:
+                pass
+
+        if candidates:
+            for pid, token in candidates:
+                try:
+                    out_lsof = subprocess.check_output(
+                        ["lsof", "-Pan", "-p", pid, "-iTCP", "-sTCP:LISTEN"],
+                        text=True,
+                        stderr=subprocess.DEVNULL,
+                        timeout=1.0,
+                    )
+                    for m in re.finditer(r":(\d+)\s+\(LISTEN\)", out_lsof):
+                        ports_to_try.append((int(m.group(1)), token))
+                except Exception:
+                    pass
+
+                try:
+                    out = subprocess.check_output(["ss", "-tulpn"], text=True, stderr=subprocess.DEVNULL, timeout=1.0)
+                    for line in out.splitlines():
+                        if f"pid={pid}," in line:
+                            m_port = re.search(r":(\d+)\s+", line)
+                            if m_port:
+                                ports_to_try.append((int(m_port.group(1)), token))
+                except Exception:
+                    pass
+
+        if not ports_to_try and csrf_token:
+            for p in [p for p in [http_port, https_port, 44351, 39831, 36977, 43923] if p]:
+                ports_to_try.append((p, csrf_token))
+
+        ports_to_try = list(dict.fromkeys(ports_to_try))
+        if ports_to_try:
+            for port, token in ports_to_try:
+                for scheme in ["http", "https"]:
+                    res_disc = _query_quota_endpoint(port, token, scheme, timeout=0.8)
+                    if res_disc and "response" in res_disc:
+                        raw_data = res_disc
+                        successful_conn = (port, token, scheme)
+                        break
+                if raw_data:
+                    break
 
     if successful_conn:
         try:
@@ -620,21 +571,7 @@ def fetch_live_antigravity_quota(
             pass
 
     if not raw_data or "response" not in raw_data:
-        # Tenta projetar a partir do último snapshot salvo em disco
-        snapshot = load_quota_snapshot()
-        if snapshot:
-            curr_5h = rolling.tokens_5h if rolling else 0
-            curr_7d = rolling.tokens_7d if rolling else 0
-            quota = calculate_projected_quota(
-                snapshot,
-                current_tokens_5h=curr_5h,
-                current_tokens_7d=curr_7d,
-                model_name=model_name,
-            )
-            _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
-            return quota
-
-        quota = LiveServerQuota(is_live=False, error="Falha ao consultar RetrieveUserQuotaSummary via RPC")
+        quota = LiveServerQuota(is_live=False, error="Não está sendo possível aferir no momento")
         _LIVE_QUOTA_CACHE = {"timestamp": now, "data": quota}
         return quota
 
@@ -1316,17 +1253,11 @@ def format_badge(stats: TokenStats) -> str:
             f"{rtk_badge}"
         )
 
-    r5h_used = human_tokens(stats.rolling.tokens_5h)
-    r5h_tot = human_tokens(stats.rolling.limit_5h)
-    r7d_used = human_tokens(stats.rolling.tokens_7d)
-    r7d_tot = human_tokens(stats.rolling.limit_7d)
-    bar_5h = make_progress_bar(stats.rolling.percent_5h, 8)
-    bar_7d = make_progress_bar(stats.rolling.percent_7d, 8)
     return (
         f"📊 **Token Telemetry ({stats.model_name}):** "
         f"`[{bar_ctx}] {tot_str}/{win_str}` ({stats.percent_used:.1f}%) "
-        f"| **5h:** `[{bar_5h}] {r5h_used}/{r5h_tot}` ({stats.rolling.percent_5h:.1f}%) "
-        f"| **Semana:** `[{bar_7d}] {r7d_used}/{r7d_tot}` ({stats.rolling.percent_7d:.1f}%)"
+        f"| **5h:** `Não está sendo possível aferir no momento` "
+        f"| **Semana:** `Não está sendo possível aferir no momento`"
         f"{rtk_badge}"
     )
 
@@ -1377,7 +1308,17 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
     effort_tag = f" (Effort: {effort_cap})"
     bar_ctx = make_progress_bar(stats.percent_used, 10)
 
-    if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
+    pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
+    resend_line = _format_resend_line(stats.conversation_id)
+    rtk_line = ""
+    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
+        s = stats.rtk_savings
+        tok_saved = human_tokens(s.get("saved_tokens", 0))
+        pct_saved = s.get("avg_savings_pct", 0.0)
+        n_cmds = s.get("total_commands", 0)
+        rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
+
+    if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
         b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
@@ -1390,106 +1331,25 @@ def format_message_footer(stats: TokenStats, turn: TurnStats) -> str:
         desc_5h = clean_refresh_text(b_5h.description) if b_5h else ""
         desc_7d = clean_refresh_text(b_7d.description) if b_7d else ""
 
-        if is_gemini:
-            limit_5h = stats.rolling.limit_5h or 800_000
-            limit_7d = stats.rolling.limit_7d or 10_000_000
-        else:
-            p_defs = get_provider_defaults(stats.model_name)
-            limit_5h = p_defs["limit_5h"]
-            limit_7d = p_defs["limit_7d"]
-
-        tok_5h_rem = human_tokens(int(limit_5h * (pct_5h_rem / 100.0)))
-        tok_5h_used = human_tokens(int(limit_5h * (pct_5h_used / 100.0)))
-        tok_5h_tot = human_tokens(limit_5h)
-
-        tok_7d_rem = human_tokens(int(limit_7d * (pct_7d_rem / 100.0)))
-        tok_7d_used = human_tokens(int(limit_7d * (pct_7d_used / 100.0)))
-        tok_7d_tot = human_tokens(limit_7d)
-
-        pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
+        desc_5h_str = f" ({desc_5h})" if desc_5h else ""
+        desc_7d_str = f" ({desc_7d})" if desc_7d else ""
 
         bar_5h = make_progress_bar(pct_5h_used, 10)
         bar_7d = make_progress_bar(pct_7d_used, 10)
 
-        proj_tag = " [Projetado]" if stats.live_quota.is_projected else ""
-        desc_5h_str = f" ({desc_5h})" if desc_5h else ""
-        desc_7d_str = f" ({desc_7d})" if desc_7d else ""
-
-        resend_line = _format_resend_line(stats.conversation_id)
-        rtk_line = ""
-        if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
-            s = stats.rtk_savings
-            tok_saved = human_tokens(s.get("saved_tokens", 0))
-            pct_saved = s.get("avg_savings_pct", 0.0)
-            n_cmds = s.get("total_commands", 0)
-            rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
-
-        if stats.live_quota.is_live:
-            line_5h = f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado • {pct_5h_rem:.1f}% restante{desc_5h_str}{proj_tag}  \n"
-            line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado • **{pct_7d_rem:.1f}% restante**{desc_7d_str}{proj_tag}  \n"
-        else:
-            line_5h = f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado ({tok_5h_used}) • {pct_5h_rem:.1f}% restante (~{tok_5h_rem}) de {tok_5h_tot}{desc_5h_str}{proj_tag}  \n"
-            line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado ({tok_7d_used}) • **{pct_7d_rem:.1f}% restante ({tok_7d_rem})** de {tok_7d_tot}{desc_7d_str}{proj_tag}  \n"
-
-        return (
-            f"{consumo_line}"
-            f"{resend_line}"
-            f"{rtk_line}"
-            f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
-            f"{line_5h}"
-            f"{line_7d}"
-            f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
-        )
-
-    # Fallback: sem dados ao vivo do Language Server e sem snapshot — usa defaults por provider
-    provider_defaults = get_provider_defaults(stats.model_name)
-    is_gemini = "gemini" in stats.model_name.lower()
-    provider_label = (
-        "Claude" if "claude" in stats.model_name.lower()
-        else "OpenAI" if any(x in stats.model_name.lower() for x in ("gpt", "o1", "o3"))
-        else "DeepSeek" if "deepseek" in stats.model_name.lower()
-        else "Gemini" if is_gemini
-        else "Estimado"
-    )
-
-    fallback_5h = provider_defaults["limit_5h"]
-    fallback_7d = provider_defaults["limit_7d"]
-
-    eff_5h_limit = stats.rolling.limit_5h or fallback_5h
-    eff_7d_limit = stats.rolling.limit_7d or fallback_7d
-
-    r5h_used = human_tokens(stats.rolling.tokens_5h)
-    r5h_tot = human_tokens(eff_5h_limit)
-    r5h_rem = human_tokens(max(0, eff_5h_limit - stats.rolling.tokens_5h))
-    r7d_used = human_tokens(stats.rolling.tokens_7d)
-    r7d_tot = human_tokens(eff_7d_limit)
-    r7d_rem = human_tokens(max(0, eff_7d_limit - stats.rolling.tokens_7d))
-
-    pct_5h = (stats.rolling.tokens_5h / eff_5h_limit * 100.0) if eff_5h_limit else 0.0
-    pct_7d = (stats.rolling.tokens_7d / eff_7d_limit * 100.0) if eff_7d_limit else 0.0
-    pct_5h_rem = max(0.0, 100.0 - pct_5h)
-    pct_7d_rem = max(0.0, 100.0 - pct_7d)
-    pct_ctx_rem = max(0.0, 100.0 - stats.percent_used)
-
-    bar_5h = make_progress_bar(pct_5h, 10)
-    bar_7d = make_progress_bar(pct_7d, 10)
-
-    resend_line = _format_resend_line(stats.conversation_id)
-    rtk_line = ""
-    if stats.rtk_savings and stats.rtk_savings.get("saved_tokens", 0) > 0:
-        s = stats.rtk_savings
-        tok_saved = human_tokens(s.get("saved_tokens", 0))
-        pct_saved = s.get("avg_savings_pct", 0.0)
-        n_cmds = s.get("total_commands", 0)
-        rtk_line = f"RTK:      ⚡ {tok_saved} economizados em {n_cmds} comandos ({pct_saved:.1f}% de redução)  \n"
+        line_5h = f"5h:       [{bar_5h}] {pct_5h_used:.1f}% usado • {pct_5h_rem:.1f}% restante{desc_5h_str}  \n"
+        line_7d = f"Semana:   [{bar_7d}] {pct_7d_used:.1f}% usado • **{pct_7d_rem:.1f}% restante**{desc_7d_str}  \n"
+    else:
+        line_5h = "5h:       Não está sendo possível aferir no momento  \n"
+        line_7d = "Semana:   Não está sendo possível aferir no momento  \n"
 
     return (
         f"{consumo_line}"
         f"{resend_line}"
         f"{rtk_line}"
         f"Contexto: [{bar_ctx}] {stats.percent_used:.1f}% usado ({tot_str}) • {pct_ctx_rem:.1f}% livre de {win_str}  \n"
-        f"5h:       [{bar_5h}] {pct_5h:.1f}% usado ({r5h_used}) • {pct_5h_rem:.1f}% restante (~{r5h_rem}) de {r5h_tot} [Estimado · {provider_label}]  \n"
-        f"Semana:   [{bar_7d}] {pct_7d:.1f}% usado ({r7d_used}) • **{pct_7d_rem:.1f}% restante ({r7d_rem})** de {r7d_tot} [Estimado · {provider_label}]  \n"
+        f"{line_5h}"
+        f"{line_7d}"
         f"Modelo:   {display_model}{effort_tag} | Janela: {win_str} | Saída: {max_out_str}"
     )
 
@@ -1579,6 +1439,26 @@ def format_markdown_report(stats: TokenStats) -> str:
         )
     tools_table = "\n".join(tools_rows) if tools_rows else "| Nenhuma ferramenta executada | - | - | - |"
 
+    if stats.live_quota and stats.live_quota.is_live:
+        is_gemini = "gemini" in stats.model_name.lower()
+        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
+        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+        pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+        pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        pct_5h_used = max(0.0, 100.0 - pct_5h_rem)
+        pct_7d_used = max(0.0, 100.0 - pct_7d_rem)
+        desc_5h = clean_refresh_text(b_5h.description) if b_5h else ""
+        desc_7d = clean_refresh_text(b_7d.description) if b_7d else ""
+        row_5h = f"| **2. Janela Móvel de 5 Horas (Rate)** | - | - | **{pct_5h_used:.1f}%** | {pct_5h_rem:.1f}% restante | {desc_5h} |"
+        row_7d = f"| **3. Janela Semanal (7 Dias Quota)** | - | - | **{pct_7d_used:.1f}%** | {pct_7d_rem:.1f}% restante | {desc_7d} |"
+        gov_5h = f"Consumo atual em **{pct_5h_used:.1f}%** ({pct_5h_rem:.1f}% restante). Mantenha comandos concisos."
+        gov_7d = f"Consumo atual em **{pct_7d_used:.1f}%** ({pct_7d_rem:.1f}% restante). Utilize `PROJECT_MEMORY.md` para resetar sessões longas."
+    else:
+        row_5h = "| **2. Janela Móvel de 5 Horas (Rate)** | Não está sendo possível aferir no momento | - | - | - | - |"
+        row_7d = "| **3. Janela Semanal (7 Dias Quota)** | Não está sendo possível aferir no momento | - | - | - | - |"
+        gov_5h = "Não está sendo possível aferir no momento. Mantenha comandos e leituras concisas."
+        gov_7d = "Não está sendo possível aferir no momento. Utilize `PROJECT_MEMORY.md` para resetar sessões longas."
+
     display_model = get_model_display_name(stats.model_name)
     effort_str = f" | **Effort:** `{stats.effort}`" if stats.effort else ""
     report = f"""# 📊 Relatório de Telemetria de Tokens — Antigravity
@@ -1593,8 +1473,8 @@ def format_markdown_report(stats: TokenStats) -> str:
 | Camada de Limite | Consumo Usado | Teto / Limite Total | Utilizado (%) | Margem Restante | Status & Ritmo |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **1. Janela de Mensagem (Context)** | `{human_tokens(stats.total_tokens)}` tokens | `{human_tokens(stats.context_window)}` | **{stats.percent_used:.2f}%** | `{human_tokens(stats.remaining_tokens)}` livres | Ativa na sessão |
-| **2. Janela Móvel de 5 Horas (Rate)** | `{human_tokens(stats.rolling.tokens_5h)}` tokens | `{human_tokens(stats.rolling.limit_5h)}` | **{stats.rolling.percent_5h:.2f}%** | `{human_tokens(stats.rolling.remaining_5h)}` livres | {stats.rolling.conversations_5h} sessões (~{human_tokens(stats.rolling.tokens_5h // 5)}/h) |
-| **3. Janela Semanal (7 Dias Quota)** | `{human_tokens(stats.rolling.tokens_7d)}` tokens | `{human_tokens(stats.rolling.limit_7d)}` | **{stats.rolling.percent_7d:.2f}%** | `{human_tokens(stats.rolling.remaining_7d)}` livres | {stats.rolling.conversations_7d} sessões (~{human_tokens(stats.rolling.tokens_7d // 7)}/dia) |
+{row_5h}
+{row_7d}
 
 ---
 
@@ -1626,8 +1506,8 @@ def format_markdown_report(stats: TokenStats) -> str:
 ---
 
 ## 4. Recomendações de Governança
-- **Janela de 5 Horas:** Consumo atual em **{stats.rolling.percent_5h:.1f}%** do teto ({human_tokens(stats.rolling.remaining_5h)} disponíveis). Mantenha comandos e testes com saída concisa.
-- **Janela Semanal:** Consumo atual em **{stats.rolling.percent_7d:.1f}%** da cota semanal ({human_tokens(stats.rolling.remaining_7d)} disponíveis). Utilize `PROJECT_MEMORY.md` para resetar sessões longas ao concluir marcos.
+- **Janela de 5 Horas:** {gov_5h}
+- **Janela Semanal:** {gov_7d}
 """
     return report
 
@@ -1650,7 +1530,7 @@ def check_budget_status(stats: TokenStats) -> Tuple[str, bool, str]:
     elif stats.percent_used >= 65:
         warnings.append(f"• Contexto da Mensagem em {stats.percent_used:.1f}% ({human_tokens(stats.remaining_tokens)} livres de {human_tokens(stats.context_window)})")
 
-    # 2 e 3. Cotas de 5h e Semanal (Oficiais da Google ou Heurística Offline)
+    # 2 e 3. Cotas de 5h e Semanal (Apenas se aferível oficialmente ao vivo)
     if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
@@ -1670,7 +1550,7 @@ def check_budget_status(stats: TokenStats) -> Tuple[str, bool, str]:
             warnings.append(f"• Cota Semanal (Google): apenas {rem_7d * 100.0:.1f}% restante ({clean_refresh_text(b_7d.description)})")
         elif rem_7d <= 0.20:
             warnings.append(f"• Cota Semanal (Google): {rem_7d * 100.0:.1f}% restante ({clean_refresh_text(b_7d.description)})")
-    else:
+    elif stats.rolling and (stats.rolling.tokens_5h > 0 or stats.rolling.tokens_7d > 0):
         if stats.rolling.percent_5h >= 80:
             is_critical = True
             warnings.append(f"• Janela Móvel de 5 Horas em {stats.rolling.percent_5h:.1f}% ({human_tokens(stats.rolling.remaining_5h)} livres de {human_tokens(stats.rolling.limit_5h)})")
@@ -1894,30 +1774,28 @@ def render_rich_dashboard(stats: TokenStats):
         info_text.append(f"   Margem Livre: {human_tokens(stats.remaining_tokens)} tokens | Saída Max: {human_tokens(stats.max_output)}\n\n", style="dim")
 
         info_text.append("2. LIMITE MÓVEL 5 HORAS: ", style="bold magenta")
-        info_text.append(f"{human_tokens(stats.rolling.tokens_5h)} / {human_tokens(stats.rolling.limit_5h)} tokens ", style="bold white")
-        info_text.append(f"({stats.rolling.percent_5h:.2f}%)\n", style=f"bold {c_5h}")
-        info_text.append(f"   Margem Livre: {human_tokens(stats.rolling.remaining_5h)} tokens | {stats.rolling.conversations_5h} sessões (~{human_tokens(stats.rolling.tokens_5h // 5)}/h)\n\n", style="dim")
-
-        info_text.append("3. LIMITE SEMANAL (7 DIAS): ", style="bold magenta")
-        info_text.append(f"{human_tokens(stats.rolling.tokens_7d)} / {human_tokens(stats.rolling.limit_7d)} tokens ", style="bold white")
-        info_text.append(f"({stats.rolling.percent_7d:.2f}%)\n", style=f"bold {c_7d}")
-        info_text.append(f"   Margem Livre: {human_tokens(stats.rolling.remaining_7d)} tokens | {stats.rolling.conversations_7d} sessões (~{human_tokens(stats.rolling.tokens_7d // 7)}/dia)\n", style="dim")
-
-        if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
+        if stats.live_quota and stats.live_quota.is_live:
             is_gemini = "gemini" in stats.model_name.lower()
             b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
-            b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
-            pct_5h = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
-            pct_7d = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+            pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+            pct_5h_used = max(0.0, 100.0 - pct_5h_rem)
             d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
+            c_5h_val = "green" if pct_5h_used < 50 else ("yellow" if pct_5h_used < 80 else "red")
+            info_text.append(f"{pct_5h_used:.1f}% usado • {pct_5h_rem:.1f}% restante{d_5h}\n\n", style=f"bold {c_5h_val}")
+        else:
+            info_text.append("Não está sendo possível aferir no momento\n\n", style="dim")
+
+        info_text.append("3. LIMITE SEMANAL (7 DIAS): ", style="bold magenta")
+        if stats.live_quota and stats.live_quota.is_live:
+            is_gemini = "gemini" in stats.model_name.lower()
+            b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+            pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+            pct_7d_used = max(0.0, 100.0 - pct_7d_rem)
             d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
-            if stats.live_quota.is_live:
-                info_text.append(f"\n⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):\n", style="bold yellow")
-            else:
-                sync_dt = stats.live_quota.sync_datetime or "Recente"
-                info_text.append(f"\n⚡ COTA PROJETADA (Base Real: {sync_dt} • {stats.live_quota.plan_name}):\n", style="bold cyan")
-            info_text.append(f"   • Janela 5h:     {pct_5h:.1f}% restante{d_5h}\n", style="white")
-            info_text.append(f"   • Cota Semanal:  {pct_7d:.1f}% restante{d_7d}\n", style="white")
+            c_7d_val = "green" if pct_7d_used < 50 else ("yellow" if pct_7d_used < 80 else "red")
+            info_text.append(f"{pct_7d_used:.1f}% usado • **{pct_7d_rem:.1f}% restante**{d_7d}\n\n", style=f"bold {c_7d_val}")
+        else:
+            info_text.append("Não está sendo possível aferir no momento\n\n", style="dim")
 
         console.print(Panel(info_text, title="🧠 [bold magenta]Antigravity Token & Quota Tracker[/bold magenta]", border_style="bright_blue"))
 
@@ -1967,26 +1845,21 @@ def render_plain_dashboard(stats: TokenStats):
     print("-" * 70)
     print(f"1. Contexto Msg: {stats.total_tokens:,} / {stats.context_window:,} ({stats.percent_used:.2f}%)")
     print(f"   Margem Livre: {stats.remaining_tokens:,} tokens disponíveis")
-    print(f"2. Janela 5h:    {stats.rolling.tokens_5h:,} / {stats.rolling.limit_5h:,} ({stats.rolling.percent_5h:.2f}%)")
-    print(f"   Margem Livre: {stats.rolling.remaining_5h:,} tokens disponíveis ({stats.rolling.conversations_5h} conversas)")
-    print(f"3. Janela 7d:    {stats.rolling.tokens_7d:,} / {stats.rolling.limit_7d:,} ({stats.rolling.percent_7d:.2f}%)")
-    print(f"   Margem Livre: {stats.rolling.remaining_7d:,} tokens disponíveis ({stats.rolling.conversations_7d} conversas)")
-    if stats.live_quota and (stats.live_quota.is_live or stats.live_quota.is_projected):
+    if stats.live_quota and stats.live_quota.is_live:
         is_gemini = "gemini" in stats.model_name.lower()
         b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
         b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
-        pct_5h = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
-        pct_7d = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
+        pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
+        pct_5h_used = max(0.0, 100.0 - pct_5h_rem)
+        pct_7d_used = max(0.0, 100.0 - pct_7d_rem)
         d_5h = f" ({clean_refresh_text(b_5h.description)})" if b_5h and b_5h.description else ""
         d_7d = f" ({clean_refresh_text(b_7d.description)})" if b_7d and b_7d.description else ""
-        print("-" * 70)
-        if stats.live_quota.is_live:
-            print(f"⚡ COTA AO VIVO (Google Language Server - {stats.live_quota.plan_name}):")
-        else:
-            sync_dt = stats.live_quota.sync_datetime or "Recente"
-            print(f"⚡ COTA PROJETADA (Base Real: {sync_dt} • {stats.live_quota.plan_name}):")
-        print(f"   • Janela 5 Horas: {pct_5h:.1f}% restante{d_5h}")
-        print(f"   • Cota Semanal:   {pct_7d:.1f}% restante{d_7d}")
+        print(f"2. Janela 5h:    {pct_5h_used:.1f}% usado • {pct_5h_rem:.1f}% restante{d_5h}")
+        print(f"3. Cota Semanal: {pct_7d_used:.1f}% usado • {pct_7d_rem:.1f}% restante{d_7d}")
+    else:
+        print("2. Janela 5h:    Não está sendo possível aferir no momento")
+        print("3. Cota Semanal: Não está sendo possível aferir no momento")
     print("-" * 70)
     print(f" - System Prompt & Schemas: {stats.system_prompt_tokens:,} tokens ({stats.system_prompt_bytes:,} B)")
     print(f" - Execuções de Ferramentas: {stats.tool_tokens:,} tokens ({stats.tool_bytes:,} B)")

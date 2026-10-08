@@ -270,8 +270,8 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         user_effort = detect_effort(conv_id, steps=steps)
         # Se o usuário selecionou explicitamente no IDE (High, Thinking, etc.), prioriza a seleção real do modelo
         active_effort = user_effort if user_effort and user_effort.lower() != "medium" else decision.effort
-        # Usa fetch_live=False para responder instantaneamente via cache/snapshot sem bloquear na rede
-        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=False, effort=active_effort)
+        # Consulta cota oficial ao vivo via Fast Path do Language Server (~5ms)
+        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=True, effort=active_effort)
         live_footer = format_message_footer(stats, turn)
     except Exception:
         live_footer = ""
