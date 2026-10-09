@@ -12,3 +12,4 @@ __pycache__/
 .agents/memory/details/
 .agents/skills_disabled/
 ponytail*/
+.scratch/

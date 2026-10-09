@@ -137,6 +137,10 @@ if [ -f "$KIT_DIR/scripts/apply_ignore_rules.py" ]; then
   python3 "$KIT_DIR/scripts/apply_ignore_rules.py" || true
 fi
 
+# 4.5. Configurar permissões irrestritas de MCP e auto-aprovação de ferramentas
+echo "⚙️  Configurando permissões irrestritas e auto-aprovação MCP..."
+python3 "$KIT_DIR/scripts/kit_installer.py" --configure-mcp || true
+
 # 5. Instalar executáveis CLI globais em ~/.local/bin/
 echo "🔗 Instalando ferramentas globais de otimização de tokens em ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
@@ -184,8 +188,10 @@ ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/agy-debt"
 ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/xp-debt"
 ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/agy-kit"
 ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/xp-kit"
+ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/agy-design"
+ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/xp-design"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)
@@ -203,6 +209,23 @@ elif command -v cargo >/dev/null 2>&1 && [ -d "$KIT_DIR/rtk-develop" ]; then
 fi
 if command -v rtk >/dev/null 2>&1; then
   echo "   ✅ RTK ativo: $(rtk --version 2>/dev/null || echo 'instalado')"
+fi
+
+# 5.2. Instalação e verificação do OpenDesign (od)
+OPEN_DESIGN_PERSISTENT="$HOME/.local/share/open-design"
+if [ ! -f "$OPEN_DESIGN_PERSISTENT/apps/daemon/bin/od.mjs" ]; then
+  echo "🎨 Instalando OpenDesign (od) via kit_installer..."
+  python3 "$KIT_DIR/scripts/kit_installer.py" --install-opendesign || true
+fi
+
+if [ -f "$OPEN_DESIGN_PERSISTENT/apps/daemon/bin/od.mjs" ]; then
+  echo "🎨 Vinculando OpenDesign CLI (od) em $HOME/.local/bin/od..."
+  ln -sf "$OPEN_DESIGN_PERSISTENT/apps/daemon/bin/od.mjs" "$HOME/.local/bin/od"
+  chmod +x "$HOME/.local/bin/od"
+fi
+
+if command -v od >/dev/null 2>&1; then
+  echo "   ✅ OpenDesign ativo: $(od --version 2>/dev/null || echo 'instalado')"
 fi
 
 # 6. Configurar Git Hooks globais para o CI/CD Auto-Healer

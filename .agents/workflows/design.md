@@ -69,3 +69,11 @@ Antes de finalizar a resposta, faça a auto-inspeção contra os 6 itens crític
 - [ ] **Clareza nos Textos:** Botões com verbos de ação claros (`Salvar Evento`, `Criar Conta`) e sem travessões longos (`—`)?
 - [ ] **Feedback Tátil:** Todos os elementos interativos possuem transição definida (`transition-all duration-150`)?
 - [ ] **Responsividade Testada:** O layout quebra em telas de 375px (iPhone SE) ou desktop ultrawide?
+
+---
+
+### 🎨 Prototipagem & Validação no OpenDesign Studio (`agy-design`)
+Para exploração visual avançada, testes de templates ou live sandbox com o Antigravity:
+1. **Live Studio:** Execute `agy-design studio` (ou `od`) para abrir o sandbox interativo (`http://localhost:7456`).
+2. **Lint & Validação:** Execute `od lint <caminho>` para validar tokens, hierarquia e acessibilidade antes do gate de entrega.
+3. **Design Skills:** O repositório persistente em `~/.local/share/open-design/skills/` contém 163 referências visuais prontas para importação direta via MCP.

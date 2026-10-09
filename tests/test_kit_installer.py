@@ -225,5 +225,89 @@ class TestCliMainParser(unittest.TestCase):
         mock_diag.assert_called_once()
 
 
+class TestOpenDesignInstaller(unittest.TestCase):
+    """Testes para instalação e vinculação do OpenDesign (od)."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.home_dir = Path(self.temp_dir) / "home"
+        self.home_dir.mkdir()
+        self.bin_dir = self.home_dir / ".local" / "bin"
+        self.bin_dir.mkdir(parents=True)
+        self.od_dir = self.home_dir / ".local" / "share" / "open-design"
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_link_existing_opendesign(self):
+        from scripts.kit_installer import OpenDesignInstaller
+        # Cria arquivo od.mjs simulado
+        daemon_bin = self.od_dir / "apps" / "daemon" / "bin"
+        daemon_bin.mkdir(parents=True)
+        od_script = daemon_bin / "od.mjs"
+        od_script.write_text("#!/usr/bin/env node\nconsole.log('od v0.23.1');\n", encoding="utf-8")
+
+        installer = OpenDesignInstaller(home_dir=self.home_dir)
+        res = installer.install()
+        self.assertTrue(res["ok"])
+        target_link = self.bin_dir / "od"
+        self.assertTrue(target_link.exists() or target_link.is_symlink())
+
+    @patch("subprocess.run")
+    def test_clone_and_install_opendesign(self, mock_run):
+        from scripts.kit_installer import OpenDesignInstaller
+        mock_run.return_value = MagicMock(returncode=0)
+
+        installer = OpenDesignInstaller(home_dir=self.home_dir)
+        # Mock do método de criação para simular criação do od.mjs após clone
+        def fake_clone(*args, **kwargs):
+            daemon_bin = self.od_dir / "apps" / "daemon" / "bin"
+            daemon_bin.mkdir(parents=True, exist_ok=True)
+            od_script = daemon_bin / "od.mjs"
+            od_script.write_text("#!/usr/bin/env node\n", encoding="utf-8")
+            return MagicMock(returncode=0)
+
+        with patch("shutil.which", return_value="/usr/bin/git"):
+            with patch.object(installer, "_run_clone_or_copy", side_effect=fake_clone):
+                res = installer.install()
+                self.assertTrue(res["ok"])
+                self.assertTrue((self.bin_dir / "od").exists() or (self.bin_dir / "od").is_symlink())
+
+
+class TestMcpConfigurator(unittest.TestCase):
+    """Testes para auto-aprovação e configuração irrestrita de permissões MCP."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.home_dir = Path(self.temp_dir) / "home"
+        self.home_dir.mkdir()
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_configure_mcp_permissions_and_servers(self):
+        from scripts.kit_installer import McpConfigurator
+        configurator = McpConfigurator(home_dir=self.home_dir)
+        res = configurator.configure_all()
+        self.assertTrue(res["ok"])
+
+        # Verifica se settings.json foi gerado com auto_approve
+        settings_path = self.home_dir / ".gemini" / "config" / "settings.json"
+        self.assertTrue(settings_path.exists())
+        import json
+        settings_data = json.loads(settings_path.read_text(encoding="utf-8"))
+        self.assertEqual(settings_data.get("approval_mode"), "auto")
+        self.assertTrue(settings_data.get("auto_approve"))
+        self.assertTrue(settings_data.get("auto_approve_mcp"))
+        self.assertEqual(settings_data.get("permissions", {}).get("call_mcp_tool"), "allow")
+
+        # Verifica mcp_config.json
+        mcp_cfg_path = self.home_dir / ".gemini" / "config" / "mcp_config.json"
+        self.assertTrue(mcp_cfg_path.exists())
+        mcp_data = json.loads(mcp_cfg_path.read_text(encoding="utf-8"))
+        self.assertIn("open-design", mcp_data.get("mcpServers", {}))
+        self.assertTrue(mcp_data["mcpServers"]["open-design"].get("autoApprove"))
+
+
 if __name__ == "__main__":
     unittest.main()

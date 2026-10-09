@@ -10,6 +10,7 @@ configuração de PATH e diagnóstico de integridade (agy-kit doctor).
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import platform
 import shutil
@@ -93,6 +94,7 @@ class DependencyChecker:
         gh_check = self.check_command("gh", required=False)
         cargo_check = self.check_command("cargo", required=False)
         rtk_check = self.check_command("rtk", required=False)
+        od_check = self.check_command("od", required=False)
 
         can_proceed = py_check["ok"] and git_check["ok"]
         return {
@@ -103,6 +105,7 @@ class DependencyChecker:
                 "gh": gh_check,
                 "cargo": cargo_check,
                 "rtk": rtk_check,
+                "od": od_check,
             },
         }
 
@@ -264,6 +267,167 @@ class ProjectInstaller:
         return {"ok": True, "actions": actions, "project_dir": str(project_dir)}
 
 
+class OpenDesignInstaller:
+    """Instala e vincula o OpenDesign (od) em ~/.local/share/open-design e ~/.local/bin/od."""
+
+    REPO_URL = "https://github.com/opendesign/open-design.git"
+
+    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
+        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
+        self.home_dir = home_dir or Path.home()
+        self.od_dir = self.home_dir / ".local" / "share" / "open-design"
+        self.bin_dir = self.home_dir / ".local" / "bin"
+
+    def _run_clone_or_copy(self) -> Any:
+        """Clona o repositório oficial do OpenDesign ou copia se houver fonte local."""
+        self.od_dir.parent.mkdir(parents=True, exist_ok=True)
+        git_cmd = shutil.which("git")
+        if not git_cmd:
+            return None
+        res = subprocess.run(
+            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.od_dir)],
+            capture_output=True,
+            text=True,
+        )
+        return res
+
+    def install(self) -> Dict[str, Any]:
+        self.bin_dir.mkdir(parents=True, exist_ok=True)
+        daemon_script = self.od_dir / "apps" / "daemon" / "bin" / "od.mjs"
+
+        if not daemon_script.exists():
+            self._run_clone_or_copy()
+
+        if daemon_script.exists():
+            try:
+                daemon_script.chmod(daemon_script.stat().st_mode | 0o111)
+            except Exception:
+                pass
+
+            target_link = self.bin_dir / "od"
+            if target_link.exists() or target_link.is_symlink():
+                try:
+                    target_link.unlink()
+                except Exception:
+                    pass
+            try:
+                target_link.symlink_to(daemon_script)
+            except Exception:
+                wrapper_content = f'#!/usr/bin/env bash\nexec node "{daemon_script}" "$@"\n'
+                target_link.write_text(wrapper_content, encoding="utf-8")
+                target_link.chmod(target_link.stat().st_mode | 0o111)
+
+            agy_design_link = self.bin_dir / "agy-design"
+            if not agy_design_link.exists() and not agy_design_link.is_symlink():
+                try:
+                    agy_design_link.symlink_to(target_link)
+                except Exception:
+                    pass
+
+            return {
+                "ok": True,
+                "path": str(target_link),
+                "message": f"OpenDesign instalado com sucesso em {target_link}",
+            }
+
+        return {
+            "ok": False,
+            "path": None,
+            "message": "Falha ao instalar OpenDesign: script od.mjs não foi encontrado.",
+        }
+
+
+class McpConfigurator:
+    """Configura permissões de auto-aprovação MCP e servidores nos ambientes Antigravity."""
+
+    def __init__(self, home_dir: Optional[Path] = None):
+        self.home_dir = home_dir or Path.home()
+
+    def configure_all(self) -> Dict[str, Any]:
+        gemini_dir = self.home_dir / ".gemini"
+        
+        settings_paths = [
+            gemini_dir / "config" / "settings.json",
+            gemini_dir / "antigravity-ide" / "settings.json",
+            gemini_dir / "antigravity-cli" / "settings.json",
+            gemini_dir / "settings.json",
+        ]
+
+        settings_update = {
+            "approval_mode": "auto",
+            "auto_approve": True,
+            "autoApprove": True,
+            "auto_approve_mcp": True,
+            "permissions": {
+                "call_mcp_tool": "allow",
+                "read_resource": "allow",
+                "list_resources": "allow",
+                "browser_subagent": "allow",
+                "read_url_content": "allow",
+                "run_command": "allow",
+            },
+        }
+
+        for p in settings_paths:
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                data = {}
+                if p.exists():
+                    try:
+                        data = json.loads(p.read_text(encoding="utf-8"))
+                    except Exception:
+                        data = {}
+                data.update(settings_update)
+                p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+
+        mcp_paths = [
+            gemini_dir / "config" / "mcp_config.json",
+            gemini_dir / "antigravity-ide" / "mcp_config.json",
+            gemini_dir / "mcp_config.json",
+        ]
+
+        od_tools = [
+            "collect_brief", "confirm_brief", "list_projects", "get_active_context",
+            "get_artifact", "get_project", "get_file", "search_files", "list_files",
+            "create_artifact", "write_file", "delete_file", "delete_project",
+            "create_project", "list_skills", "list_plugins", "start_vela_login",
+            "get_vela_login_status", "start_run", "get_run", "cancel_run", "list_agents"
+        ]
+
+        for p in mcp_paths:
+            try:
+                p.parent.mkdir(parents=True, exist_ok=True)
+                mcp_data = {"mcpServers": {}}
+                if p.exists():
+                    try:
+                        mcp_data = json.loads(p.read_text(encoding="utf-8"))
+                    except Exception:
+                        mcp_data = {"mcpServers": {}}
+                if "mcpServers" not in mcp_data:
+                    mcp_data["mcpServers"] = {}
+
+                mcp_data["autoApprove"] = True
+                mcp_data["auto_approve"] = True
+                mcp_data["approval_mode"] = "auto"
+
+                od_cfg = mcp_data["mcpServers"].get("open-design", {})
+                od_cfg.update({
+                    "command": "od",
+                    "args": ["mcp"],
+                    "autoApprove": True,
+                    "alwaysAllow": od_tools,
+                })
+                mcp_data["mcpServers"]["open-design"] = od_cfg
+
+                p.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            except Exception:
+                pass
+
+        return {"ok": True, "message": "Configurações MCP e auto-aprovação sincronizadas com sucesso"}
+
+
 class GlobalInstaller:
     """Orquestra a instalação e sincronização global do kit em ~/.gemini/config e ~/.local/bin."""
 
@@ -292,6 +456,18 @@ class GlobalInstaller:
             actions.append(f"Caminho {bin_dir} adicionado ao shell RC")
         else:
             actions.append(f"Caminho {bin_dir} já configurado no PATH")
+
+        # Configura permissões MCP irrestritas e servidores
+        mcp_cfg = McpConfigurator(home_dir=self.home_dir)
+        mcp_res = mcp_cfg.configure_all()
+        if mcp_res.get("ok"):
+            actions.append("Permissões MCP e OpenDesign configuradas com auto-aprovação")
+
+        # Instala e vincula OpenDesign (od)
+        od_installer = OpenDesignInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir)
+        od_res = od_installer.install()
+        if od_res.get("ok"):
+            actions.append(f"OpenDesign (od) instalado com sucesso em {od_res.get('path')}")
 
         return {"ok": True, "actions": actions}
 
@@ -326,7 +502,7 @@ class KitDoctor:
         path_ok = str(bin_dir) in path_env
 
         # Binários essenciais no bin_dir
-        essential_bins = ["agy-tokens", "agy-run", "agy-debt", "agy-health", "agy-kit"]
+        essential_bins = ["agy-tokens", "agy-run", "agy-debt", "agy-health", "agy-kit", "od", "agy-design"]
         installed_bins = {b: (bin_dir / b).exists() for b in essential_bins}
 
         return {
@@ -479,9 +655,39 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Simula a execução sem realizar alterações no disco",
     )
+    parser.add_argument(
+        "--configure-mcp",
+        action="store_true",
+        help="Aplica permissões irrestritas e auto-aprovação para MCP e OpenDesign",
+    )
+    parser.add_argument(
+        "--install-opendesign",
+        action="store_true",
+        help="Instala e vincula o OpenDesign (od) em ~/.local/share/open-design e ~/.local/bin/od",
+    )
 
     args = parser.parse_args(argv)
     kit_dir = Path(__file__).resolve().parent.parent
+
+    # Subcomando ou flag --configure-mcp
+    if args.configure_mcp:
+        configurator = McpConfigurator()
+        res = configurator.configure_all()
+        if res["ok"]:
+            print("✅ Permissões MCP e auto-aprovação configuradas com sucesso!")
+            return 0
+        print(f"❌ Falha ao configurar MCP: {res.get('message')}")
+        return 1
+
+    # Subcomando ou flag --install-opendesign
+    if args.install_opendesign:
+        od_installer = OpenDesignInstaller(kit_dir=kit_dir)
+        res = od_installer.install()
+        if res["ok"]:
+            print(f"✅ OpenDesign instalado com sucesso em {res.get('path')}!")
+            return 0
+        print(f"❌ Falha ao instalar OpenDesign: {res.get('message')}")
+        return 1
 
     # Subcomando 'version'
     if args.command == "version":
