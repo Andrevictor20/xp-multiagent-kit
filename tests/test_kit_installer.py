@@ -306,7 +306,11 @@ class TestMcpConfigurator(unittest.TestCase):
         self.assertTrue(mcp_cfg_path.exists())
         mcp_data = json.loads(mcp_cfg_path.read_text(encoding="utf-8"))
         self.assertIn("open-design", mcp_data.get("mcpServers", {}))
-        self.assertTrue(mcp_data["mcpServers"]["open-design"].get("autoApprove"))
+        self.assertEqual(
+            mcp_data["mcpServers"]["open-design"].get("args"),
+            ["mcp", "--daemon-url", "http://127.0.0.1:7456"],
+        )
+        self.assertNotIn("autoApprove", mcp_data["mcpServers"]["open-design"])
 
 
 if __name__ == "__main__":

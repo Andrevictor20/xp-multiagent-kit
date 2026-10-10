@@ -408,18 +408,20 @@ class McpConfigurator:
                 if "mcpServers" not in mcp_data:
                     mcp_data["mcpServers"] = {}
 
-                mcp_data["autoApprove"] = True
-                mcp_data["auto_approve"] = True
-                mcp_data["approval_mode"] = "auto"
-
                 od_cfg = mcp_data["mcpServers"].get("open-design", {})
                 od_cfg.update({
                     "command": "od",
-                    "args": ["mcp"],
-                    "autoApprove": True,
-                    "alwaysAllow": od_tools,
+                    "args": ["mcp", "--daemon-url", "http://127.0.0.1:7456"],
                 })
+                # Remove propriedades fora do schema MCP para evitar warnings na IDE
+                od_cfg.pop("autoApprove", None)
+                od_cfg.pop("alwaysAllow", None)
                 mcp_data["mcpServers"]["open-design"] = od_cfg
+
+                # Remove propriedades de raiz que não pertencem ao schema padrão do mcp_config.json
+                mcp_data.pop("autoApprove", None)
+                mcp_data.pop("auto_approve", None)
+                mcp_data.pop("approval_mode", None)
 
                 p.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
             except Exception:

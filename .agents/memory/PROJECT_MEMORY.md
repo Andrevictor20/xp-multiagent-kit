@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-09 (Local)  
+> **Última Atualização:** 2026-10-10 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.44.4 (Instalação Automática do OpenDesign e Auto-Aprovação Global MCP no Instalador Unificado)
+> **Versão / Marco Atual:** v2.44.5 (Resolução de Crash do OpenDesign MCP e Conformidade de Schema JSON)
 
 ---
 
@@ -34,6 +34,7 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-10-10 | `FIX` | Resolução de Crash do OpenDesign MCP e Conformidade de Schema JSON (v2.44.5): passagem explícita de `--daemon-url http://127.0.0.1:7456` para `od mcp` eliminando crash na inicialização do Antigravity quando o daemon não está em execução prévia, expurgo de propriedades fora do padrão MCP (`autoApprove` e `alwaysAllow`) nos arquivos `mcp_config.json` para zerar warnings do schema na IDE, adição do import faltante `subprocess` em `scripts/token_tracker.py`, validação de MCP handshake stdio e 79/79 testes unitários aprovados | `scripts/kit_installer.py`, `scripts/token_tracker.py`, `tests/test_kit_installer.py`, `~/.gemini/config/mcp_config.json` | `PASS (EV-MCP-STARTUP-FIX-20261010-01)` |
 | 2026-10-09 | `FEAT` | Instalação Automática do OpenDesign e Auto-Aprovação MCP no Instalador (v2.44.4): classes `OpenDesignInstaller` e `McpConfigurator` em `scripts/kit_installer.py`, suporte a `--configure-mcp` e `--install-opendesign`, integração completa no `GlobalInstaller.install_global` e `scripts/install-global.sh`, binários `od` e `agy-design` auditados em `KitDoctor`, cobertura com 18 testes em `test_kit_installer.py` e 316/316 testes da suíte global aprovados | `scripts/kit_installer.py`, `scripts/install-global.sh`, `tests/test_kit_installer.py` | `PASS (EV-INSTALLER-OPEN-DESIGN-MCP-20261009-01)` |
 | 2026-10-09 | `CONFIG` | Liberação Contínua e Auto-Aprovação MCP (v2.44.3): configuração de `auto_approve: true`, `approval_mode: auto`, `auto_approve_mcp: true` e permissões explícitas para ferramentas MCP (`call_mcp_tool`, `list_resources`, `read_resource`, etc.) em todos os perfis do Antigravity (`~/.gemini/antigravity-ide/`, `~/.gemini/config/`, `~/.gemini/antigravity/` e `~/.gemini/settings.json`), além de `autoApprove: true` e `alwaysAllow` para todos os métodos em `mcp_config.json`, eliminando prompts interativos repetitivos de confirmação | `~/.gemini/*/settings.json`, `~/.gemini/*/mcp_config.json` | `PASS (EV-MCP-ALWAYS-ALLOW-20261009-01)` |
 | 2026-10-09 | `TEST` | Teste, Redesign (OpenClaw-style) e Limpeza da Landing Page via OpenDesign (v2.44.2): validação prática do OpenDesign MCP e daemon local (`od`), criação inicial e redesign estético inspirado em OpenClaw.ai (Switzer + Sentient italic accent, dither ASCII art, blueprint grid contínuo), auditoria com `od lint` aprovada com `clean — 0 findings`, validação via Browser Subagent / headless Chrome e encerramento com expurgo completo dos arquivos temporários (`landing-test/`), parada do servidor HTTP e remoção do projeto temporário no OpenDesign | `landing-test/*` (removido), `.gitignore` | `PASS (EV-OD-LANDING-TEST-CLEANUP-20261009-01)` |

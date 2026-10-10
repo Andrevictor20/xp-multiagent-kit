@@ -18,6 +18,7 @@ import os
 import re
 import sqlite3
 import ssl
+import subprocess
 
 # Integração com telemetria local de reenvio (D2/D3/D4)
 try:
