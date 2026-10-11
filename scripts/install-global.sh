@@ -228,20 +228,41 @@ if command -v od >/dev/null 2>&1; then
   echo "   ✅ OpenDesign ativo: $(od --version 2>/dev/null || echo 'instalado')"
 fi
 
-# 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
-echo "🔗 Configurando Git Hooks globais (post-push watcher)..."
+# 5.3. Instalação e verificação do CodeReviewGraph (crg / agy-graph)
+CRG_PERSISTENT="$HOME/.local/share/code-review-graph"
+if [ ! -f "$CRG_PERSISTENT/.venv/bin/code-review-graph" ]; then
+  echo "🗺️ Instalando CodeReviewGraph via kit_installer..."
+  python3 "$KIT_DIR/scripts/kit_installer.py" --install-graph || true
+fi
+
+if [ -f "$CRG_PERSISTENT/.venv/bin/code-review-graph" ]; then
+  echo "🗺️ Vinculando CodeReviewGraph em $HOME/.local/bin/code-review-graph..."
+  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/code-review-graph"
+  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/agy-graph"
+  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/agy-crg"
+  chmod +x "$HOME/.local/bin/code-review-graph" "$HOME/.local/bin/agy-graph" "$HOME/.local/bin/agy-crg"
+fi
+
+if command -v code-review-graph >/dev/null 2>&1; then
+  echo "   ✅ CodeReviewGraph ativo: $(code-review-graph --version 2>/dev/null || echo 'instalado')"
+fi
+
+# 6. Configurar Git Hooks globais para o CI/CD Auto-Healer e CRG Auto-Update
+echo "🔗 Configurando Git Hooks globais (post-push watcher & CRG auto-update)..."
 GLOBAL_GIT_HOOKS="$HOME/.config/git/hooks"
 mkdir -p "$GLOBAL_GIT_HOOKS"
 ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/pre-push"
 ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/post-push"
-chmod +x "$GLOBAL_GIT_HOOKS/pre-push" "$GLOBAL_GIT_HOOKS/post-push"
+ln -sf "$KIT_DIR/scripts/hooks/crg-auto-update.sh" "$GLOBAL_GIT_HOOKS/post-commit"
+chmod +x "$GLOBAL_GIT_HOOKS/pre-push" "$GLOBAL_GIT_HOOKS/post-push" "$GLOBAL_GIT_HOOKS/post-commit"
 git config --global core.hooksPath "$GLOBAL_GIT_HOOKS"
 
 # Hook local do repositório
 if [ -d "$KIT_DIR/.git/hooks" ]; then
   ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/pre-push"
   ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/post-push"
-  chmod +x "$KIT_DIR/.git/hooks/pre-push" "$KIT_DIR/.git/hooks/post-push"
+  ln -sf "$KIT_DIR/scripts/hooks/crg-auto-update.sh" "$KIT_DIR/.git/hooks/post-commit"
+  chmod +x "$KIT_DIR/.git/hooks/pre-push" "$KIT_DIR/.git/hooks/post-push" "$KIT_DIR/.git/hooks/post-commit"
 fi
 echo "   ✅ Git Hooks configurados (Global + Local)!"
 

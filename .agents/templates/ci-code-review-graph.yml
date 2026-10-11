@@ -1,0 +1,26 @@
+name: Code Review Graph & Risk Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-graph:
+    name: Codebase Knowledge Graph & Blast Radius
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Code Review Graph Action
+        uses: tirth8205/code-review-graph@v2.3.9
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Falha a pipeline se detectar risco alto sem testes associados
+          fail-on-risk: "false"

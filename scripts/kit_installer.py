@@ -337,6 +337,102 @@ class OpenDesignInstaller:
         }
 
 
+class CodeReviewGraphInstaller:
+    """Instala e vincula o CodeReviewGraph em ~/.local/share/code-review-graph e ~/.local/bin."""
+
+    REPO_URL = "https://github.com/tirth8205/code-review-graph.git"
+
+    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
+        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
+        self.home_dir = home_dir or Path.home()
+        self.crg_dir = self.home_dir / ".local" / "share" / "code-review-graph"
+        self.bin_dir = self.home_dir / ".local" / "bin"
+
+    def _run_clone_or_copy(self) -> Any:
+        """Copia do workspace se existir staging local, ou clona do GitHub."""
+        self.crg_dir.parent.mkdir(parents=True, exist_ok=True)
+        staging_dir = self.kit_dir / "code-review-graph-staging"
+        if staging_dir.exists() and (staging_dir / "pyproject.toml").exists():
+            if not self.crg_dir.exists():
+                shutil.copytree(str(staging_dir), str(self.crg_dir), dirs_exist_ok=True)
+            return True
+
+        git_cmd = shutil.which("git")
+        if not git_cmd:
+            return None
+        res = subprocess.run(
+            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.crg_dir)],
+            capture_output=True,
+            text=True,
+        )
+        return res
+
+    def _setup_venv_and_install(self) -> bool:
+        """Cria virtualenv com uv (se disponível) ou python3 -m venv e instala o pacote."""
+        venv_dir = self.crg_dir / ".venv"
+        uv_cmd = shutil.which("uv") or str(self.home_dir / ".local" / "bin" / "uv")
+        has_uv = bool(shutil.which("uv")) or Path(str(self.home_dir / ".local" / "bin" / "uv")).exists()
+
+        if has_uv:
+            real_uv = shutil.which("uv") or str(self.home_dir / ".local" / "bin" / "uv")
+            res = subprocess.run([real_uv, "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
+            if res.returncode == 0:
+                subprocess.run([real_uv, "pip", "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
+                return True
+
+        py_cmd = shutil.which("python3") or sys.executable
+        res = subprocess.run([py_cmd, "-m", "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
+        if res.returncode == 0:
+            pip_bin = venv_dir / "bin" / "pip"
+            subprocess.run([str(pip_bin), "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
+            return True
+        return False
+
+    def install(self) -> Dict[str, Any]:
+        self.bin_dir.mkdir(parents=True, exist_ok=True)
+        venv_bin = self.crg_dir / ".venv" / "bin" / "code-review-graph"
+
+        if not venv_bin.exists():
+            self._run_clone_or_copy()
+            self._setup_venv_and_install()
+
+        if venv_bin.exists():
+            try:
+                venv_bin.chmod(venv_bin.stat().st_mode | 0o111)
+            except Exception:
+                pass
+
+            created_links = []
+            for link_name in ["code-review-graph", "agy-graph", "agy-crg"]:
+                target_link = self.bin_dir / link_name
+                if target_link.exists() or target_link.is_symlink():
+                    try:
+                        target_link.unlink()
+                    except Exception:
+                        pass
+                try:
+                    target_link.symlink_to(venv_bin)
+                    created_links.append(str(target_link))
+                except Exception:
+                    wrapper_content = f'#!/usr/bin/env bash\nexec "{venv_bin}" "$@"\n'
+                    target_link.write_text(wrapper_content, encoding="utf-8")
+                    target_link.chmod(target_link.stat().st_mode | 0o111)
+                    created_links.append(str(target_link))
+
+            return {
+                "ok": True,
+                "path": str(self.bin_dir / "code-review-graph"),
+                "aliases": created_links,
+                "message": f"CodeReviewGraph instalado com sucesso em {self.bin_dir / 'code-review-graph'}",
+            }
+
+        return {
+            "ok": False,
+            "path": None,
+            "message": "Falha ao instalar CodeReviewGraph: binário .venv/bin/code-review-graph não foi encontrado.",
+        }
+
+
 class McpConfigurator:
     """Configura permissões de auto-aprovação MCP e servidores nos ambientes Antigravity."""
 
@@ -396,6 +492,14 @@ class McpConfigurator:
             "get_vela_login_status", "start_run", "get_run", "cancel_run", "list_agents"
         ]
 
+        crg_bin = self.home_dir / ".local" / "share" / "code-review-graph" / ".venv" / "bin" / "code-review-graph"
+        crg_cmd = str(crg_bin) if crg_bin.exists() else "code-review-graph"
+        crg_tools = (
+            "detect_changes_tool,get_minimal_context_tool,get_impact_radius_tool,"
+            "query_graph_tool,get_review_context_tool,get_architecture_overview_tool,"
+            "find_large_functions_tool,refactor_tool,list_flows_tool,get_affected_flows_tool"
+        )
+
         for p in mcp_paths:
             try:
                 p.parent.mkdir(parents=True, exist_ok=True)
@@ -417,6 +521,19 @@ class McpConfigurator:
                 od_cfg.pop("autoApprove", None)
                 od_cfg.pop("alwaysAllow", None)
                 mcp_data["mcpServers"]["open-design"] = od_cfg
+
+                # Configura code-review-graph
+                crg_cfg = mcp_data["mcpServers"].get("code-review-graph", {})
+                crg_cfg.update({
+                    "command": crg_cmd,
+                    "args": ["serve"],
+                    "env": {
+                        "CRG_TOOLS": crg_tools,
+                    },
+                })
+                crg_cfg.pop("autoApprove", None)
+                crg_cfg.pop("alwaysAllow", None)
+                mcp_data["mcpServers"]["code-review-graph"] = crg_cfg
 
                 # Remove propriedades de raiz que não pertencem ao schema padrão do mcp_config.json
                 mcp_data.pop("autoApprove", None)
@@ -471,6 +588,12 @@ class GlobalInstaller:
         if od_res.get("ok"):
             actions.append(f"OpenDesign (od) instalado com sucesso em {od_res.get('path')}")
 
+        # Instala e vincula CodeReviewGraph (crg / agy-graph)
+        crg_installer = CodeReviewGraphInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir)
+        crg_res = crg_installer.install()
+        if crg_res.get("ok"):
+            actions.append(f"CodeReviewGraph instalado com sucesso em {crg_res.get('path')}")
+
         return {"ok": True, "actions": actions}
 
 
@@ -504,7 +627,10 @@ class KitDoctor:
         path_ok = str(bin_dir) in path_env
 
         # Binários essenciais no bin_dir
-        essential_bins = ["agy-tokens", "agy-run", "agy-debt", "agy-health", "agy-kit", "od", "agy-design"]
+        essential_bins = [
+            "agy-tokens", "agy-run", "agy-debt", "agy-health", "agy-kit",
+            "od", "agy-design", "code-review-graph", "agy-graph", "agy-crg"
+        ]
         installed_bins = {b: (bin_dir / b).exists() for b in essential_bins}
 
         return {
@@ -667,6 +793,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Instala e vincula o OpenDesign (od) em ~/.local/share/open-design e ~/.local/bin/od",
     )
+    parser.add_argument(
+        "--install-graph",
+        action="store_true",
+        help="Instala e vincula o CodeReviewGraph em ~/.local/share/code-review-graph e ~/.local/bin",
+    )
 
     args = parser.parse_args(argv)
     kit_dir = Path(__file__).resolve().parent.parent
@@ -689,6 +820,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"✅ OpenDesign instalado com sucesso em {res.get('path')}!")
             return 0
         print(f"❌ Falha ao instalar OpenDesign: {res.get('message')}")
+        return 1
+
+    # Subcomando ou flag --install-graph
+    if args.install_graph:
+        crg_installer = CodeReviewGraphInstaller(kit_dir=kit_dir)
+        res = crg_installer.install()
+        if res["ok"]:
+            print(f"✅ CodeReviewGraph instalado com sucesso em {res.get('path')}!")
+            return 0
+        print(f"❌ Falha ao instalar CodeReviewGraph: {res.get('message')}")
         return 1
 
     # Subcomando 'version'

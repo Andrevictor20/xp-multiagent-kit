@@ -9,6 +9,7 @@ skills:
   - test-evidence-walkthrough
   - integration-testing
   - systematic-debugging
+  - codebase-cartography
 ---
 
 # Test Guardian

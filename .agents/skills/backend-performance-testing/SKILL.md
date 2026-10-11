@@ -1,6 +1,6 @@
 ---
 name: backend-performance-testing
-description: Testes de carga, estresse, benchmark de backend, profiling e detecção de gargalos.
+description: Testes de carga, estresse, benchmark de backend, profiling e gargalos.
 ---
 
 # Backend Performance & Load Testing Engineering

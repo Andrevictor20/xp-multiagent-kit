@@ -1,6 +1,6 @@
 ---
 name: software-evolution-and-roadmapping
-description: Planejamento a longo prazo, roadmapping Now/Next/Later, Strangler Fig e ciclo de vida (EOL).
+description: Roadmapping técnico, horizontes Now/Next/Later e Strangler Fig.
 ---
 
 # Software Evolution & Strategic Technical Roadmapping

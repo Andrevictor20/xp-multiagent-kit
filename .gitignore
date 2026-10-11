@@ -13,3 +13,6 @@ __pycache__/
 .agents/skills_disabled/
 ponytail*/
 .scratch/
+.code-review-graph/
+code-review-graph-staging/
+code-review-graph-staging.zip

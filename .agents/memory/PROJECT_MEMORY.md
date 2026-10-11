@@ -1,8 +1,8 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-10 (Local)  
+> **Última Atualização:** 2026-10-11 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.44.5 (Resolução de Crash do OpenDesign MCP e Conformidade de Schema JSON)
+> **Versão / Marco Atual:** v2.45.0 (Integração Nativa CodeReviewGraph & Cartografia AST Determinística)
 
 ---
 
@@ -26,7 +26,7 @@
 
 - **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills, 10 Workflows, 11 Policies, 2 Templates, CI/CD Auto-Healer, Rastreador de Débito `agy-debt`, Utilitário CLI `agy-kit` / `xp-kit`, Suíte Global de Tokens e Health Scanner em `~/.local/bin/`).
 - **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (Pirâmide ATDD/BDD com Stop Gate, TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Root-Cause Debugging, No Workarounds, Code Deslop, 4-Tier Memory e Telemetria de Tokens).
-- **Última Execução / Evidência:** `EV-INSTALLER-OPEN-DESIGN-MCP-20261009-01` (Instalação automática do OpenDesign via clone/link e auto-aprovação MCP irrestrita no kit_installer e install-global.sh com 316/316 testes aprovados)
+- **Última Execução / Evidência:** `EV-CRG-NATIVE-INTEGRATION-20261011-01` (Integração nativa do CodeReviewGraph v2.3.9, instalação automática via kit_installer, binários agy-graph/code-review-graph/agy-crg, servidor MCP em mcp_config.json, modernização da skill codebase-cartography e 319/319 testes aprovados)
 - **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI.
 - **⚠️ Alerta de Cota (Pre-Flight Gate):** Operar em Modo Cirúrgico Atômico (`agy-fast` / effort low) sob alta utilização de cota.
 
@@ -34,6 +34,7 @@
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
 
+| 2026-10-11 | `FEAT` | Integração Nativa CodeReviewGraph v2.3.9 & Cartografia AST Determinística (v2.45.0): classe `CodeReviewGraphInstaller` em `scripts/kit_installer.py`, ambiente isolado em `~/.local/share/code-review-graph`, binários globais `~/.local/bin/code-review-graph`, `agy-graph` e `agy-crg`, registro do servidor MCP `code-review-graph` em `mcp_config.json` com filtro de ferramentas `CRG_TOOLS` (10 ferramentas essenciais), suporte a `--install-graph` e auditoria em `KitDoctor` (`agy-kit doctor`), sincronização em `install-global.sh`, modernização da skill `codebase-cartography` e agentes `navigator`, `test-guardian` e `refactor-warden`, 319/319 testes da suíte global aprovados | `scripts/kit_installer.py`, `scripts/install-global.sh`, `.agents/skills/codebase-cartography/SKILL.md`, `.agents/agents/*`, `tests/test_kit_installer.py` | `PASS (EV-CRG-NATIVE-INTEGRATION-20261011-01)` |
 | 2026-10-10 | `FIX` | Resolução de Crash do OpenDesign MCP e Conformidade de Schema JSON (v2.44.5): passagem explícita de `--daemon-url http://127.0.0.1:7456` para `od mcp` eliminando crash na inicialização do Antigravity quando o daemon não está em execução prévia, expurgo de propriedades fora do padrão MCP (`autoApprove` e `alwaysAllow`) nos arquivos `mcp_config.json` para zerar warnings do schema na IDE, adição do import faltante `subprocess` em `scripts/token_tracker.py`, validação de MCP handshake stdio e 79/79 testes unitários aprovados | `scripts/kit_installer.py`, `scripts/token_tracker.py`, `tests/test_kit_installer.py`, `~/.gemini/config/mcp_config.json` | `PASS (EV-MCP-STARTUP-FIX-20261010-01)` |
 | 2026-10-09 | `FEAT` | Instalação Automática do OpenDesign e Auto-Aprovação MCP no Instalador (v2.44.4): classes `OpenDesignInstaller` e `McpConfigurator` em `scripts/kit_installer.py`, suporte a `--configure-mcp` e `--install-opendesign`, integração completa no `GlobalInstaller.install_global` e `scripts/install-global.sh`, binários `od` e `agy-design` auditados em `KitDoctor`, cobertura com 18 testes em `test_kit_installer.py` e 316/316 testes da suíte global aprovados | `scripts/kit_installer.py`, `scripts/install-global.sh`, `tests/test_kit_installer.py` | `PASS (EV-INSTALLER-OPEN-DESIGN-MCP-20261009-01)` |
 | 2026-10-09 | `CONFIG` | Liberação Contínua e Auto-Aprovação MCP (v2.44.3): configuração de `auto_approve: true`, `approval_mode: auto`, `auto_approve_mcp: true` e permissões explícitas para ferramentas MCP (`call_mcp_tool`, `list_resources`, `read_resource`, etc.) em todos os perfis do Antigravity (`~/.gemini/antigravity-ide/`, `~/.gemini/config/`, `~/.gemini/antigravity/` e `~/.gemini/settings.json`), além de `autoApprove: true` e `alwaysAllow` para todos os métodos em `mcp_config.json`, eliminando prompts interativos repetitivos de confirmação | `~/.gemini/*/settings.json`, `~/.gemini/*/mcp_config.json` | `PASS (EV-MCP-ALWAYS-ALLOW-20261009-01)` |

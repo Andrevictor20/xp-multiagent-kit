@@ -1,6 +1,6 @@
 ---
 name: spec-driven-development
-description: Engenharia guiada por especificação formal (SDD) com ATDD/BDD integrado.
+description: Engenharia guiada por especificação formal (SDD).
 ---
 
 # Spec-Driven Development (SDD) Skill

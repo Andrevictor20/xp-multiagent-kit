@@ -6,6 +6,7 @@ skills:
   - code-deslop-review
   - diff-simplifier-review
   - no-workarounds
+  - codebase-cartography
 ---
 
 # Refactor Warden

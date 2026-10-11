@@ -224,6 +224,13 @@ class TestCliMainParser(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         mock_diag.assert_called_once()
 
+    @patch("scripts.kit_installer.CodeReviewGraphInstaller.install")
+    def test_cli_install_graph_flag(self, mock_install):
+        mock_install.return_value = {"ok": True, "path": "/bin/code-review-graph"}
+        exit_code = main(["--install-graph"])
+        self.assertEqual(exit_code, 0)
+        mock_install.assert_called_once()
+
 
 class TestOpenDesignInstaller(unittest.TestCase):
     """Testes para instalação e vinculação do OpenDesign (od)."""
@@ -311,6 +318,74 @@ class TestMcpConfigurator(unittest.TestCase):
             ["mcp", "--daemon-url", "http://127.0.0.1:7456"],
         )
         self.assertNotIn("autoApprove", mcp_data["mcpServers"]["open-design"])
+
+        # Verifica code-review-graph em mcp_config.json
+        self.assertIn("code-review-graph", mcp_data.get("mcpServers", {}))
+        self.assertEqual(
+            mcp_data["mcpServers"]["code-review-graph"].get("args"),
+            ["serve"],
+        )
+        self.assertIn("CRG_TOOLS", mcp_data["mcpServers"]["code-review-graph"].get("env", {}))
+        self.assertNotIn("autoApprove", mcp_data["mcpServers"]["code-review-graph"])
+
+
+class TestCodeReviewGraphInstaller(unittest.TestCase):
+    """Testes para instalação e vinculação do CodeReviewGraph (crg/agy-graph)."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.home_dir = Path(self.temp_dir) / "home"
+        self.home_dir.mkdir()
+        self.bin_dir = self.home_dir / ".local" / "bin"
+        self.bin_dir.mkdir(parents=True)
+        self.crg_dir = self.home_dir / ".local" / "share" / "code-review-graph"
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_link_existing_graph(self):
+        from scripts.kit_installer import CodeReviewGraphInstaller
+        venv_bin = self.crg_dir / ".venv" / "bin"
+        venv_bin.mkdir(parents=True)
+        crg_bin = venv_bin / "code-review-graph"
+        crg_bin.write_text("#!/usr/bin/env python3\nprint('crg v2.3.9');\n", encoding="utf-8")
+        crg_bin.chmod(0o755)
+
+        installer = CodeReviewGraphInstaller(home_dir=self.home_dir)
+        res = installer.install()
+        self.assertTrue(res["ok"])
+        target_link = self.bin_dir / "code-review-graph"
+        self.assertTrue(target_link.exists() or target_link.is_symlink())
+        self.assertTrue((self.bin_dir / "agy-graph").exists() or (self.bin_dir / "agy-graph").is_symlink())
+        self.assertTrue((self.bin_dir / "agy-crg").exists() or (self.bin_dir / "agy-crg").is_symlink())
+
+    @patch("subprocess.run")
+    def test_clone_and_install_graph(self, mock_run):
+        from scripts.kit_installer import CodeReviewGraphInstaller
+        mock_run.return_value = MagicMock(returncode=0)
+
+        installer = CodeReviewGraphInstaller(home_dir=self.home_dir)
+
+        def fake_clone(*args, **kwargs):
+            venv_bin = self.crg_dir / ".venv" / "bin"
+            venv_bin.mkdir(parents=True, exist_ok=True)
+            crg_bin = venv_bin / "code-review-graph"
+            crg_bin.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+            crg_bin.chmod(0o755)
+            return MagicMock(returncode=0)
+
+        with patch("shutil.which", return_value="/usr/bin/git"):
+            with patch.object(installer, "_run_clone_or_copy", side_effect=fake_clone):
+                with patch.object(installer, "_setup_venv_and_install", return_value=True):
+                    venv_bin = self.crg_dir / ".venv" / "bin"
+                    venv_bin.mkdir(parents=True, exist_ok=True)
+                    crg_bin = venv_bin / "code-review-graph"
+                    crg_bin.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
+                    crg_bin.chmod(0o755)
+
+                    res = installer.install()
+                    self.assertTrue(res["ok"])
+                    self.assertTrue((self.bin_dir / "code-review-graph").exists() or (self.bin_dir / "code-review-graph").is_symlink())
 
 
 if __name__ == "__main__":
