@@ -1121,17 +1121,37 @@ def parse_transcript_data(
     eff_sys_bytes = system_prompt_bytes if system_prompt_bytes > 0 else _measure_system_prompt_bytes()
     sys_tokens = _tokens_from_bytes(eff_sys_bytes, _CHARS_PER_TOKEN_CONFIG)
 
+    # 1. Localiza o último CHECKPOINT (evento de /compact)
+    last_checkpoint_idx = -1
+    for i in range(len(steps) - 1, -1, -1):
+        if steps[i].get("type") == "CHECKPOINT":
+            last_checkpoint_idx = i
+            break
+
+    # 2. Localiza o último PLANNER_RESPONSE com métricas oficiais da API (input_tokens / cache_read_tokens)
+    last_pr_idx = -1
+    for i in range(len(steps) - 1, -1, -1):
+        s = steps[i]
+        if s.get("type") == "PLANNER_RESPONSE" and (s.get("input_tokens") is not None or s.get("cache_read_tokens") is not None):
+            last_pr_idx = i
+            break
+
+    # Determina a fatia de steps ativos para breakdown e fallback a partir do último CHECKPOINT
+    active_start_idx = max(0, last_checkpoint_idx) if last_checkpoint_idx >= 0 else 0
+    active_steps_slice = steps[active_start_idx:]
+
     user_bytes = 0
     tool_bytes = 0
     model_bytes = 0
+    active_prompt_model_bytes = 0
     tool_breakdown: Dict[str, Dict[str, int]] = {}
     active_steps = 0
 
-    for step in steps:
+    for step in active_steps_slice:
         stype = step.get("type", "UNKNOWN")
 
-        # Pula steps truncados — foram removidos da janela de contexto ativa
-        if step.get("is_truncated", False):
+        # Pula steps truncados ou mensagens efêmeras internas
+        if step.get("is_truncated", False) or stype in ("EPHEMERAL_MESSAGE", "SYSTEM_MESSAGE"):
             continue
 
         content = step.get("content", "")
@@ -1147,8 +1167,9 @@ def parse_transcript_data(
         elif stype == "PLANNER_RESPONSE":
             thinking = step.get("thinking", "")
             if isinstance(thinking, str):
-                step_len += len(thinking)
+                model_bytes += len(thinking)
             model_bytes += step_len
+            active_prompt_model_bytes += step_len
 
         elif stype == "CONVERSATION_HISTORY":
             # É compressão de turnos antigos já contados → peso 50% para evitar double-count
@@ -1177,7 +1198,28 @@ def parse_transcript_data(
         sorted(tool_breakdown.items(), key=lambda item: item[1]["bytes"], reverse=True)
     )
 
-    total_tokens = sys_tokens + user_tokens + tool_tokens + model_tokens
+    # Cálculo da Janela de Contexto Ativa:
+    # Se existe métrica real da API no último PLANNER_RESPONSE (e não invalidada por CHECKPOINT posterior),
+    # usamos o valor oficial retornado pelo Gemini/Antigravity (input_tokens + cache_read_tokens) + delta.
+    if last_pr_idx >= 0 and last_pr_idx >= last_checkpoint_idx:
+        pr = steps[last_pr_idx]
+        base_prompt_tokens = (pr.get("input_tokens") or 0) + (pr.get("cache_read_tokens") or 0)
+        subsequent_bytes = 0
+        for s in steps[last_pr_idx + 1:]:
+            st = s.get("type", "UNKNOWN")
+            if st in ("EPHEMERAL_MESSAGE", "SYSTEM_MESSAGE"):
+                continue
+            c = s.get("content", "")
+            if not isinstance(c, str):
+                c = json.dumps(c) if c else ""
+            subsequent_bytes += len(c)
+        subsequent_tokens = _tokens_from_bytes(subsequent_bytes, _CHARS_PER_TOKEN_MIXED)
+        total_tokens = base_prompt_tokens + subsequent_tokens
+    else:
+        # Fallback heurístico: soma histórico limpo a partir do último CHECKPOINT (sem thinking, que é efêmero de saída)
+        prompt_model_tokens = _tokens_from_bytes(active_prompt_model_bytes, _CHARS_PER_TOKEN_MIXED)
+        total_tokens = sys_tokens + user_tokens + tool_tokens + prompt_model_tokens
+
     remaining = max(0, limits["context_window"] - total_tokens)
     pct = (total_tokens / limits["context_window"]) * 100.0 if limits["context_window"] else 0.0
 

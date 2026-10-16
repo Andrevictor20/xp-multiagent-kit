@@ -954,6 +954,33 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         self.assertTrue(98 <= total_pct <= 102, f"Percentuais do breakdown somaram {total_pct}% (deveria ser ~100%): {pct_in}% + {pct_tools}% + {pct_out}%")
 
 
+    def test_parse_transcript_data_with_api_tokens_and_compaction(self):
+        """Testa se métricas oficiais de input_tokens + cache_read_tokens e CHECKPOINT são priorizadas."""
+        steps = [
+            {"type": "USER_INPUT", "content": "Mensagem antiga antes de compactar " * 100},
+            {"type": "PLANNER_RESPONSE", "content": "Resposta antiga", "thinking": "Thinking gigante " * 500},
+            {"type": "CHECKPOINT", "content": "# Resuming from a compaction\n\nResumo da conversa..."},
+            {"type": "USER_INPUT", "content": "Mensagem pós-compactação"},
+            {
+                "type": "PLANNER_RESPONSE",
+                "content": "Resposta com métricas reais",
+                "thinking": "Thinking atual que não deve ser contado no contexto",
+                "input_tokens": 5284,
+                "cache_read_tokens": 19249,
+                "output_tokens": 174
+            }
+        ]
+        stats = parse_transcript_data(
+            conversation_id="conv-compact-test",
+            model_name="gemini-3.8-flash",
+            steps=steps,
+            fetch_live=False,
+        )
+        # Contexto ativo deve refletir exatamente 5284 + 19249 = 24533 tokens
+        self.assertEqual(stats.total_tokens, 24533)
+        self.assertAlmostEqual(stats.percent_used, (24533 / 1_048_576) * 100.0, places=2)
+
+
 if __name__ == "__main__":
     unittest.main()
 
