@@ -499,20 +499,48 @@ def main(argv: Optional[List[str]] = None) -> int:
             return 1
 
     if args.both_path:
+        print(f"\n{m['installing_global']}")
         g_res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
         if not g_res["ok"]:
+            print(f"{m['global_fail']} {g_res.get('error', '')}")
             return 1
+        print(f"{m['global_ok']}")
+        for a in g_res.get("actions", []):
+            print(f"  • {a}")
+        print(f"\n{m['installing_project']} {args.both_path}")
         p_res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.both_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
-        return 0 if p_res["ok"] else 1
+        if p_res["ok"]:
+            print(f"{m['project_ok']}: {args.both_path}")
+            return 0
+        else:
+            print(f"{m['project_fail']} {p_res.get('error', '')}")
+            return 1
 
     if args.install_global or (args.yes and not args.project_path):
+        print(f"\n{m['installing_global']}")
         res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
-        return 0 if res["ok"] else 1
+        if res["ok"]:
+            print(f"{m['global_ok']}")
+            print(f"🎯 Hosts configurados: {', '.join(res.get('targets', []))}")
+            for a in res.get("actions", []):
+                print(f"  • {a}")
+            return 0
+        else:
+            print(f"{m['global_fail']} {res.get('error', '')}")
+            return 1
 
     if args.project_path:
+        print(f"\n{m['installing_project']} {args.project_path}")
         p_installer = ProjectInstaller(kit_dir=kit_dir)
         res = p_installer.install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
-        return 0 if res["ok"] else 1
+        if res["ok"]:
+            print(f"{m['project_ok']}: {args.project_path}")
+            for a in res.get("actions", []):
+                print(f"  • {a}")
+            return 0
+        else:
+            print(f"{m['project_fail']} {res.get('error', '')}")
+            return 1
 
     return interactive_wizard(kit_dir=kit_dir, dry_run=args.dry_run, lang=lang)
 
