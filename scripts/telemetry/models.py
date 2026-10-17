@@ -63,6 +63,7 @@ class LiveServerQuota:
     plan_name: str = "Google AI Pro"
     gemini_5h: Optional[LiveQuotaBucket] = None
     gemini_weekly: Optional[LiveQuotaBucket] = None
+    gemini_argon_weekly: Optional[LiveQuotaBucket] = None
     claude_5h: Optional[LiveQuotaBucket] = None
     claude_weekly: Optional[LiveQuotaBucket] = None
     description: str = ""

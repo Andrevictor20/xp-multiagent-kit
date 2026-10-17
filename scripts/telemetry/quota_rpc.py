@@ -352,6 +352,7 @@ def fetch_live_antigravity_quota(
     res = raw_data.get("response", {})
     gem_5h = None
     gem_week = None
+    gem_argon_week = None
     claude_5h = None
     claude_week = None
 
@@ -369,7 +370,9 @@ def fetch_live_antigravity_quota(
                 remaining_fraction=float(b.get("remainingFraction", 1.0)),
                 reset_time=b.get("resetTime", ""),
             )
-            if "Gemini" in grp_name:
+            if "Argon" in grp_name or "argon" in bid.lower():
+                gem_argon_week = bucket_obj
+            elif "Gemini" in grp_name:
                 if win == "5h" or "5h" in bid:
                     gem_5h = bucket_obj
                 elif win == "weekly" or "weekly" in bid:
@@ -386,6 +389,7 @@ def fetch_live_antigravity_quota(
         plan_name="Google AI Pro",
         gemini_5h=gem_5h,
         gemini_weekly=gem_week,
+        gemini_argon_weekly=gem_argon_week,
         claude_5h=claude_5h,
         claude_weekly=claude_week,
         description=res.get("description", ""),

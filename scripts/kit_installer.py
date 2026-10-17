@@ -300,7 +300,7 @@ class GlobalInstaller:
         for root in known_roots:
             if root.is_dir():
                 for child in root.iterdir():
-                    if child.is_dir() and child.resolve() != self.kit_dir.resolve():
+                    if child.is_dir() and child.resolve() != self.kit_dir.resolve() and child.name != "xp-multiagent-kit":
                         if (child / ".agents").is_dir() or (child / "AGENTS.md").is_file():
                             p_res = project_installer.install_project(
                                 child, use_symlinks=True, dry_run=dry_run, targets=resolved_targets

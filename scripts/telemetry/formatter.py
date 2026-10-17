@@ -80,9 +80,19 @@ def _format_resend_line(conversation_id: str) -> str:
 def _extract_quota_metrics(stats: TokenStats) -> Tuple[bool, float, float, str, float, float, str]:
     """Returns (is_live, pct_5h_used, pct_5h_rem, desc_5h, pct_7d_used, pct_7d_rem, desc_7d)."""
     if stats.live_quota and stats.live_quota.is_live:
-        is_gemini = "gemini" in stats.model_name.lower()
-        b_5h = stats.live_quota.gemini_5h if is_gemini else stats.live_quota.claude_5h
-        b_7d = stats.live_quota.gemini_weekly if is_gemini else stats.live_quota.claude_weekly
+        model_lower = (stats.model_name or "").lower()
+        is_argon = "argon" in model_lower
+        is_claude = "claude" in model_lower or "gpt" in model_lower
+
+        if is_argon and getattr(stats.live_quota, "gemini_argon_weekly", None):
+            b_5h = stats.live_quota.gemini_5h
+            b_7d = stats.live_quota.gemini_argon_weekly
+        elif is_claude:
+            b_5h = stats.live_quota.claude_5h
+            b_7d = stats.live_quota.claude_weekly
+        else:
+            b_5h = stats.live_quota.gemini_5h
+            b_7d = stats.live_quota.gemini_weekly
 
         pct_5h_rem = (b_5h.remaining_fraction * 100.0) if b_5h else 100.0
         pct_7d_rem = (b_7d.remaining_fraction * 100.0) if b_7d else 100.0
