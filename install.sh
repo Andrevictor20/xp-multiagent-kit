@@ -49,30 +49,60 @@ if ! command -v python3 >/dev/null 2>&1; then
   fi
 fi
 
+if [ $# -eq 0 ] && [ ! -t 0 ]; then
+  set -- --global --target all --yes
+fi
+
 SCRIPT_SOURCE="${BASH_SOURCE[0]:-}"
+INSTALLER_DIR=""
 if [ -n "$SCRIPT_SOURCE" ] && [ -f "$SCRIPT_SOURCE" ]; then
   CANDIDATE_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")" && pwd)"
   if [ -f "$CANDIDATE_DIR/scripts/kit_installer.py" ]; then
-    exec python3 "$CANDIDATE_DIR/scripts/kit_installer.py" "$@"
+    INSTALLER_DIR="$CANDIDATE_DIR"
   fi
 fi
 
-if ! command -v git >/dev/null 2>&1; then
-  echo "⏳ Git ausente. Tentando instalar dependência automaticamente..."
-  try_install_pkg git || true
+if [ -z "$INSTALLER_DIR" ]; then
   if ! command -v git >/dev/null 2>&1; then
-    echo "$MSG_GIT_ERR"
-    exit 1
+    echo "⏳ Git ausente. Tentando instalar dependência automaticamente..."
+    try_install_pkg git || true
+    if ! command -v git >/dev/null 2>&1; then
+      echo "$MSG_GIT_ERR"
+      exit 1
+    fi
   fi
+
+  if [ -d "$DEFAULT_CLONE_DIR/.git" ]; then
+    echo "$MSG_UPD $DEFAULT_CLONE_DIR..."
+    git -C "$DEFAULT_CLONE_DIR" pull --ff-only --quiet || true
+  else
+    echo "$MSG_DL $DEFAULT_CLONE_DIR..."
+    mkdir -p "$(dirname "$DEFAULT_CLONE_DIR")"
+    git clone --depth 1 "$REPO_URL" "$DEFAULT_CLONE_DIR"
+  fi
+  INSTALLER_DIR="$DEFAULT_CLONE_DIR"
 fi
 
-if [ -d "$DEFAULT_CLONE_DIR/.git" ]; then
-  echo "$MSG_UPD $DEFAULT_CLONE_DIR..."
-  git -C "$DEFAULT_CLONE_DIR" pull --ff-only --quiet || true
+python3 "$INSTALLER_DIR/scripts/kit_installer.py" "$@"
+
+USER_SHELL="$(basename "${SHELL:-sh}")"
+echo ""
+if [[ "${SYS_LANG,,}" == pt* ]]; then
+  echo "🐚 Shell detectado: $USER_SHELL (~/.local/bin configurado automaticamente)"
+  case "$USER_SHELL" in
+    fish) echo "👉 Para ativar os comandos agora no Fish, rode: source ~/.config/fish/config.fish (ou exec fish)" ;;
+    zsh)  echo "👉 Para ativar os comandos agora no Zsh, rode:  source ~/.zshrc (ou exec zsh)" ;;
+    bash) echo "👉 Para ativar os comandos agora no Bash, rode: source ~/.bashrc (ou exec bash)" ;;
+    *)    echo "👉 Para ativar os comandos agora, abra um novo terminal ou rode: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+  esac
 else
-  echo "$MSG_DL $DEFAULT_CLONE_DIR..."
-  mkdir -p "$(dirname "$DEFAULT_CLONE_DIR")"
-  git clone --depth 1 "$REPO_URL" "$DEFAULT_CLONE_DIR"
+  echo "🐚 Detected shell: $USER_SHELL (~/.local/bin configured automatically)"
+  case "$USER_SHELL" in
+    fish) echo "👉 To activate commands now in Fish, run: source ~/.config/fish/config.fish (or exec fish)" ;;
+    zsh)  echo "👉 To activate commands now in Zsh, run:  source ~/.zshrc (or exec zsh)" ;;
+    bash) echo "👉 To activate commands now in Bash, run: source ~/.bashrc (or exec bash)" ;;
+    *)    echo "👉 To activate commands now, open a new terminal or run: export PATH=\"\$HOME/.local/bin:\$PATH\"" ;;
+  esac
 fi
 
-exec python3 "$DEFAULT_CLONE_DIR/scripts/kit_installer.py" "$@"
+

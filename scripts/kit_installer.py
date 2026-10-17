@@ -103,21 +103,61 @@ class DependencyChecker:
 
 
 class PathConfigurator:
-    """Idempotently configures ~/.local/bin in user shell RC files."""
+    """Idempotently configures ~/.local/bin in user shell RC files (bash, zsh, fish, ksh, profile)."""
 
-    def __init__(self, rc_files: Optional[List[Path]] = None):
-        home = Path.home()
-        self.rc_files = rc_files if rc_files is not None else [
-            home / ".bashrc",
-            home / ".zshrc",
-            home / ".profile",
-            home / ".zprofile",
-            home / ".bash_profile",
-        ]
+    def __init__(self, rc_files: Optional[List[Path]] = None, home_dir: Optional[Path] = None):
+        self.home = home_dir or Path.home()
+        if rc_files is not None:
+            self.rc_files = rc_files
+        else:
+            zdot = Path(os.environ["ZDOTDIR"]) if os.environ.get("ZDOTDIR") else self.home
+            self.rc_files = [
+                self.home / ".bashrc",
+                zdot / ".zshrc",
+                self.home / ".profile",
+                zdot / ".zprofile",
+                self.home / ".bash_profile",
+                self.home / ".kshrc",
+                self.home / ".config" / "fish" / "config.fish",
+            ]
+
+    def _ensure_active_shell_rc_exists(self) -> None:
+        shell_env = os.environ.get("SHELL", "").lower()
+        target: Optional[Path] = None
+        if "fish" in shell_env:
+            target = self.home / ".config" / "fish" / "config.fish"
+        elif "zsh" in shell_env:
+            zdot = Path(os.environ["ZDOTDIR"]) if os.environ.get("ZDOTDIR") else self.home
+            target = zdot / ".zshrc"
+        elif "bash" in shell_env:
+            target = self.home / ".bashrc"
+        elif "ksh" in shell_env:
+            target = self.home / ".kshrc"
+
+        if target is not None:
+            if target not in self.rc_files:
+                self.rc_files.append(target)
+            if not target.exists():
+                try:
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    target.write_text("", encoding="utf-8")
+                except Exception:
+                    pass
+
+    @staticmethod
+    def _format_snippet(rc_file: Path, bin_dir: str) -> str:
+        if rc_file.suffix == ".fish" or rc_file.name == "config.fish":
+            return (
+                "# XP Multi-Agent Kit\n"
+                f'if not contains "{bin_dir}" $PATH\n'
+                f'    set -gx PATH "{bin_dir}" $PATH\n'
+                "end\n"
+            )
+        return f'# XP Multi-Agent Kit\nexport PATH="{bin_dir}:$PATH"\n'
 
     def ensure_path_in_rc(self, bin_dir: str) -> bool:
+        self._ensure_active_shell_rc_exists()
         added_any = False
-        identifier = f'# XP Multi-Agent Kit\nexport PATH="{bin_dir}:$PATH"\n'
         for rc_file in self.rc_files:
             if not rc_file.exists():
                 continue
@@ -125,13 +165,15 @@ class PathConfigurator:
                 content = rc_file.read_text(encoding="utf-8")
                 if bin_dir in content:
                     continue
-                if not content.endswith("\n"):
+                if content and not content.endswith("\n"):
                     content += "\n"
-                rc_file.write_text(f"{content}\n{identifier}", encoding="utf-8")
+                snippet = self._format_snippet(rc_file, bin_dir)
+                rc_file.write_text(f"{content}\n{snippet}" if content else snippet, encoding="utf-8")
                 added_any = True
             except Exception:
                 continue
         return added_any
+
 
 
 class ProjectInstaller:
@@ -280,7 +322,7 @@ class GlobalInstaller:
             actions.append(f"{len(shims)} shims .cmd gerados em {bin_dir}")
             WindowsPathConfigurator().ensure_path_in_user_env(bin_dir)
         else:
-            PathConfigurator().ensure_path_in_rc(bin_dir)
+            PathConfigurator(home_dir=self.home_dir).ensure_path_in_rc(bin_dir)
         McpConfigurator(home_dir=self.home_dir).configure_all()
         OpenDesignInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
         CodeReviewGraphInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()

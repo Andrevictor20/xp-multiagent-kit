@@ -99,6 +99,40 @@ class TestPathConfigurator(unittest.TestCase):
         content = self.bashrc.read_text(encoding="utf-8")
         self.assertEqual(content.count("/custom/local/bin"), 1)
 
+    def test_fish_shell_adaptation_syntax(self):
+        fish_cfg = Path(self.temp_dir) / ".config" / "fish" / "config.fish"
+        fish_cfg.parent.mkdir(parents=True, exist_ok=True)
+        fish_cfg.write_text("# Fish config\n", encoding="utf-8")
+        configurator = PathConfigurator(rc_files=[fish_cfg], home_dir=Path(self.temp_dir))
+        added = configurator.ensure_path_in_rc(bin_dir="/custom/local/bin")
+        self.assertTrue(added)
+        content = fish_cfg.read_text(encoding="utf-8")
+        self.assertIn("set -gx PATH", content)
+        self.assertIn("/custom/local/bin", content)
+        self.assertNotIn("export PATH=", content)
+
+    def test_auto_create_active_shell_rc_for_zsh_and_fish(self):
+        home = Path(self.temp_dir) / "fresh_home"
+        home.mkdir(parents=True, exist_ok=True)
+        with patch.dict(os.environ, {"SHELL": "/usr/bin/fish"}, clear=False):
+            configurator = PathConfigurator(home_dir=home)
+            added = configurator.ensure_path_in_rc(bin_dir="/custom/local/bin")
+            self.assertTrue(added)
+            fish_cfg = home / ".config" / "fish" / "config.fish"
+            self.assertTrue(fish_cfg.exists())
+            self.assertIn("set -gx PATH", fish_cfg.read_text(encoding="utf-8"))
+
+        home_zsh = Path(self.temp_dir) / "fresh_zsh_home"
+        home_zsh.mkdir(parents=True, exist_ok=True)
+        with patch.dict(os.environ, {"SHELL": "/bin/zsh"}, clear=False):
+            configurator = PathConfigurator(home_dir=home_zsh)
+            added = configurator.ensure_path_in_rc(bin_dir="/custom/local/bin")
+            self.assertTrue(added)
+            zshrc = home_zsh / ".zshrc"
+            self.assertTrue(zshrc.exists())
+            self.assertIn('export PATH="/custom/local/bin:$PATH"', zshrc.read_text(encoding="utf-8"))
+
+
 
 class TestProjectInstaller(unittest.TestCase):
     """AC-5: Injeção isolada em projeto específico com links simbólicos."""

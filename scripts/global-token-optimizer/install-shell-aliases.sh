@@ -13,17 +13,24 @@ echo "===================================================================="
 echo "⚡ Configurando Aliases Globais de Economia de Tokens"
 echo "===================================================================="
 
-# 1. Configurar no Fish
-if [ -f "$FISH_CONFIG" ]; then
-  # Garantir PATH no fish
+# 1. Configurar no Fish (se existir ~/.config/fish, binário fish ou $SHELL=fish)
+if [ -d "$HOME/.config/fish" ] || command -v fish >/dev/null 2>&1 || [[ "${SHELL:-}" == *fish* ]]; then
+  mkdir -p "$HOME/.config/fish/conf.d"
+  touch "$FISH_CONFIG"
   if ! grep -q "\.local/bin" "$FISH_CONFIG"; then
-    echo 'set -gx PATH "$HOME/.local/bin" $PATH' >> "$FISH_CONFIG"
-  fi
-  if ! grep -q "agy-ci-heal" "$FISH_CONFIG"; then
-    echo "🔗 Injetando aliases em $FISH_CONFIG..."
     cat << 'EOF' >> "$FISH_CONFIG"
 
-# --- Antigravity Token Saver & CI Aliases ---
+# XP Multi-Agent Kit
+if not contains "$HOME/.local/bin" $PATH
+    set -gx PATH "$HOME/.local/bin" $PATH
+end
+EOF
+  fi
+  cat << 'EOF' > "$HOME/.config/fish/conf.d/xp-kit.fish"
+# XP Multi-Agent Kit — Fish Auto-Loader
+if not contains "$HOME/.local/bin" $PATH
+    set -gx PATH "$HOME/.local/bin" $PATH
+end
 alias agy="$HOME/.local/bin/agy-smart"
 alias agy-fast="agy --effort low"
 alias agy-deep="agy --effort high"
@@ -31,18 +38,18 @@ alias agy-smart="$HOME/.local/bin/agy-smart"
 alias agy-effort="$HOME/.local/bin/agy-effort"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"
 alias agy-tokens="$HOME/.local/bin/agy-tokens"
+alias xp-kit="$HOME/.local/bin/xp-kit"
+alias agy-kit="$HOME/.local/bin/agy-kit"
+alias xp-spec="$HOME/.local/bin/xp-spec"
+alias agy-spec="$HOME/.local/bin/agy-spec"
 alias agy-sanitize="$HOME/.local/bin/agy-sanitize"
 alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
 alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
-# ---------------------------------------------
 EOF
-    echo "   ✅ Aliases configurados no Fish!"
-  else
-    echo "   ℹ️ Aliases já existentes em $FISH_CONFIG."
-  fi
+  echo "   ✅ PATH e Aliases configurados no Fish ($FISH_CONFIG & conf.d/xp-kit.fish)!"
 fi
 
 # 2. Configurar no Bash
@@ -78,6 +85,10 @@ alias agy-smart="$HOME/.local/bin/agy-smart"
 alias agy-effort="$HOME/.local/bin/agy-effort"
 alias xp-tokens="$HOME/.local/bin/xp-tokens"
 alias agy-tokens="$HOME/.local/bin/agy-tokens"
+alias xp-kit="$HOME/.local/bin/xp-kit"
+alias agy-kit="$HOME/.local/bin/agy-kit"
+alias xp-spec="$HOME/.local/bin/xp-spec"
+alias agy-spec="$HOME/.local/bin/agy-spec"
 alias agy-sanitize="$HOME/.local/bin/agy-sanitize"
 alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
@@ -92,12 +103,13 @@ EOF
   fi
 fi
 
-# 3. Configurar no Zsh se existir
+# 3. Configurar no Zsh (se existir .zshrc, binário zsh ou $SHELL=zsh)
 if [ -L "$ZSH_CONFIG" ] && [ ! -e "$ZSH_CONFIG" ]; then
   rm -f "$ZSH_CONFIG"
 fi
 
-if [ -f "$ZSH_CONFIG" ]; then
+if [ -f "$ZSH_CONFIG" ] || command -v zsh >/dev/null 2>&1 || [[ "${SHELL:-}" == *zsh* ]]; then
+  touch "$ZSH_CONFIG"
   if ! grep -q "\.local/bin" "$ZSH_CONFIG"; then
     echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$ZSH_CONFIG"
   fi
@@ -112,6 +124,10 @@ alias xp-tokens="$HOME/.local/bin/xp-tokens"
 alias agy-smart="$HOME/.local/bin/agy-smart"
 alias agy-effort="$HOME/.local/bin/agy-effort"
 alias agy-tokens="$HOME/.local/bin/agy-tokens"
+alias xp-kit="$HOME/.local/bin/xp-kit"
+alias agy-kit="$HOME/.local/bin/agy-kit"
+alias xp-spec="$HOME/.local/bin/xp-spec"
+alias agy-spec="$HOME/.local/bin/agy-spec"
 alias agy-sanitize="$HOME/.local/bin/agy-sanitize"
 alias agy-handoff="$HOME/.local/bin/agy-handoff"
 alias agy-audit="$HOME/.local/bin/agy-audit-config"
@@ -120,7 +136,15 @@ alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
 alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
 # ---------------------------------------------
 EOF
-    echo "   ✅ Aliases configurados no Zsh!"
+    echo "   ✅ PATH e Aliases configurados no Zsh ($ZSH_CONFIG)!"
+  fi
+fi
+
+# 4. Garantir fallback POSIX em ~/.profile
+PROFILE_CONFIG="$HOME/.profile"
+if [ -f "$PROFILE_CONFIG" ]; then
+  if ! grep -q "\.local/bin" "$PROFILE_CONFIG"; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$PROFILE_CONFIG"
   fi
 fi
 
