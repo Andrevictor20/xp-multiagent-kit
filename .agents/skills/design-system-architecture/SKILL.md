@@ -1,15 +1,15 @@
 ---
 name: design-system-architecture
-description: Governança de Design System de tokens a páginas.
+description: Design System governance from semantic tokens and primitives to page templates.
 ---
 
 # Design System Architecture
 
-Garanta a separação de conceitos:
-1. Design Tokens (Cores, Fontes, Espaçamento)
-2. Primitives (Divs, Textos)
-3. Components (Buttons, Inputs)
-4. Patterns (Forms, Lists)
-5. Templates e Pages
+Enforce strict layered separation across the UI architecture:
+1. **Design Tokens:** Semantic colors, typography scales, spacing, radii, shadows, motion curves.
+2. **Primitives:** Unstyled layout/accessibility building blocks (`Box`, `Stack`, `Text`, `Portal`).
+3. **Components:** Reusable interactive controls (`Button`, `Input`, `Dialog`, `Card`).
+4. **Patterns:** Composed domain-agnostic flows (`DataTable`, `SearchFilterBar`, `FormSection`).
+5. **Templates & Pages:** Route-level layouts binding domain data into patterns.
 
-O Design System não é apenas um guia de "cores + fontes". Ele é a base de implementação reutilizável de toda a UI.
+Treat the Design System as executable, reusable UI infrastructure rather than a static style guide.

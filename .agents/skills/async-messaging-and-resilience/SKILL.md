@@ -1,57 +1,49 @@
 ---
 name: async-messaging-and-resilience
-description: Mensageria assíncrona, EDA, Outbox Pattern, DLQ, idempotência e Circuit Breaker.
+description: Async messaging, EDA, Outbox Pattern, DLQ, idempotency, and Circuit Breaker.
 ---
 
 # Async Messaging & System Resilience
 
-> **Propósito:** Garantir confiabilidade absoluta, consistência eventual sem perdas e resiliência a falhas transitórias em arquiteturas distribuídas e orientadas a eventos (EDA).
+Ensure zero-loss eventual consistency and fault tolerance across distributed event-driven architectures (EDA).
 
----
-
-## 1. Padrões de Mensageria Confiável
+## 1. Reliable Messaging Patterns
 
 ### 1.A Transactional Outbox Pattern
-- **Problema:** Atualizar o banco de dados e publicar uma mensagem em um broker (Kafka, RabbitMQ, SQS) na mesma requisição não é transacional (risco de commit no banco com falha no broker ou vice-versa).
-- **Regra:** Nunca publique diretamente em um broker durante uma transação de banco.
-- **Implementação:**
-  1. Grave o evento de domínio em uma tabela `outbox` na **mesma transação local** que altera os dados do negócio.
-  2. Um processo background dedicado (ou worker CDC como Debezium) lê a tabela `outbox` e publica as mensagens no broker com confirmação (*at-least-once delivery*).
-  3. Marque a mensagem como enviada ou remova-a após confirmação (ACK).
+- **Rule:** Never publish directly to a message broker (Kafka, RabbitMQ, SQS) inside a database transaction.
+- **Implementation:**
+  1. Insert the domain event into a local `outbox` table within the **same ACID transaction** as the business state mutation.
+  2. A background relay or CDC worker (e.g., Debezium) polls `outbox` and publishes to the broker (*at-least-once delivery*).
+  3. Mark the outbox row processed or delete it only after broker ACK.
 
-### 1.B Idempotência no Consumidor (Deduplicação)
-- **Problema:** Brokers distribuídos garantem entrega *at-least-once*. Mensagens duplicadas acontecerão inevitavelmente devido a re-entregas de rede ou retentativas.
-- **Regra:** Todo consumidor deve ser estritamente idempotente.
-- **Implementação:**
-  - Extraia uma chave de unicidade da mensagem (`message_id` ou `idempotency_key` de negócio).
-  - Antes de processar, verifique se a chave já foi registrada na tabela de `processed_messages`.
-  - Execute a lógica de processamento e a inserção da chave na mesma transação.
-  - Se a chave já existir, descarte a mensagem e emita ACK imediatamente.
+### 1.B Consumer Idempotency (Deduplication)
+- **Rule:** Distributed brokers deliver *at-least-once*; every consumer must be strictly idempotent.
+- **Implementation:**
+  - Extract a unique `message_id` or business `idempotency_key`.
+  - Check `processed_messages` before executing side effects.
+  - Record the key and execute business mutations in the same atomic transaction; if already processed, ACK and drop immediately.
 
 ### 1.C Dead Letter Queue (DLQ) & Poison Pill Isolation
-- Se o processamento de uma mensagem falhar:
-  1. Realize até **N retentativas com backoff exponencial** (ex: 3 a 5 tentativas).
-  2. Se a falha persistir (erro irrecuperável / *poison pill*), envie a mensagem para uma **Dead Letter Queue (DLQ)** com o payload original, stack trace do erro e metadados de tentativa.
-  3. Emita ACK no canal principal para não travar a fila.
-  4. Alerte a equipe de operações sobre mensagens acumuladas na DLQ.
+- On consumer failure:
+  1. Retry up to **N times with exponential backoff** (e.g., 3-5 attempts).
+  2. Route unrecoverable messages (*poison pills*) to a **DLQ** with original payload, error stack trace, and retry metadata.
+  3. ACK the main queue so processing never stalls, and alert operations on DLQ growth.
 
----
+## 2. Communication Resilience Patterns
 
-## 2. Padrões de Resiliência de Comunicação
+### 2.A Circuit Breaker
+Prevent cascading failures when downstream dependencies degrade:
+- **Closed:** Normal execution; tracks error rate.
+- **Open:** Trips when failure/timeout rate exceeds threshold (e.g., 50% over 10s); fails fast without network calls.
+- **Half-Open:** After sleep window (e.g., 30s), allows probe requests; closes on success or re-opens on failure.
 
-### 2.A Circuit Breaker (Disjuntor)
-Protege chamadas remotas contra falhas em cascata quando o serviço dependente estiver degradado:
-- **Fechado (Closed):** Fluxo normal. Todas as chamadas são executadas. Contabiliza falhas.
-- **Aberto (Open):** Quando a taxa de falha (ex: HTTP 5xx ou timeouts) atinge o limiar (ex: 50% em 10s), o disjuntor abre. Chamadas subsequentes falham imediatamente (*fail-fast*) sem tocar a rede.
-- **Meio-Aberto (Half-Open):** Após uma janela de espera (*sleep window*, ex: 30s), permite um número controlado de requisições de teste. Se tiverem sucesso, fecha o disjuntor; se falharem, volta para Aberto.
-
-### 2.B Exponential Backoff com Full Jitter
-Ao retentar operações de I/O transitórias, **sempre adicione jitter** para evitar o problema da *manada enfurecida* (*thundering herd*):
+### 2.B Exponential Backoff with Full Jitter
+Always add jitter to retries to prevent *thundering herd* spikes:
 ```text
 sleep = random(0, min(max_backoff, base_backoff * (2 ^ attempt)))
 ```
-- Nunca faça retentativas imediatas ou com intervalos fixos em sistemas com concorrência.
+Never use immediate or fixed-interval retries under concurrency.
 
 ### 2.C Bulkhead & Backpressure
-- **Bulkhead:** Isole pools de threads e conexões para cada dependência externa. A falha de um serviço de terceiros não pode exaurir as threads da aplicação principal.
-- **Backpressure:** Consumidores devem buscar mensagens de acordo com sua capacidade de processamento (*pull-based* com prefetch limitado), nunca aceitar sobrecarga irrestrita.
+- **Bulkhead:** Isolate connection and thread pools per external dependency so one slow service cannot exhaust the host.
+- **Backpressure:** Use pull-based consumption with bounded prefetch limits.

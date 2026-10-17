@@ -1,54 +1,27 @@
 ---
 name: security-sentinel-review
-description: Revisão proativa de segurança e superfícies sensíveis.
+description: Proactive security architecture review across auth, PII, payments, and inputs.
 ---
 
 # Security Sentinel Review
 
-Análise estática (Brakeman, Semgrep, etc., coberta pela skill `ci-security-gate`) pega padrões conhecidos de código inseguro. Ela não decide se uma decisão de produto/arquitetura é arriscada, não audita gestão de secrets, e não tem visão de "o que fazemos se isso vazar". Esta skill cobre esse espaço.
+Complement automated SAST (`ci-security-gate`) with proactive architectural security review, secret lifecycle auditing, and blast-radius containment.
 
-## Quando revisar (gatilhos)
+## 1. Mandatory Activation Triggers
+Activate whenever a task touches:
+- **Authentication / Authorization:** Login, sessions, JWTs, RBAC/ABAC, resource ownership.
+- **Personal Data (PII):** Names, emails, government IDs, health/financial records.
+- **Payments & Billing:** Cards, PIX, webhooks, ledger mutations, payouts.
+- **File Uploads or User-Supplied URLs:** Path traversal, SSRF, malicious payloads.
+- **External Third-Party Integrations:** Outbound user data sharing and webhook verification.
 
-Acione esta skill sempre que uma proposta envolver:
-- **Autenticação/autorização** — login, sessão, tokens, permissões, controle de acesso a recursos de outros usuários.
-- **Dados pessoais (PII)** — nome, email, documento, endereço, dado de saúde, qualquer dado que identifique uma pessoa.
-- **Pagamentos** — qualquer fluxo que toque em cartão, PIX, dados financeiros, mesmo via provedor terceirizado.
-- **Upload de arquivo ou input de URL fornecido pelo usuário** — risco de path traversal, SSRF, arquivo malicioso.
-- **Integração externa que recebe dado do usuário** — o que é enviado, para onde, e sob qual garantia de proteção do terceiro.
+## 2. Review Checklist by Surface
+- **Secrets & Credentials:** Zero hardcoded secrets; support zero-downtime key rotation; enforce least-privilege scope per API key.
+- **Auth & Object Authorization:** Argon2id/bcrypt password hashing; expiring/revocable sessions; explicit resource-level ownership checks on every ID parameter (prevent BOLA/IDOR).
+- **Personal Data (PII):** Collect minimum required fields; support user data deletion; encrypt sensitive fields at rest.
+- **Untrusted Input Surfaces:** Block SSRF on server-side URL fetches; normalize file paths and validate MIME/magic bytes; enforce rate limiting on login/reset/public forms.
+- **Dependencies & Third Parties:** Verify necessity and CVE posture of new packages (`dependency-governance`).
 
-## Checklist de revisão por categoria
-
-**Secrets e credenciais**
-- Nenhum secret hardcoded ou commitado (coordenar com `deploy-pipeline-conductor` para gestão por ambiente).
-- Rotação de credenciais é possível sem reescrever código.
-- Escopo mínimo: cada credencial/API key tem só a permissão necessária, não acesso total por conveniência.
-
-**Autenticação e autorização**
-- Senhas (se houver) usam hashing adequado, nunca texto plano ou hash reversível.
-- Sessões/tokens têm expiração e podem ser revogados.
-- Toda ação sobre um recurso verifica se o usuário autenticado tem permissão sobre **aquele recurso específico** (não só "está logado") — esse é o erro mais comum (broken object-level authorization).
-
-**Dados pessoais**
-- Dado sensível é coletado só quando necessário para a funcionalidade (minimização).
-- Existe forma de o usuário ver/excluir seus próprios dados, se a jurisdição aplicável exigir.
-- Dado sensível em repouso é protegido de forma proporcional ao risco (encryption at rest quando fizer sentido).
-
-**Superfícies de input não confiável**
-- Toda URL/host fornecido por usuário e usado para requisição server-side é validado contra SSRF.
-- Todo path/nome de arquivo fornecido é normalizado antes de tocar o filesystem.
-- Rate limiting em endpoints públicos de alta sensibilidade (login, reset de senha, formulários públicos).
-
-**Dependências e superfície de terceiros**
-- Toda nova dependência externa é avaliada quanto à necessidade real (menos dependências = menos superfície de ataque) antes de ser adicionada.
-- Integrações com terceiros que recebem dado do usuário são avaliadas quanto à política de retenção/proteção desse terceiro, quando relevante.
-
-## Prontidão para incidentes
-
-Para projetos com dado sensível de usuários reais em produção, confirme que existe (mesmo que simples):
-- Forma de identificar rapidamente o que foi exposto/afetado em caso de incidente (logs de acesso a dado sensível).
-- Um caminho claro para revogar credenciais/sessões comprometidas rapidamente.
-- Registro de quem/quando decisões de segurança relevantes foram tomadas (coordenar com `living-docs-keeper`).
-
-## Como reportar
-
-Ao concluir uma revisão, categorize achados por severidade (crítico/alto/médio/baixo) e proponha a correção mínima para cada um antes da feature ir para produção — achados críticos e altos bloqueiam a liberação; médios/baixos podem ser registrados como dívida explícita e aceita, não ignorados silenciosamente.
+## 3. Incident Readiness & Verdict Reporting
+- Ensure audit logs identify *who* accessed *what* sensitive resource and provide a fast credential/session revocation path.
+- Classify findings as `CRITICAL`, `HIGH`, `MEDIUM`, or `LOW` with minimal root-cause fixes. **CRITICAL and HIGH findings block release.**

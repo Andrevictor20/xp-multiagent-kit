@@ -1,111 +1,55 @@
 ---
 name: conformance-tracker
-description: Rastreamento de cobertura de Acceptance Criteria e geração de Conformance Report.
+description: Traceability between Acceptance Criteria and tests via Conformance Report.
 ---
 
-# Conformance Tracker Skill
+# Conformance Tracker
 
-Esta skill governa o **rastreamento de conformidade** entre Acceptance Criteria (definidos pelo humano) e testes automatizados (implementados pela IA), garantindo que o contrato comportamental da especificação foi integralmente cumprido.
+Enforce 1:1 traceability between human-approved Acceptance Criteria (AC) and automated tests so that **100% passing tests = 100% fulfilled specification contract**.
 
----
-
-## 1. Propósito
-
-O Conformance Tracker resolve o problema central do AI-assisted development:
-
-> **100% dos testes passando ≠ produto correto.**
-
-Ele garante que cada Acceptance Criteria da spec possui um teste correspondente e que esse teste está GREEN.
-
----
-
-## 2. Conformance Report: Formato Canônico
+## 1. Canonical Conformance Report Format
 
 ```markdown
-## Conformance Report — SPEC-NNN: [Título]
+## Conformance Report — SPEC-NNN: [Title]
 
-### Resumo
-- **Critérios totais:** N
-- **Cobertos por testes:** N/N
-- **Aprovados (GREEN):** N/N
+### Summary
+- **Total Criteria:** N
+- **Covered by Tests:** N/N
+- **Passing (GREEN):** N/N
 - **Status:** ✅ COMPLIANT | ❌ NON-COMPLIANT
 
-### Matriz de Rastreabilidade
+### Traceability Matrix
 
-| # | Acceptance Criteria | SbE Lines | Test File | Test Name | Status |
+| # | Acceptance Criteria | SbE Rows | Test File | Test Name | Status |
 |---|---|---|---|---|---|
-| AC-1 | [descrição] | 3 exemplos | `tests/test_x.py` | `test_ac1_valid` | ✅ GREEN |
-| AC-2 | [descrição] | 4 exemplos | `tests/test_x.py` | `test_ac2_duplicate` | ✅ GREEN |
-| AC-3 | [descrição] | 2 exemplos | `tests/test_y.py` | `test_ac3_event` | ✅ GREEN |
+| AC-1 | [description] | 3 examples | `tests/test_x.py` | `test_ac1_valid` | ✅ GREEN |
+| AC-2 | [description] | 4 examples | `tests/test_x.py` | `test_ac2_duplicate` | ✅ GREEN |
 
-### Evidência de Execução
-- **Comando:** `python3 -m unittest tests/test_x.py tests/test_y.py`
+### Execution Evidence
+- **Command:** `python3 -m unittest tests/test_x.py`
 - **Exit code:** 0
-- **Output:** [trecho relevante do output real]
+- **Output:** [concise verified output]
 ```
 
----
+## 2. Conformance Rules
 
-## 3. Regras de Conformidade
+### Hard Gates (Block Delivery)
+1. **100% AC Coverage:** Every AC must map to at least one automated test. Missing test = `NON-COMPLIANT`.
+2. **All GREEN:** Every mapped test must pass. Any failing test = `NON-COMPLIANT`.
+3. **Real Native Evidence:** GREEN status must be backed by actual test runner execution (evidence level >= L1). Verbal claims are rejected.
 
-### Hard Gates (Bloqueiam a entrega)
-1. **Cobertura 100%:** Todo Acceptance Criteria DEVE ter pelo menos um teste correspondente. Critérios sem teste = NON-COMPLIANT.
-2. **Todos GREEN:** Cada teste vinculado a um critério DEVE estar passando. Qualquer RED = NON-COMPLIANT.
-3. **Evidência real:** O status GREEN deve ser comprovado por execução nativa real (evidence level ≥ L1). Afirmação verbal é rejeitada.
+### Soft Gates (Warnings)
+1. **SbE Completeness:** Verify all rows in Specification by Example tables are parameterized in tests.
+2. **Orphan Tests:** Review tests not linked to any AC for undocumented requirements or redundant testing.
 
-### Soft Gates (Alertas, não bloqueiam)
-1. **Cobertura SbE:** Se um critério tem tabela SbE associada, verificar se todos os exemplos da tabela foram convertidos em casos de teste parametrizados.
-2. **Testes órfãos:** Testes que não estão vinculados a nenhum Acceptance Criteria devem ser revisados — podem indicar over-testing ou critérios não documentados.
+## 3. Activation by Risk Level
+- **L0 (Trivial):** Exempt.
+- **L1 (Small):** 1-2 line informal summary.
+- **L2 (Feature):** Mandatory full Conformance Report.
+- **L3 (Critical):** Mandatory full Conformance Report + Threat Model cross-reference.
 
----
-
-## 4. Integração no Ciclo de Entrega
-
-```text
-Acceptance Criteria (aprovados)
-    ↓
-Testes escritos (RED)
-    ↓
-Implementação (GREEN)
-    ↓
-Conformance Tracker verifica:
-  ├─ Cada AC tem teste? ✅/❌
-  ├─ Cada teste está GREEN? ✅/❌
-  └─ Evidência é real? ✅/❌
-    ↓
-Conformance Report gerado
-    ↓
-Se COMPLIANT → prossegue para review/release
-Se NON-COMPLIANT → BLOQUEADO
-```
-
----
-
-## 5. Ativação por Nível de Risco
-
-| Nível | Conformance Report |
-|---|---|
-| **L0 (Trivial)** | Dispensado |
-| **L1 (Small)** | Resumo informal em 1-2 linhas |
-| **L2 (Feature)** | **Obrigatório** — formato canônico completo |
-| **L3 (Critical)** | **Obrigatório** — formato canônico + cross-reference com Threat Model |
-
----
-
-## 6. Localização do Report
-
-- **Inline:** Incluído na seção 7 (Conformance Tracking) do template `SPEC-NNN-ATDD.md`.
-- **Handoff:** Referenciado no campo `verification_evidence` do Handoff Packet.
-- **Memória:** Resumo persistido na entrada correspondente do `PROJECT_MEMORY.md`.
-
----
-
-## 7. Geração Automática via CLI
-
-O Conformance Report pode ser gerado por script em vez de escrito em prosa pelo modelo:
-
+## 4. Automated CLI Generation
+Generate and verify the report deterministically via CLI (exits `1` on `NON-COMPLIANT`):
 ```bash
 agy-conformance --spec docs/specs/SPEC-042.md --tests tests/
 ```
-
-O script (`scripts/conformance_report.py`) indexa os testes, casa cada AC com testes que mencionam seu identificador e emite exit 1 se o resultado for `NON-COMPLIANT`.

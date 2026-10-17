@@ -1,35 +1,26 @@
 ---
 name: infrastructure-as-code-governance
-description: Governança e segurança em IaC (Terraform, K8s).
+description: IaC governance and security for Terraform, OpenTofu, Kubernetes, and Docker.
 ---
 
 # Infrastructure as Code (IaC) Governance & Security
 
-> **Propósito:** Garantir que toda infraestrutura provisionada por código (Terraform, OpenTofu, Kubernetes, Docker Compose) seja determinística, modular, segura por padrão e validada estaticamente antes de qualquer `apply`.
+Ensure all provisioned infrastructure (Terraform, OpenTofu, Kubernetes, Helm, Docker Compose) is declarative, immutable, least-privilege, and statically scanned before `apply`.
 
----
+## 1. Core IaC Principles
+1. **Immutable & Declarative (No ClickOps):** All infrastructure state lives in version-controlled code; forbid manual console mutations.
+2. **IAM Least Privilege:** Ban wildcard policies (`AdministratorAccess`, `Action: "*"`, `Resource: "*"`). Scope every workload role to exact actions and ARNs.
+3. **Network Isolation:** Place databases, caches, and queues in **private subnets with no public IPs**; enforce default-deny Kubernetes `NetworkPolicies`.
 
-## 1. Princípios Fundamentais de IaC
-
-1. **Infraestrutura Imutável e Declarativa:** Recursos nunca devem ser modificados manualmente no painel da nuvem (*ClickOps*). Todo estado reside no código versionado em Git.
-2. **Princípio do Menor Privilégio (*Least Privilege* em IAM):**
-   - Nunca use permissões de `AdministratorAccess` ou `*` em roles de serviços.
-   - Cada serviço ou workload deve possuir apenas as permissões exatas necessárias para suas operações (ex: `s3:GetObject` em um bucket específico).
-3. **Isolamento de Redes & Defesa em Perímetro:**
-   - Recursos de dados (bancos de dados, Redis, filas) devem residir estritamente em **subnets privadas sem IP público**.
-   - Toda comunicação entre pods no Kubernetes deve ser governada por **`NetworkPolicies`** com política padrão de negação (*Default Deny*).
-
----
-
-## 2. Boas Práticas por Tecnologia
+## 2. Technology Guardrails
 
 ### 2.A Terraform / OpenTofu
-- **Remote State com State Locking:** Armazene o arquivo de estado em backend remoto seguro (ex: S3 com criptografia SSE-KMS e tabela DynamoDB para lock, ou Terraform Cloud).
-- **Sem Segredos em Plaintext:** Nunca declare credenciais ou senhas em arquivos `.tf` ou variáveis padrão. Utilize integração com HashiCorp Vault, AWS Secrets Manager ou variáveis de ambiente seguras.
-- **Módulos Versionados e Imutáveis:** Módulos reutilizáveis devem ser versionados via tags do Git (`source = "...?ref=v1.2.0"`).
+- **Remote State & Locking:** Store state in encrypted remote backends (e.g., S3 with SSE-KMS + DynamoDB lock) and never commit `.tfstate` files.
+- **Zero Plaintext Secrets:** Never hardcode credentials in `.tf` or `.tfvars`; inject via Vault, AWS Secrets Manager, or ephemeral OIDC env vars.
+- **Pinned Immutable Modules:** Pin module sources to explicit Git tags or commit SHAs (`?ref=v1.2.0`).
 
-### 2.B Kubernetes (Manifests, Helm & Kustomize)
-- **Security Context Restrito por Padrão:**
+### 2.B Kubernetes (Manifests, Helm, Kustomize)
+- **Restricted Pod SecurityContext:**
   ```yaml
   securityContext:
     runAsNonRoot: true
@@ -37,28 +28,12 @@ description: Governança e segurança em IaC (Terraform, K8s).
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
     capabilities:
-      drop:
-        - ALL
+      drop: ["ALL"]
   ```
-- **Limites de Recursos Obrigatórios:** Todo container deve definir `resources.requests` e `resources.limits` para CPU e Memória para evitar esgotamento de nós (OOMKilled).
-- **NetworkPolicy Default Deny:**
-  ```yaml
-  apiVersion: networking.k8s.io/v1
-  kind: NetworkPolicy
-  metadata:
-    name: default-deny-all
-  spec:
-    podSelector: {}
-    policyTypes:
-      - Ingress
-      - Egress
-  ```
+- **Mandatory Resource Quotas:** Define `resources.requests` and `resources.limits` (CPU & memory) on every container.
+- **Default-Deny NetworkPolicy:** Enforce ingress/egress `default-deny-all` per namespace and open only required service ports.
 
----
-
-## 3. Validação Estática Pré-Apply (IaC Lint & Security Scan)
-
-Antes de aprovar qualquer PR que altere arquivos de infraestrutura:
-1. **Sintaxe & Formatação:** Executar `terraform fmt -check` e `terraform validate` (ou `helm lint`).
-2. **Scanner de Segurança Estática:** Executar ferramentas como **Checkov**, **tfsec** ou **Trivy Config** para detectar portas públicas abertas (`0.0.0.0/0`), falta de criptografia em repouso e roles excessivamente permissivas.
-3. **Plano de Execução Auditável:** Toda alteração deve gerar um `terraform plan` documentado com as contagens exatas de recursos a criar (`to add`), alterar (`to change`) ou destruir (`to destroy`).
+## 3. Pre-Apply Static Validation Gate
+1. **Format & Syntax:** Run `terraform fmt -check`, `terraform validate`, and `helm lint`.
+2. **IaC Security Scan:** Run **Checkov**, **tfsec**, or **Trivy Config** to block `0.0.0.0/0` admin ports, unencrypted storage, and wildcard IAM roles.
+3. **Auditable Plan:** Generate and review `terraform plan` resource counts (`to add`, `to change`, `to destroy`) before applying.

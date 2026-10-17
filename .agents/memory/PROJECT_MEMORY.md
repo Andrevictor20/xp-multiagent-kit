@@ -1,84 +1,72 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-11 (Local)  
+> **Última Atualização:** 2026-10-16 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v2.45.0 (Integração Nativa CodeReviewGraph & Cartografia AST Determinística)
+> **Versão / Marco Atual:** v3.1.2 (Multi-Platform Parity, Universal Project Portability & 5-Host Diagnostics)
 
 ---
 
 ## 1. Quick Project Summary (Semantic)
 
-- **Propósito:** Kit modular de governança, agentes, skills, workflows e políticas para pair programming com IA (XP, Task Routing L0-L3, Pirâmide de Especificação ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Engenharia de Causa Raiz, Otimização de Tokens, Memória Contínua em 4 Tiers e Escada de Simplificação Ponytail).
-- **Tech Stack:** Antigravity Agent Framework (Markdown + YAML Frontmatter), Python, Bash, Git, GitHub Actions CLI (`gh`). Agnóstico de linguagem de produção.
-- **Arquitetura Chave:** Estrutura modular em `.agents/` (11 agentes, 77 skills, 10 workflows, 11 policies, 2 templates e memória viva em 4 tiers). Suíte global em `~/.local/bin/` e espelhamento em `~/.gemini/config/`.
+- **Propósito:** Kit modular e agnóstico de governança, agentes, skills, workflows e políticas para pair programming com IA em **Antigravity, OpenCode, Cursor, Codex e Qoder (IDE & CLI)**, orquestrando Task Routing L0-L3, Pirâmide ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Autocorreção Reflexiva, Otimização de Tokens e Memória Contínua em 4 Tiers.
+- **Tech Stack:** Multi-Host Agent Framework (`AGENTS.md`, `opencode.json`, `.cursor/rules/*.mdc`, `.codex/rules/`, `.qoder/rules/`), Python 3.8+, Bash, PowerShell 5.1+, Windows CMD, Git, GitHub Actions CLI (`gh`). Agnóstico de SO (Linux, macOS, Windows).
+- **Arquitetura Chave:** `.agents/` (11 agentes, 77 skills, 11 workflows, 12 policies, 2 templates em Token-Dense English com regra mandatória de saída em Português ao usuário; memória viva em 4 tiers). Suíte modular em `scripts/telemetry/`, `scripts/host_adapters.py`, `scripts/mcp_installers.py`, `scripts/spec_tool.py`, `scripts/update_manager.py`, `scripts/windows_support.py` e binários globais `xp-*` / `agy-*` em `~/.local/bin/` (Unix) ou `%USERPROFILE%\.local\bin\` (Windows `.cmd` shims).
 - **Comandos Essenciais:** (Catálogo completo em [details/commands.md](details/commands.md))
-  - Instalação Única / Gestão do Kit: `./install.sh` / `agy-kit [doctor|init|sync]`
-  - Instalação / Re-sincronização Global: `./scripts/install-global.sh`
-  - Diagnóstico Global de Saúde: `agy-health` / `agy-kit doctor`
-  - Auditoria de Débitos Técnicos & Simplificações: `agy-debt --scan`
-  - Rotação Automática de Memória: `agy-memory-archive`
-  - Telemetria de Tokens (Ao Vivo / Acumulada): `agy-tokens --turn` / `agy-tokens --badge`
-  - CI/CD Auto-Healer: `agy-ci-heal --status` / `agy-ci-heal --watch --heal --auto-push`
+  - Instalação Linux/macOS: `./install.sh [--global|--project <dir>|--both <dir>] [--target all|...] [--lang pt|en]`
+  - Instalação Windows (PowerShell/CMD): `powershell -ExecutionPolicy Bypass -File .\install.ps1` ou `install.cmd`
+  - Gestão e Auto-Update do Kit: `xp-kit [doctor|init <dir>|sync|update|version]` / `agy-kit`
+  - Ferramenta ATDD de Specs: `xp-spec [new <slug>|validate <file>]` / `agy-spec`
+  - Telemetria Compacta (4 linhas + ANSI Colors): `xp-tokens --turn [--color] [--host <host>]` / `agy-tokens --turn`
+  - Auditoria de Orçamento & Índice de Skills: `python3 scripts/skill_index.py [generate|audit]`
+  - Conformidade ATDD & Débitos: `xp-conformance` / `agy-debt --scan`
 
 ---
 
 ## 2. Current Health & System Status
 
-- **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills, 10 Workflows, 11 Policies, 2 Templates, CI/CD Auto-Healer, Rastreador de Débito `agy-debt`, Utilitário CLI `agy-kit` / `xp-kit`, Suíte Global de Tokens e Health Scanner em `~/.local/bin/`).
-- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (Pirâmide ATDD/BDD com Stop Gate, TDD Multi-Camadas, Anti-Test-Bypass, SSDLC, Root-Cause Debugging, No Workarounds, Code Deslop, 4-Tier Memory e Telemetria de Tokens).
-- **Última Execução / Evidência:** `EV-CRG-NATIVE-INTEGRATION-20261011-01` (Integração nativa do CodeReviewGraph v2.3.9, instalação automática via kit_installer, binários agy-graph/code-review-graph/agy-crg, servidor MCP em mcp_config.json, modernização da skill codebase-cartography e 319/319 testes aprovados)
-- **Ambiente Ativo:** Local & Global / Antigravity IDE & CLI.
-- **⚠️ Alerta de Cota (Pre-Flight Gate):** Operar em Modo Cirúrgico Atômico (`agy-fast` / effort low) sob alta utilização de cota.
+- **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills `< 4KB` em Inglês, 11 Workflows, 12 Policies, Adaptadores Multi-Host para Antigravity/OpenCode/Cursor/Codex/Qoder, Instaladores Nativos Linux/macOS/Windows, Toolchain Bundled RTK/OD/CRG, Motor de Auto-Update e Telemetria Adaptativa).
+- **Quality Gate / Rules:** 100% compliant com `AGENTS.md`, `SPEC-003-ATDD.md`, `SPEC-005`, `SPEC-006` (348/348 testes unitários e de integração `PASS`, 0 caminhos pessoais no git, hooks renderizados no config global, arquivos `< 500` linhas, `AGENTS.md` 5.3KB e `PROJECT_MEMORY.md` `< 8KB`).
+- **Última Execução / Evidência:** `EV-KIT-V3.1.2-CROSS-PLATFORM-AUDIT-20261016-01` (Auditoria e correção profunda de instalação multiplataforma: macOS settings, Windows cmd/py-3/agy-run, sincronização local de skills/agents em projetos, roteamento adaptativo de telemetria por marcador e auditoria dos 5 hosts no KitDoctor).
+- **Ambiente Ativo:** Local & Global / Linux, macOS e Windows nativo (PowerShell / CMD).
 
 ---
 
-## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5-10 Entregas)
+## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5 Entregas)
 
-| 2026-10-15 | `FIX` | Correção do Cálculo de Contexto Ativo & Compaction Awareness (v2.45.1): eliminação da divergência crítica entre o agy (`/compact`) e o kit no rodapé de telemetria; priorização de métricas reais da API (`input_tokens` e `cache_read_tokens` gravadas pelo Antigravity em `PLANNER_RESPONSE`), descarte estrito de blocos efêmeros de `thinking` no histórico de contexto acumulado, respeito a eventos de compactação (`CHECKPOINT`), novo teste unitário em `tests/test_token_tracker.py` e 55/55 testes aprovados | `scripts/token_tracker.py`, `tests/test_token_tracker.py` | `PASS (EV-CONTEXT-SIZE-ACCURACY-20261015-01)` |
-| 2026-10-11 | `FEAT` | Integração Nativa CodeReviewGraph v2.3.9 & Cartografia AST Determinística (v2.45.0): classe `CodeReviewGraphInstaller` em `scripts/kit_installer.py`, ambiente isolado em `~/.local/share/code-review-graph`, binários globais `~/.local/bin/code-review-graph`, `agy-graph` e `agy-crg`, registro do servidor MCP `code-review-graph` em `mcp_config.json` com filtro de ferramentas `CRG_TOOLS` (10 ferramentas essenciais), suporte a `--install-graph` e auditoria em `KitDoctor` (`agy-kit doctor`), sincronização em `install-global.sh`, modernização da skill `codebase-cartography` e agentes `navigator`, `test-guardian` e `refactor-warden`, 319/319 testes da suíte global aprovados | `scripts/kit_installer.py`, `scripts/install-global.sh`, `.agents/skills/codebase-cartography/SKILL.md`, `.agents/agents/*`, `tests/test_kit_installer.py` | `PASS (EV-CRG-NATIVE-INTEGRATION-20261011-01)` |
-| 2026-10-10 | `FIX` | Resolução de Crash do OpenDesign MCP e Conformidade de Schema JSON (v2.44.5): passagem explícita de `--daemon-url http://127.0.0.1:7456` para `od mcp` eliminando crash na inicialização do Antigravity quando o daemon não está em execução prévia, expurgo de propriedades fora do padrão MCP (`autoApprove` e `alwaysAllow`) nos arquivos `mcp_config.json` para zerar warnings do schema na IDE, adição do import faltante `subprocess` em `scripts/token_tracker.py`, validação de MCP handshake stdio e 79/79 testes unitários aprovados | `scripts/kit_installer.py`, `scripts/token_tracker.py`, `tests/test_kit_installer.py`, `~/.gemini/config/mcp_config.json` | `PASS (EV-MCP-STARTUP-FIX-20261010-01)` |
-| 2026-10-09 | `FEAT` | Instalação Automática do OpenDesign e Auto-Aprovação MCP no Instalador (v2.44.4): classes `OpenDesignInstaller` e `McpConfigurator` em `scripts/kit_installer.py`, suporte a `--configure-mcp` e `--install-opendesign`, integração completa no `GlobalInstaller.install_global` e `scripts/install-global.sh`, binários `od` e `agy-design` auditados em `KitDoctor`, cobertura com 18 testes em `test_kit_installer.py` e 316/316 testes da suíte global aprovados | `scripts/kit_installer.py`, `scripts/install-global.sh`, `tests/test_kit_installer.py` | `PASS (EV-INSTALLER-OPEN-DESIGN-MCP-20261009-01)` |
-| 2026-10-09 | `CONFIG` | Liberação Contínua e Auto-Aprovação MCP (v2.44.3): configuração de `auto_approve: true`, `approval_mode: auto`, `auto_approve_mcp: true` e permissões explícitas para ferramentas MCP (`call_mcp_tool`, `list_resources`, `read_resource`, etc.) em todos os perfis do Antigravity (`~/.gemini/antigravity-ide/`, `~/.gemini/config/`, `~/.gemini/antigravity/` e `~/.gemini/settings.json`), além de `autoApprove: true` e `alwaysAllow` para todos os métodos em `mcp_config.json`, eliminando prompts interativos repetitivos de confirmação | `~/.gemini/*/settings.json`, `~/.gemini/*/mcp_config.json` | `PASS (EV-MCP-ALWAYS-ALLOW-20261009-01)` |
-| 2026-10-09 | `TEST` | Teste, Redesign (OpenClaw-style) e Limpeza da Landing Page via OpenDesign (v2.44.2): validação prática do OpenDesign MCP e daemon local (`od`), criação inicial e redesign estético inspirado em OpenClaw.ai (Switzer + Sentient italic accent, dither ASCII art, blueprint grid contínuo), auditoria com `od lint` aprovada com `clean — 0 findings`, validação via Browser Subagent / headless Chrome e encerramento com expurgo completo dos arquivos temporários (`landing-test/`), parada do servidor HTTP e remoção do projeto temporário no OpenDesign | `landing-test/*` (removido), `.gitignore` | `PASS (EV-OD-LANDING-TEST-CLEANUP-20261009-01)` |
-| 2026-10-08 | `FIX` | Fast Path RPC do Language Server e Ativação no Hook (v2.44.1): resolução da causa raiz que gerava constantemente 'Não está sendo possível aferir no momento' no chat; ativação de `fetch_live=True` em `dynamic_effort_hook.py`, acelerado pelo Fast Path direto (~5ms) via `active_ls_conn.json` e variáveis de ambiente; exibição em tempo real das barras oficiais de progresso e renovação (5h e semanal) com 306/306 testes unitários aprovados | `scripts/hooks/dynamic_effort_hook.py`, `scripts/token_tracker.py`, `tests/test_dynamic_effort_hook.py` | `PASS (EV-LIVE-QUOTA-HOOK-FAST-PATH-20261008-01)` |
-| 2026-10-08 | `FIX` | Remoção de Estimativa Inacurada de Quotas (v2.44.0): remoção da função e projeção de estimativas heurísticas de cotas (5h e semanal) quando a conexão direta via RPC ao Language Server estiver offline ou indisponível; exibição direta e transparente de 'Não está sendo possível aferir no momento' no rodapé (format_message_footer), badge e dashboards sem forçar dados errados ([Estimado]); ajuste de alertas de orçamento para não disparar falsos positivos críticos; validado com 306/306 testes unitários | `scripts/token_tracker.py`, `tests/test_token_tracker.py` | `PASS (EV-QUOTA-NO-ESTIMATION-20261008-01)` |
-| 2026-10-03 | `FIX` | Contabilização Exata de Telemetria e Multimodelo (v2.43.0): correção do bug de propagação de `eff_rolling` em `parse_transcript_data` eliminando o falso `0.0% usado (0)` nas janelas de 5h e semanal, fechamento matemático estrito de 100% no breakdown de consumo do turno (Entrada, Ferramentas, Resposta) com deduplicação de mensagens efêmeras, suporte fiel a limites móveis de outros provedores (Claude 100k/2M, OpenAI, DeepSeek) e priorização do raciocínio explicitamente selecionado pelo usuário no IDE (Effort: High/Thinking) em `dynamic_effort_hook.py`, aprovado com 306/306 testes | `scripts/token_tracker.py`, `scripts/hooks/dynamic_effort_hook.py`, `tests/test_token_tracker.py` | `PASS (EV-TOKEN-TELEMETRY-ACCURACY-20261003-01)` |
-| 2026-10-02 | `FEAT` | Modernização de Design & Workflow Dedicado /design (v2.42.0): criação do workflow .agents/workflows/design.md (4 fases: Token Discovery, 6-State Blueprint, Implementation & Micro-Interactions, Polish Gate), atualização das políticas design-system.md e frontend.md com Token Anchoring First, escala de 8pt estrita, máquina de 6 estados obrigatória, ergonomia móvel com alvos de toque ≥ 48px e teclado seguro, atualização da skill component-architecture e registro no AGENTS.md | `.agents/workflows/design.md`, `.agents/policies/*`, `.agents/skills/*`, `AGENTS.md` | `PASS (EV-DESIGN-V2-20261002-01)` |
-| 2026-10-02 | `FEAT` | Planejamento a Longo Prazo & Roadmapping Estratégico (v2.41.0): skill software-evolution-and-roadmapping (horizontes Now/Next/Later, padrão Strangler Fig para modernização de legados, capacity planning, FinOps e governança de EOL/Sunset de APIs RFC 8594), integração em skill_profiles.py (33 skills no backend) e regeneração do SKILLS_INDEX.md | `.agents/skills/*`, `scripts/skill_profiles.py`, `scripts/prune_skills.py` | `PASS (EV-SKILL-EXPANSION-20261002-02)` |
-| 2026-10-02 | `FEAT` | Modernização da Suíte de Skills (v2.40.0): fusão canônica de `observability-instrumentation` em `observability-and-slo-engineering`, criação das skills `async-messaging-and-resilience`, `caching-architecture` e `backend-performance-testing`, catálogo de presets em `visual-direction-studio`, sincronização de `skill_profiles.py` e regeneração de `SKILLS_INDEX.md` | `.agents/skills/*`, `scripts/skill_profiles.py`, `scripts/prune_skills.py` | `PASS (EV-SKILL-MODERNIZATION-20261002-01)` |
-| 2026-10-02 | `FEAT` | Instalador Unificado & Portabilidade do Kit (v2.39.0): script único install.sh (suporte a one-liner curl e execução local), motor kit_installer.py com DependencyChecker, GlobalInstaller e ProjectInstaller (modo symlinks aprovado no Stop Gate), utilitário CLI agy-kit / xp-kit com doctor/init/sync, documentação no README.md, SPEC-002 aprovada com 6/6 ACs COMPLIANT e 303/303 testes aprovados | `install.sh`, `scripts/kit_installer.py`, `scripts/agy-kit`, `README.md`, `tests/test_kit_installer.py` | `PASS (EV-UNIFIED-INSTALLER-20261002-01)` |
-| 2026-10-02 | `FEAT` | Integração Ponytail & Rastreador agy-debt (v2.38.0): Incorporação da Escada de 7 Degraus de Simplificação, política platform-native.md, gramática cirúrgica de 1 linha no diff-simplifier-review e refactor-warden, motor CLI agy-debt com detecção de rot [NO-TRIGGER] e gate de CI, SPEC-001 aprovada com 6/6 ACs COMPLIANT e 288/288 testes aprovados | `.agents/policies/*`, `scripts/debt_tracker.py`, `tests/test_debt_tracker.py` | `PASS (EV-PONYTAIL-INTEGRATION-20261002-01)` |
-| 2026-10-01 | `FEAT` | Consumo Híbrido Ponderado & Eliminação de Tetos Artificiais (v2.37.3): linha de consumo híbrida com tokens absolutos, impacto na janela de contexto (% da janela) e distribuição percentual por categoria (Entrada, Ferramentas, Resposta), eliminação de tetos fictícios na cota da Google exibindo métricas oficiais exatas, correção ponderada do RTK e 276/276 testes aprovados | `scripts/token_tracker.py`, `tests/*` | `PASS (EV-HYBRID-CONSUMPTION-PERCENTAGE-20261001-01)` |
-| 2026-10-01 | `FEAT` | Integração Nativa RTK v0.49.0 (v2.37.0): delegação semântica em smart_tool_optimizer para comandos elegíveis git/cargo/pytest/gh, invariante never_worse, agregação e exibição de ganhos do RTK no rodapé canônico (agy-tokens --turn) e 275/275 testes aprovados | `scripts/hooks/*`, `scripts/token_tracker.py`, `scripts/output_noise.py`, `tests/*` | `PASS (EV-RTK-INTEGRATION-COMPLETE-20261001-01)` |
+| 2026-10-16 | `FIX` | Auditoria Multiplataforma & Portabilidade Universal — (1) Sincronização de `.agents/skills` e `.agents/agents` em projetos locais (eliminando File Not Found de SKILLS_INDEX.md), (2) Cursor customInstructions compatível com macOS e Windows, (3) Shims Windows com detecção e fallback `py -3`, (4) `agy-run` no Windows com `cmd.exe`/`bash` em vez de `/bin/sh`, (5) `KitDoctor` com auditoria dos 5 hosts e alertas de auto-update, (6) Roteamento de telemetria por marcadores de projeto (`.cursor`, `.codex`, etc.), (7) `xp-kit init [path]` posicional | `scripts/host_adapters.py`, `scripts/kit_installer.py`, `scripts/agy-run`, `scripts/windows_support.py`, `scripts/telemetry/*`, `tests/*` | `PASS (EV-KIT-V3.1.2-CROSS-PLATFORM-AUDIT-20261016-01)` |
+| 2026-10-16 | `FIX` | SPEC-006: Instalação Global Cursor & Auto-Discovery — (1) Correção do bug de diretório aninhado `.cursor/.cursor/`, (2) Geração de regras globais em `~/.cursor/rules/*.mdc` e injeção de instruções em `settings.json`, (3) Auto-descoberta e sync automático de `AGENTS.md` v3 em projetos de trabalho (`vito`, `Saturn`, `Essenza`), (4) Leitor SQLite OpenCode e telemetria adaptativa multi-host | `scripts/host_adapters.py`, `scripts/kit_installer.py`, `scripts/telemetry/*`, `tests/test_multi_host_telemetry.py` | `PASS (EV-KIT-V3.1-CURSOR-GLOBAL-20261016-02)` |
+| 2026-10-16 | `FEAT` | SPEC-005: Suporte Nativo ao Windows — (1) Scripts `install.ps1` e `install.cmd`, (2) Shims `.cmd` em `%USERPROFILE%\.local\bin`, (3) PATH via `winreg`, (4) Fallback NTFS para cópia, (5) Documentação no `README.md` | `install.ps1`, `install.cmd`, `scripts/windows_support.py`, `scripts/kit_installer.py`, `tests/test_windows_installer.py`, `README.md` | `PASS (EV-KIT-V3.1-WINDOWS-20261016-01)` |
+| 2026-10-16 | `FEAT` | XP Multi-Agent Kit v3.1 — Codex, RTK/OD/CRG, ATDD xp-spec, Zero Personal Paths, Telemetria & Auto-Update: (1) Codex CLI, (2) Toolchain embutida, (3) ATDD `xp-spec`/`agy-spec`, (4) Zero caminhos pessoais, (5) Telemetria `--host`, (6) `xp-kit update` com cache 24h, (7) Matriz flexível, (8) `README.md` técnico | `scripts/host_adapters.py`, `scripts/kit_installer.py`, `scripts/mcp_installers.py`, `scripts/spec_tool.py`, `scripts/update_manager.py`, `scripts/telemetry/*`, `README.md` | `PASS (EV-KIT-V3.1-ENHANCEMENTS-20261016-01)` |
+| 2026-10-16 | `FEAT` | XP Multi-Agent Kit v3.0 — Multi-Host Agnosticism, Bilingual Installer, English Core & Compact Telemetry: 4 ecossistemas, wizard PT/EN, 77 skills em inglês, telemetria 4 linhas, autocorreção reflexiva | `AGENTS.md`, `install.sh`, `scripts/host_adapters.py`, `scripts/kit_installer.py`, `scripts/telemetry/*`, `scripts/hooks/*`, `tests/test_spec_003_v3.py` | `PASS (EV-KIT-V3-SPEC003-20261016-01)` |
+
+*(Entregas anteriores arquivadas em [archive/HISTORY.md](archive/HISTORY.md))*
 
 ---
 
 ## 4. Active Backlog & Immediate Handoff (Working / Episodic)
 
-- [x] **[DONE] Integração Nativa OpenDesign v0.23.1 & Antigravity (v2.40.0): Instalação e compilação persistente em `~/.local/share/open-design`, binário global `~/.local/bin/od`, utilitário `agy-design` (status/mcp/studio/lint), integração com MCP no Antigravity (`~/.gemini/antigravity/mcp_config.json` e espelhos), atualização de `install-global.sh` e `kit_installer.py`, 100% de testes TDD aprovados e remoção segura de arquivos temporários do repositório.**
-- [x] **[DONE] Instalador Unificado & Portabilidade do Kit (v2.39.0): script único install.sh (one-liner curl e local), motor kit_installer.py, injeção de projeto isolado via symlinks, utilitário CLI agy-kit doctor/init/sync, documentação no README.md, SPEC-002 aprovada com 6/6 ACs COMPLIANT e 303/303 testes aprovados.**
-- [x] **[DONE] Integração Ponytail & Rastreador agy-debt (v2.38.0): Escada de 7 Degraus de Simplificação no builder/token-economy/frontend, catálogo platform-native.md, gramática cirúrgica de 1 linha de over-engineering, CLI agy-debt com detecção de rot [NO-TRIGGER] e 288/288 testes unitários aprovados.**
-- [x] **[DONE] Integração Nativa RTK v0.49.0 (v2.37.0): reescrita semântica de comandos via RTK em `smart_tool_optimizer.py`, invariante `never_worse` em `output_noise.py`, telemetria de tokens economizados no rodapé canônico (`agy-tokens --turn`), compilação/instalação em `install-global.sh` e 275/275 testes aprovados.**
-
-- [x] **[DONE] Governança Mecânica Anti-Tool-Spamming (v2.36.0): Hooks renderizados incondicionalmente no IDE/CLI, interceptação e bloqueio de polling em `manage_task status`, no-reread pós-edição em `smart_tool_optimizer`, Turno 1 batching no `AGENTS.md` e 268/268 testes unitários aprovados.**
-- [x] **[DONE] Expansão ATDD/BDD (v2.35.0): Pirâmide de Especificação com separação de contrato humano-IA, skills `acceptance-test-driven` / `specification-by-example` / `conformance-tracker`, policy `atdd-bdd-tdd.md`, template `SPEC-NNN-ATDD.md`, integração nos workflows L1/L2/L3 e 74/74 skills sincronizadas.**
-- [x] **[DONE] Suíte Global de Redução de Tokens: agy-sanitize, agy-handoff, agy-audit, agy-skills-profile (perfis de skills), universal.geminiignore e telemetria em 3 camadas.**
-- [x] **[DONE] CI/CD Auto-Healer: monitoramento autônomo de GitHub Actions (gh run), extração cirúrgica de logs de erro e loop de autocorreção em até 3 tentativas (L-003).**
-*(Entregas anteriores concluídas arquivadas em [archive/HISTORY.md](archive/HISTORY.md))*
-- [ ] **[P1] Validar a execução da matriz multi-testes em um projeto piloto complexo.**
-- [ ] **[P2] Validar a Pirâmide de Especificação ponta-a-ponta em uma feature L2 real: emitir `SPEC-NNN-ATDD.md`, obter aprovação no Stop Gate, gerar acceptance tests parametrizados e produzir o primeiro Conformance Report `COMPLIANT` de referência.**
-- [ ] **[P3] Rotacionar as 2 entregas mais antigas da seção 3 para `archive/HISTORY.md` via `agy-memory-archive` (Memory Lint / sliding window).**
+- [x] **[DONE] Instalador nativo para Windows (PowerShell/CMD/Batch) com shims .cmd e configuração de PATH via winreg.**
+- [x] **[DONE] Suporte ao Codex CLI e matriz de 5 hosts (Antigravity, OpenCode, Cursor, Codex, Qoder).**
+- [x] **[DONE] Toolchain embutida no instalador: RTK (compilação cargo/download), OpenDesign e CodeReviewGraph.**
+- [x] **[DONE] Reforço ATDD/BDD com CLI `xp-spec`/`agy-spec` e hook de disciplina ATDD.**
+- [x] **[DONE] Eliminação total de caminhos e referências pessoais do desenvolvedor em arquivos rastreados.**
+- [x] **[DONE] Catálogo de modelos multi-ferramenta e telemetria adaptativa por host (`--host`).**
+- [x] **[DONE] Motor de Auto-Update `xp-kit update` com cache de 24h e notificações discretas.**
+- [x] **[DONE] Matriz de instalação flexível: global, projetos específicos (`--project`), ou ambos (`--both`).**
+- [x] **[DONE] Documentação técnica completa em inglês no `README.md`.**
+- [ ] **[P1] Validar execução de projeto piloto multi-IDE (OpenCode + Cursor + Codex + Qoder) em repositório externo.**
 
 ---
 
 ## 5. Architectural Decisions & Domain Models (Semantic Memory)
 
-> Conteúdo movido para [details/5-architectural-decisions-domain-models-semantic-memory.md](details/5-architectural-decisions-domain-models-semantic-memory.md) (leitura sob demanda).
+> Conteúdo em [details/5-architectural-decisions-domain-models-semantic-memory.md](details/5-architectural-decisions-domain-models-semantic-memory.md) (sob demanda).
 
 ## 6. Gotchas, Hurdles & Learned Playbooks (Procedural Memory)
 
-> Conteúdo movido para [details/6-gotchas-hurdles-learned-playbooks-procedural-memory.md](details/6-gotchas-hurdles-learned-playbooks-procedural-memory.md) (leitura sob demanda).
+> Conteúdo em [details/6-gotchas-hurdles-learned-playbooks-procedural-memory.md](details/6-gotchas-hurdles-learned-playbooks-procedural-memory.md) (sob demanda).
 
 ## 7. Technical Debts & Known Blockers
 
-- **Nenhum bloqueio ativo.** CI/CD Auto-Healer operacional, 276/276 testes unitários aprovados, RTK v0.49.0 ativo em `~/.local/bin/rtk`, comandos integrados em `~/.local/bin/`, git hooks ativos e persistência de disco rigorosamente cumprida.
+- **Nenhum bloqueio ativo.** Orçamento de contexto base (`AGENTS.md`, `PROJECT_MEMORY.md`, 77 `SKILL.md` e `SKILLS_INDEX.md`) 100% dentro dos tetos de `kit_constants.py`.
+

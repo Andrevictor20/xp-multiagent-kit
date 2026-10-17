@@ -1,60 +1,44 @@
 ---
 name: caching-architecture
-description: Arquitetura de cache, Redis/Memcached, Cache-Aside e mitigação de stampede/avalanche.
+description: Redis/Memcached caching, Cache-Aside, and stampede/avalanche/penetration defense.
 ---
 
 # Caching Architecture & Invalidation Strategies
 
-> **Propósito:** Acelerar leituras e proteger recursos caros de I/O e banco de dados, mantendo coerência estrita de dados e eliminando riscos clássicos de saturação de cache.
+Accelerate reads and shield databases/I/O while preserving cache coherence and preventing saturation anomalies.
 
----
+## 1. Cache Access Patterns
 
-## 1. Padrões de Acesso ao Cache
+### 1.A Cache-Aside (Lazy Loading — Recommended)
+- **Read:** Check cache key (e.g., `user:1001`) -> return immediately on **Hit** -> on **Miss**, query source of truth, set cache with TTL, and return.
+- **Write:** Mutate database first, then **delete (invalidate)** the cache key rather than overwriting it to avoid concurrent write race conditions.
 
-### 1.A Cache-Aside (Lazy Loading) — Padrão Recomendado
-- **Leitura:**
-  1. A aplicação consulta o cache pela chave (ex: `user:1001`).
-  2. *Cache Hit:* Retorna o dado imediatamente.
-  3. *Cache Miss:* Consulta a fonte da verdade (banco de dados/API externa), grava o resultado no cache com TTL e retorna o dado.
-- **Escrita:**
-  - A aplicação grava na fonte da verdade primeiro.
-  - **Invalide (delete)** a chave no cache em vez de sobrescrever, para evitar condições de corrida (*race conditions*) em escritas concorrentes.
+### 1.B Write-Through vs. Write-Behind
+- **Write-Through:** Synchronously write to cache and DB (immediate consistency, higher write latency).
+- **Write-Behind:** Write to cache immediately and batch/queue DB persistence asynchronously (high write throughput, requires durability safeguards).
 
-### 1.B Write-Through vs Write-Behind
-- **Write-Through:** Escreve no cache e no banco sincronicamente. Garante consistência imediata, mas aumenta a latência de escrita.
-- **Write-Behind (Write-Back):** Escreve no cache imediatamente e enfileira a gravação no banco de forma assíncrona. Alta velocidade de escrita, com risco de perda se o nó de cache falhar antes da persistência.
+## 2. Mitigating the 3 Critical Cache Anomalies
 
----
-
-## 2. Mitigação das 3 Anomalias Críticas de Cache
-
-### 2.A Cache Stampede (Dog-piling / Thundering Herd)
-- **Cenário:** Uma chave muito quente (*hot key*) expira e centenas de requisições simultâneas sofrem *cache miss*, bombardeando o banco de dados ao mesmo tempo.
-- **Soluções:**
-  1. **Mutex / Distributed Lock:** A primeira requisição adquire um lock temporário para consultar o banco e repovoar o cache; as demais aguardam alguns milissegundos ou retornam valor anterior.
-  2. **Probabilistic Early Expiration (Algoritmo XFetch):** A chave é recomputada em segundo plano antes de expirar se `compute_time * beta * ln(random()) > (expiry - now)`.
+### 2.A Cache Stampede (Dog-Piling / Thundering Herd)
+- **Cause:** A hot key expires and hundreds of concurrent requests miss simultaneously, overwhelming the DB.
+- **Mitigation:**
+  1. **Distributed Mutex / Singleflight:** Only one worker recomputes the value while concurrent callers wait briefly or serve slightly stale data (`stale-while-revalidate`).
+  2. **Probabilistic Early Expiration (XFetch):** Recompute in background before TTL expiry when `compute_time * beta * ln(random()) > (expiry - now)`.
 
 ### 2.B Cache Avalanche
-- **Cenário:** Centenas de milhares de chaves expiram exatamente no mesmo segundo (ex: job noturno ou TTLs idênticos configurados).
-- **Solução:** **Jitter Obrigatório no TTL.** Nunca use TTLs fixos. Adicione variação pseudoaleatória:
+- **Cause:** Massive batches of keys expire at the exact same second.
+- **Mitigation:** Add mandatory random **TTL Jitter**:
   ```text
   effective_ttl = base_ttl + random(-delta, +delta)
-  # Exemplo: base de 3600s com delta de 300s (expira entre 3300s e 3900s)
   ```
 
 ### 2.C Cache Penetration
-- **Cenário:** Requisições buscam IDs inexistentes (ex: `id = -999` ou varredura de ataque), o cache nunca tem o dado e todas as consultas atingem o banco de dados.
-- **Soluções:**
-  1. **Cache de Valores Nulos:** Armazene `null`/`nil` no cache com TTL muito curto (ex: 30 a 60 segundos).
-  2. **Bloom Filter:** Filtro probabilístico na borda para rejeitar requisições de chaves comprovadamente inexistentes antes de consultar o cache ou banco.
+- **Cause:** Queries for non-existent IDs bypass the cache on every request and hit the DB.
+- **Mitigation:**
+  1. **Null-Value Caching:** Cache `null`/sentinel entries with a short TTL (`30-60s`).
+  2. **Bloom Filter:** Reject known non-existent keys at the edge before querying cache or DB.
 
----
-
-## 3. Estratégias de Invalidação & Nomenclatura
-
-- **Nomenclatura Semântica de Chaves:**
-  - Formato: `<ambiente>:<serviço>:<entidade>:<id>:<versão>`
-  - Exemplo: `prod:billing:invoice:98712:v1`
-- **Invalidação Orientada a Eventos:**
-  - Prefira disparar invalidação por eventos de domínio (ex: evento `InvoiceUpdated` dispara `DEL prod:billing:invoice:98712:v1`).
-- **Versionamento de Chaves:** Para mudanças estruturais de schema de cache, altere o prefixo de versão na chave em vez de executar `FLUSHALL` ou `KEYS *` (comandos bloqueantes proibidos em produção).
+## 3. Key Naming & Safe Invalidation
+- **Semantic Key Namespace:** `<env>:<service>:<entity>:<id>:<version>` (e.g., `prod:billing:invoice:98712:v1`).
+- **Event-Driven Invalidation:** Trigger `DEL` via domain events (`InvoiceUpdated`).
+- **Schema Versioning:** Bump key version suffix (`:v2`) instead of running blocking `FLUSHALL` or `KEYS *` in production.

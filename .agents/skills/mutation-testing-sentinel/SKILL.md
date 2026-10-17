@@ -1,40 +1,28 @@
 ---
 name: mutation-testing-sentinel
-description: Auditoria de robustez de testes via injeção de mutações.
+description: Test suite robustness auditing via mutation injection and >=80% mutation score.
 ---
 
-# Mutation Testing Sentinel Skill
+# Mutation Testing Sentinel
 
-Esta skill governa a aplicação de **Testes de Mutação (Mutation Testing)** como a prova matemática definitiva contra testes tautológicos, asserts cegos e falsos positivos no XP Multi-Agent Kit.
+Verify that automated tests actually catch regressions by injecting controlled code mutations (Mutation Testing) to eliminate tautological assertions and false-positive suites.
 
----
+## 1. Core Principles & Threshold
+100% line coverage does not prove test quality if tests still pass when operators (`>` to `<=`, `true` to `false`) or statements are mutated.
+- **Killed Mutant:** A test fails immediately when the mutation is injected (robust test).
+- **Surviving Mutant:** All tests still pass despite mutated production logic (test gap).
+- **Minimum Threshold:** Require **>= 80% Mutation Score** on L2/L3 critical modules (auth, billing, permissions, financial math).
 
-## 1. Fundamento Teórico & Racional
-Passar 100% dos testes não garante que o código está protegido. Se um teste passar mesmo quando mutações deliberadas forem introduzidas na lógica (ex: inverter `>` para `<=`, trocar `true` por `false`, remover chamadas de função), o teste é **fraco ou inútil**.
-
-- **Mutante Sobrevivente (Surviving Mutant):** Falha grave na suíte de testes. Significa que o código pode quebrar sem que nenhum teste acuse o erro.
-- **Mutante Morto (Killed Mutant):** O teste falhou imediatamente após a mutação ser injetada. O teste é robusto e eficaz.
-- **Score Mínimo Exigido:** No mínimo **80% de Mutation Score** em módulos de risco L2/L3.
-
----
-
-## 2. Ferramentas por Ecossistema
-- **JavaScript / TypeScript:** [Stryker Mutator](https://stryker-mutator.io/) (`npx stryker run`)
+## 2. Ecosystem Tooling
+- **TypeScript / JavaScript:** [Stryker Mutator](https://stryker-mutator.io/) (`npx stryker run`)
 - **Python:** [mutmut](https://github.com/boxed/mutmut) (`mutmut run --paths-to-mutate <path>`)
 - **Rust:** [cargo-mutants](https://github.com/sourcefrog/cargo-mutants) (`cargo mutants`)
 - **Go:** [go-mutesting](https://github.com/zimmski/go-mutesting)
 
----
-
-## 3. Protocolo de Auditoria do Test-Guardian & Release-Gatekeeper
-1. **Identificação de Módulos Críticos:** Módulos de autorização, cálculo financeiro, validação de tokens e regras fiscais.
-2. **Execução de Amostragem de Mutação:**
+## 3. Audit Protocol (`test-guardian` & `release-gatekeeper`)
+1. Target critical domain modules (auth, pricing, billing, token validation).
+2. Run scoped mutation analysis:
    ```bash
-   # Exemplo Python:
-   mutmut run --paths-to-mutate src/billing.py
-   mutmut results
+   mutmut run --paths-to-mutate src/billing.py && mutmut results
    ```
-3. **Análise de Mutantes Sobreviventes:** Para cada mutante que não foi morto:
-   - Identifique a asserção ausente.
-   - Escreva o teste específico que captura a mutação.
-4. **Veredito:** O `release-gatekeeper` bloqueia releases se mutantes sobreviventes forem detectados na fronteira de segurança ou pagamentos.
+3. Write value assertions to kill every surviving mutant on security or payment boundaries before release approval.

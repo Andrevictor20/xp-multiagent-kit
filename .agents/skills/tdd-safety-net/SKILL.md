@@ -1,44 +1,31 @@
 ---
 name: tdd-safety-net
-description: Ciclo RED-GREEN-REFACTOR e Anti-Test-Bypass estrito.
+description: Strict RED-GREEN-REFACTOR cycle, Anti-Test-Bypass, and surgical test execution.
 ---
 
 # TDD Safety Net & Anti-Test-Bypass
 
-> **Princípio:** O desenvolvimento é estritamente orientado a testes (Red → Green → Refactor). Um teste só tem valor se tiver a capacidade real de **falhar quando a implementação estiver incorreta** e **comprovar o comportamento esperado**.
+> **Core Principle:** Follow strict Test-Driven Development (`RED -> GREEN -> REFACTOR`). A test has value only if it **fails when production logic is broken** and **verifies real behavior**.
 
----
+## 1. Fundamental TDD Rules
+1. **Never Write Production Code Before RED:** Except for disposable exploratory spikes, always write a failing automated test before implementing production logic.
+2. **Behavior Coverage Over Line Count:** Test business contracts, boundaries, and critical paths rather than chasing vanity line coverage.
+3. **Adaptive Test Matrix:**
+   - *Unit:* Pure functions, algorithms, domain rules.
+   - *Integration:* DB queries/transactions, queues, HTTP/gRPC adapters.
+   - *Contract:* API/schema compatibility.
+   - *Regression:* Reproducing and locking fixed bugs.
+   - *Property/Fuzzing:* Mathematical and serialization invariants.
 
-## 1. Diretrizes Fundamentais do Ciclo TDD
+## 2. Anti-Test-Bypass Checklist (Zero Tolerance)
+- [ ] **Executes Real Production Code?** Ban mocking the system under test; mock only external third-party I/O.
+- [ ] **Asserts Concrete Values?** Ban empty tests, `assert(true)`, or type-only checks without value verification.
+- [ ] **Zero Skipped Tests?** Ban `.skip`, `xit`, `@unittest.skip` to hide failing tests.
+- [ ] **Zero Deleted/Commented Failing Tests?** Fix the root cause in production code instead of deleting tests.
+- [ ] **Real Native Execution Evidence?** Run the test runner and observe output before claiming GREEN.
 
-1. **Nunca implemente antes do RED:** Exceto para spikes descartáveis explícitos, nenhuma lógica de negócio é escrita antes do teste que comprova sua necessidade.
-2. **Cobertura de Comportamento Real:** Avalie a qualidade dos testes por *behavior coverage*, *critical path coverage* e validação de contratos/limites, nunca por quantidade bruta de linhas de código.
-3. **Matriz de Testes Adaptativa:**
-   - *Unitário:* Para algoritmos, regras de negócio e funções puras.
-   - *Integração:* Para transações de banco, queries SQL, adapters e endpoints HTTP.
-   - *Contrato:* Para compatibilidade de schemas e APIs.
-   - *Regressão:* Para provar bugs e blindar o sistema contra reincidência.
-   - *E2E:* Para fluxos de jornada crítica do usuário.
-   - *Propriedade/Fuzzing:* Para testar invariantes matemáticas e limites de entrada.
-
----
-
-## 2. Protocolo Anti-Test-Bypass (Proibição de Burlar Testes)
-
-Antes de considerar um teste como válido, verifique se ele não comete nenhuma das infrações abaixo:
-
-- [ ] **O teste executa o código real?** (Proibido mocar o próprio código em teste ou mocar em excesso).
-- [ ] **O teste contém asserções de valor precisas?** (Proibido testes sem asserções, com `assert(true)` ou que apenas checam tipos em vez de dados).
-- [ ] **Nenhum teste foi silenciado com `.skip` ou `xit`?** (Proibido pular testes falhando).
-- [ ] **Nenhum teste existente quebrado foi deletado ou comentado?** (Erros devem ser corrigidos na causa raiz do código de produção).
-- [ ] **A evidência foi capturada via terminal nativo?** (Proibido forçar aprovação sem execução real da toolchain).
-
----
-
-## 3. Execução Cirúrgica e Eficiência de Tokens (Targeted & On-Demand)
-
-Para economizar de 5.000 a 20.000 tokens de payload de ferramentas por ciclo, aplique o princípio de execução cirúrgica:
-
-1. **Gatilho Estrito por Necessidade:** Se a alteração for puramente documental (`.md`), configs declarativas, comentários ou estilos cosméticos (Fast-Path L0), a execução de testes de código de produção é **formalmente dispensada**.
-2. **Escopo Cirúrgico por Arquivo/Módulo:** Ao modificar um módulo específico, execute **exclusivamente** o arquivo de teste correspondente àquele módulo (ex: `python3 -m unittest tests/test_<modulo>.py` ou `pytest tests/test_<modulo>.py -k test_especifico`). É expressamente proibido rodar a suíte inteira (`discover`, `pytest`, `npm test` geral) para validar refatorações ou correções locais.
-3. **Reserva da Suíte Completa:** A execução da suíte abrangente fica restrita ao gate final de release (`L3` / `release-gatekeeper`), alterações transversais no núcleo do framework ou quando expressamente requisitado pelo usuário.
+## 3. Surgical Test Execution (Token Economy)
+Save 5,000-20,000 tool tokens per turn:
+1. **L0 Fast-Path Exemption:** Pure documentation (`.md`), comments, or declarative config changes are **exempt from running code tests**.
+2. **Targeted Module Execution:** Run **only** the test file covering the modified module (`python3 -m unittest tests/test_<module>.py` or `pytest tests/test_<module>.py -k <test>`). Never run the full repository suite for local L1/L2 edits.
+3. **Full Suite Reservation:** Run the full test suite only at the final `L3` / `release-gatekeeper` gate or when explicitly requested by the user.

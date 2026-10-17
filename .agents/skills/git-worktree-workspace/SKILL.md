@@ -1,43 +1,35 @@
 ---
 name: git-worktree-workspace
-description: Isolamento de subagentes em Git Worktrees limpos.
+description: Subagent isolation in clean Git Worktrees via agy-worktree.
 ---
 
-# Git Worktree Workspace Skill
+# Git Worktree Workspace
 
-Esta skill governa o uso de **Git Worktrees** para isolar completamente a execução de subagentes e explorações arquiteturais arriscadas, impedindo a contaminação da working tree principal do desenvolvedor.
+Isolate subagent execution and high-risk architectural spikes inside dedicated **Git Worktrees** so the developer's main working tree remains clean.
 
----
+## 1. Why Git Worktrees for Subagents?
+- **Total Isolation:** Subagents operate in `.agents/worktrees/<task-name>` on an isolated branch without touching uncommitted work in the main workspace.
+- **Instant Failure Rollback:** If a spike or subagent fails verification, destroy the worktree cleanly (`git worktree remove --force`) with zero history pollution.
+- **Verified Atomic Merge:** Merge or cherry-pick into the main branch only after `test-guardian` and `release-gatekeeper` confirm 100% GREEN tests.
 
-## 1. Por que usar Git Worktrees com Agentes?
-- **Isolamento Total:** Subagentes trabalham em branches e diretórios separados (`.agents/worktrees/<task-name>`), podendo compilar, quebrar testes e rodar ferramentas sem interferir no código em edição.
-- **Rollback Instantâneo de Falhas:** Se o subagente não conseguir fazer os testes passarem ou produzir código insatisfatório, o worktree é destruído instantaneamente com `git worktree remove --force`, sem deixar resíduos de commits quebrados.
-- **Merge Atômico e Controlado:** Apenas soluções verificadas com 100% de testes aprovados pelo `release-gatekeeper` são integradas à branch de trabalho principal.
-
----
-
-## 2. Comandos e Utilitários (`agy-worktree`)
-
-O kit fornece o utilitário nativo `agy-worktree` (e `xp-worktree`):
+## 2. Native CLI (`agy-worktree` / `xp-worktree`)
 
 ```bash
-# 1. Criar um worktree isolado para uma tarefa
+# 1. Create an isolated worktree for a task
 agy-worktree --create auth-oauth-refactor --base main
 
-# 2. Listar worktrees ativos
+# 2. List active worktrees
 agy-worktree --list
 
-# 3. Remover um worktree e deletar a branch associada após conclusão ou descarte
+# 3. Remove worktree and delete its branch after merge or abort
 agy-worktree --remove auth-oauth-refactor
 
-# 4. Limpar todos os worktrees órfãos sob .agents/worktrees/
+# 4. Prune all orphan worktrees under .agents/worktrees/
 agy-worktree --clean-all
 ```
 
----
-
-## 3. Protocolo de Delegação a Subagentes
-1. O **`orchestrator`** cria o worktree isolado antes de disparar o subagente.
-2. O subagente executa todo o ciclo TDD (RED -> GREEN -> REFACTOR) exclusivamente dentro do caminho do worktree.
-3. Concluída a verificação pelo **`test-guardian`**, o **`builder`** ou **`orchestrator`** faz o cherry-pick/squash merge para a branch principal.
-4. O **`archivist`** aciona `agy-worktree --remove <task>` para manter o workspace limpo.
+## 3. Subagent Delegation Protocol
+1. **`orchestrator`** creates the worktree (or invokes subagent with `Workspace="share"` / `"branch"`).
+2. Subagent executes the full TDD cycle (`RED -> GREEN -> REFACTOR`) inside the isolated worktree.
+3. **`test-guardian`** verifies test evidence; **`builder`** or **`orchestrator`** merges into the target branch.
+4. **`archivist`** runs `agy-worktree --remove <task>` to keep the repository clean.

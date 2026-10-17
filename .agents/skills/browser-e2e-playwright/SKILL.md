@@ -1,52 +1,43 @@
 ---
 name: browser-e2e-playwright
-description: Testes E2E headless com Playwright e traces.
+description: Headless E2E browser testing with Playwright, auto-wait locators, and traces.
 ---
 
-# Browser E2E Playwright Skill
+# Browser E2E Playwright
 
-Esta skill governa a criação, execução e diagnóstico de testes de integração ponta a ponta (**End-to-End**) no navegador web através do **Playwright** (ou Puppeteer), validando fluxos críticos de usuário, acessibilidade ao vivo, erros de console e performance real de renderização.
+Build deterministic End-to-End browser tests with Playwright to verify critical user journeys, live accessibility, zero console errors, and rendering stability.
 
----
+## 1. Anti-Flaky E2E Principles
+- **Zero Artificial Sleeps:** Ban `time.sleep()` and `page.waitForTimeout()`. Use web-first auto-waiting assertions (`await expect(locator).toBeVisible()`).
+- **Resilient Locators:** Prefer user-facing semantic locators (`getByRole`, `getByLabel`, `getByTestId`) over brittle CSS chains or XPath.
+- **State Isolation:** Run every test in a fresh `BrowserContext` with clean cookies and `localStorage`.
 
-## 1. Princípios de Testes E2E Confiáveis (Anti-Flaky)
-- **Zero Sleeps Artificiais:** Proibido o uso de `time.sleep()`, `page.waitForTimeout()` ou esperas arbitrárias. Use sempre localizadores reativos com auto-wait (`page.locator('text=...').toBeVisible()`).
-- **Resiliência a Seletores:** Prefira atributos de acessibilidade ou teste semântico (`getByRole`, `getByTestId('checkout-submit-btn')`) em vez de seletores CSS frágeis ou XPaths complexos.
-- **Isolamento de Estado:** Cada teste E2E deve iniciar em um contexto de navegador limpo (`BrowserContext`), sem cookies residuais ou dados em `localStorage`.
-
----
-
-## 2. Padrão Canônico de Teste com Playwright
+## 2. Canonical Playwright Pattern
 
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('Fluxo Crítico: Cadastro e Checkout', () => {
-  test('deve completar compra com sucesso e sem erros no console', async ({ page }) => {
+test.describe('Critical Flow: Checkout', () => {
+  test('completes purchase with zero console errors', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', msg => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
     await page.goto('/pricing');
-    await page.getByRole('button', { name: /assinar plano pro/i }).click();
+    await page.getByRole('button', { name: /subscribe pro/i }).click();
 
     await expect(page).toHaveURL(/.*checkout/);
-    await page.getByLabel('Nome no Cartão').fill('João da Silva');
-    await page.getByRole('button', { name: /confirmar pagamento/i }).click();
+    await page.getByLabel('Cardholder Name').fill('Jane Doe');
+    await page.getByRole('button', { name: /confirm payment/i }).click();
 
-    await expect(page.getByText('Assinatura Confirmada!')).toBeVisible({ timeout: 5000 });
-    
-    // Verificação estrita contra erros silenciosos de JavaScript
+    await expect(page.getByText('Subscription Confirmed!')).toBeVisible({ timeout: 5000 });
     expect(consoleErrors).toHaveLength(0);
   });
 });
 ```
 
----
-
-## 3. Diagnóstico Cirúrgico de Falhas
-Ao detectar falha em teste E2E:
-1. Examine o screenshot de erro gerado automaticamente em `test-results/`.
-2. Inspecione o trace de rede (`trace.zip`) via `npx playwright show-trace`.
-3. Valide se a falha é de regressão de layout, timeout de requisição assíncrona ou quebra de backend.
+## 3. Surgical Failure Diagnostics
+1. Inspect failure screenshots in `test-results/`.
+2. Analyze network and DOM snapshots in `trace.zip` via `npx playwright show-trace`.
+3. Isolate whether the failure stems from layout regression, async timeout, or backend error.

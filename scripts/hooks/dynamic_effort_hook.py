@@ -178,6 +178,35 @@ def should_emit_badge(conv_id: str, effort: str) -> bool:
         return True
 
 
+def should_skip_duplicate_injection(
+    conv_id: str,
+    prompt_hash: str,
+    cache_dir: Optional[Path] = None,
+    ttl_seconds: float = 300.0,
+) -> bool:
+    """
+    AC-6: Prevents re-injecting ephemeralMessage on subsequent tool steps within the same user prompt.
+    Keyed strictly by (conv_id, prompt_hash) so multi-step tool calls in the same turn skip re-injection.
+    """
+    now = time.time()
+    base_dir = cache_dir or Path(tempfile.gettempdir())
+    safe_conv = re.sub(r"[^a-zA-Z0-9_-]", "_", conv_id or "default")
+    dedup_file = base_dir / f".agy_effort_prompt_{safe_conv}_{prompt_hash}.lock"
+    if dedup_file.is_file():
+        try:
+            data = json.loads(dedup_file.read_text(encoding="utf-8").strip())
+            last_time = float(data.get("time", 0.0))
+            if (now - last_time) < ttl_seconds:
+                return True
+        except Exception:
+            pass
+    try:
+        dedup_file.write_text(json.dumps({"prompt_hash": prompt_hash, "time": now}), encoding="utf-8")
+    except Exception:
+        pass
+    return False
+
+
 def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Processa o evento PreInvocation do Antigravity CLI."""
     transcript_path = payload.get("transcriptPath", "")
@@ -200,41 +229,13 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         pass
 
-    # Exibe badge informativo no terminal CLI (via stderr), deduplicado
     conv_id = payload.get("conversationId", "default")
-    inv_num = payload.get("invocationNum", 0)
-
-    init_steps = payload.get("initialNumSteps", 0)
     tpath = payload.get("transcriptPath", "")
     tpath_hash = hashlib.md5(tpath.encode("utf-8")).hexdigest()[:8] if tpath else "notrans"
-    prompt_hash = hashlib.md5(prompt_text.encode("utf-8")).hexdigest()[:8] if prompt_text else "noprompt"
-    safe_conv = re.sub(r"[^a-zA-Z0-9_-]", "_", conv_id or "default")
-    dedup_file = Path(tempfile.gettempdir()) / f".agy_effort_injected_{safe_conv}_{tpath_hash}_{prompt_hash}.lock"
-    already_injected = False
-    now = time.time()
-    if dedup_file.is_file():
-        try:
-            content = dedup_file.read_text(encoding="utf-8").strip()
-            if content.startswith("{"):
-                data = json.loads(content)
-                last_steps = data.get("init_steps")
-                last_time = float(data.get("time", 0.0))
-                if last_steps == init_steps and (now - last_time) < 300.0:
-                    already_injected = True
-            else:
-                mtime = dedup_file.stat().st_mtime
-                if (now - mtime) < 60.0:
-                    already_injected = True
-        except Exception:
-            pass
+    prompt_hash = hashlib.md5(f"{tpath_hash}:{prompt_text}".encode("utf-8")).hexdigest()[:12] if prompt_text else f"{tpath_hash}_noprompt"
 
-    if already_injected:
+    if should_skip_duplicate_injection(conv_id, prompt_hash):
         return {"injectSteps": []}
-
-    try:
-        dedup_file.write_text(json.dumps({"init_steps": init_steps, "time": now}), encoding="utf-8")
-    except Exception:
-        pass
 
     if should_emit_badge(conv_id, decision.effort):
         try:
@@ -245,16 +246,14 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Monta a diretriz de execução ephemeral para orientar o modelo neste turno
     effort_upper = decision.effort.upper()
     if decision.effort == "high":
-        guidance = "Operar em modo HIGH: máxima profundidade analítica, matriz TDD estrita, sem workarounds e com reflexão arquitetural completa."
+        guidance = "HIGH mode: deep root-cause analysis, strict TDD, zero workarounds, and Pre-Response Self-Audit."
     elif decision.effort == "low":
-        guidance = "Operar em modo LOW: resposta direta, concisa e enxuta, sem prolixidade e estritamente Zero-Tool para consultas teóricas/conceituais."
+        guidance = "LOW mode: direct, concise response, strictly Zero-Tool for conceptual queries."
     else:
-        guidance = "Operar em modo MEDIUM: equilíbrio entre eficiência de tokens e análise metódica."
+        guidance = "MEDIUM mode: balanced token efficiency, surgical tests, and Pre-Response Self-Audit."
 
-    # Obtém o bloco oficial de telemetria ao vivo via Language Server RPC
     live_footer = ""
     try:
         from scripts.token_tracker import (
@@ -268,23 +267,18 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         turn = calculate_turn_stats(steps)
         model_name = detect_model_name(conv_id, steps)
         user_effort = detect_effort(conv_id, steps=steps)
-        # Se o usuário selecionou explicitamente no IDE (High, Thinking, etc.), prioriza a seleção real do modelo
         active_effort = user_effort if user_effort and user_effort.lower() != "medium" else decision.effort
-        # Consulta cota oficial ao vivo via Fast Path do Language Server (~5ms)
         stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=True, effort=active_effort)
-        live_footer = format_message_footer(stats, turn)
+        live_footer = format_message_footer(stats, turn, compact=True)
     except Exception:
         live_footer = ""
 
     ephemeral_msg = (
-        f"⚡ [AGY-EFFORT-ACTIVE] Modulação Automática Ativa: {effort_upper} "
-        f"| Risco: {decision.risk_level} | Motivo: {decision.reason}\n"
-        f"🎯 Diretriz de Execução: {guidance}"
+        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level} | {guidance}"
     )
     if live_footer:
         ephemeral_msg += (
-            f"\n\n📋 TELEMETRIA AO VIVO OFICIAL DESTE TURNO (Language Server RPC):\n"
-            f"OBRIGATÓRIO: Copie e cole com exatidão matemática o bloco abaixo como rodapé final da sua resposta:\n"
+            f"\n📋 TELEMETRIA AO VIVO OFICIAL DESTE TURNO (copie no rodapé final):\n"
             f"{live_footer}"
         )
 

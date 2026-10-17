@@ -1,66 +1,43 @@
 ---
 name: cro-landing-pages
-description: Otimização de conversão (CRO) e redução de atrito.
+description: Conversion Rate Optimization (CRO), 5-second test, CTA hierarchy, and forms.
 ---
 
-# CRO Landing Pages: Otimização de Conversão & Redução de Atrito
+# CRO Landing Pages: Conversion Optimization & Friction Reduction
 
-> **Propósito:** Auditar e estruturar páginas para maximizar a conversão de visitantes em leads e clientes pagantes, eliminando gargalos, hesitações e distrações no funil de decisão.
+Audit and structure landing pages to maximize visitor-to-customer conversion by eliminating hesitation and funnel leaks.
 
----
+## 1. The 5-Second Test (Value Proposition Clarity)
+Within 5 seconds of landing, a visitor must answer:
+1. **What is this?** (Product category)
+2. **What do I get out of it?** (Primary benefit)
+3. **What do I do next?** (Unmistakable primary CTA)
 
-## 1. Teste dos 5 Segundos (Clareza da Proposta de Valor)
+## 2. CTA Hierarchy & Placement Discipline
+- **One Primary Goal Per Page:** Dedicate the page to a single conversion action (e.g., Start Trial, Book Demo, Purchase).
+- **Primary vs. Secondary CTA:**
+  - *Primary:* High-contrast solid button.
+  - *Secondary:* Low-emphasis ghost/outline button for researchers (*"Watch 2-min demo"*).
+- **Strategic Repetition:** Place the primary CTA at 4 decision points: (1) Hero above the fold, (2) after benefits, (3) in pricing table, (4) final footer/sticky bar.
+- **Zero Escape Hatches:** On dedicated campaign landing pages, strip full top navigation menus that leak traffic away from conversion.
 
-Ao carregar a página pela primeira vez, um visitante precisa responder mentalmente a 3 perguntas em menos de 5 segundos:
-1. **O que é isso?** (Categoria e produto)
-2. **O que eu ganho com isso?** (Principal benefício)
-3. **Qual é o próximo passo?** (CTA evidente)
+## 3. High-Impact Social Proof
+Pair claims with verifiable proof throughout the scroll:
+- **Logo Strip:** Directly below the Hero for instant authority.
+- **Quantified Testimonials:** Include full name, role, company, real photo, and measurable transformation (*"Cut client onboarding time by 42% in 3 weeks"*).
+- **Stat Callouts:** Large tabular numerals (`10,000+ active teams`, `$4.2M processed`, `99.98% uptime`).
 
-Se a resposta a qualquer uma dessas perguntas for confusa, a taxa de rejeição (*bounce rate*) dispara.
+## 4. Form Optimization & Friction Reduction
+- **Minimal Fields:** Request only essential fields upfront (e.g., email + password); collect profile details post-signup.
+- **Multi-Step Forms:** Split long flows into 2-3 steps with a visual progress bar starting at 25%.
+- **Inline Validation:** Validate fields in real time with helpful guidance before submit.
+- **Risk Reversal Microcopy:** *"No credit card required • 2-minute setup • GDPR/LGPD compliant"*.
 
----
-
-## 2. Hierarquia e Disciplina de CTAs
-
-- **Um Objetivo Primário por Página:** Cada landing page deve ter uma única ação primária desejada (ex: Criar Conta, Agendar Demo, Comprar).
-- **CTA Primário vs Secundário:**
-  - *Primário:* Botão de contraste forte, preenchido, impossível de passar despercebido.
-  - *Secundário:* Botão outline/fantasma ou link discreto para usuários que ainda estão em fase de pesquisa (ex: "Ver demonstração" ou "Falar com especialista").
-- **Repetição Estratégica:** Repita o CTA primário nos momentos-chave de decisão:
-  - 1. No Hero (acima da dobra);
-  - 2. Após a seção de benefícios/recursos;
-  - 3. Após a tabela de preços;
-  - 4. No encerramento da página (Sticky Bar ou seção final de CTA).
-- **Sem Pontos de Fuga em Landing Pages:** Em páginas de captura dedicadas a tráfego pago ou campanhas, remova o menu de navegação completo do topo para manter o foco total na conversão.
-
----
-
-## 3. Prova Social de Alto Impacto
-
-A prova social deve ser distribuída ao longo da página, sempre acompanhando afirmações de valor:
-- **Logos de Clientes:** Diretamente abaixo do Hero para conferir autoridade imediata.
-- **Depoimentos Ricos:** Com nome completo, cargo, empresa e foto real. Devem destacar uma transformação mensurável, não apenas elogios genéricos ("Adorei o produto").
-  - *Exemplo de Depoimento Forte:* *"Em apenas 3 semanas de uso, nossa equipe reduziu o tempo de onboarding de clientes em 42%. O suporte foi impecável."*
-- **Métricas Numéricas e Estatísticas:** Apresentadas em tipografia grande (`+10.000 equipes ativas`, `R$ 4.2M processados`, `99.98% de disponibilidade`).
-
----
-
-## 4. Otimização de Formulários & Redução de Atrito
-
-- **Menos Campos = Mais Conversões:** Peça apenas o estritamente necessário no primeiro momento (ex: apenas e-mail ou e-mail + senha). Colete informações adicionais após o primeiro login.
-- **Formulários em Múltiplas Etapas (Multi-Step Forms):** Para cadastros mais longos, quebre em 2 ou 3 passos lógicos com barra de progresso visual.
-- **Preenchimento Automático e Validação Inline:** Valide e-mails e campos em tempo real à medida que o usuário digita, evitando erros frustrantes após o clique no botão.
-- **Reversão de Risco Próxima ao Botão:**
-  - *"Sem necessidade de cartão de crédito • Configuração em 2 minutos • LGPD compliant"*
-
----
-
-## 5. Matriz de Auditoria Rápida de CRO
-
-- [ ] A proposta de valor é compreendida em 5 segundos?
-- [ ] O CTA primário é visível acima da dobra sem precisar rolar?
-- [ ] O texto do botão comunica valor tangível, não apenas uma ação burocrática?
-- [ ] Existem depoimentos com nomes, cargos e fotos reais?
-- [ ] As principais objeções (preço, segurança, complexidade de migração) são respondidas no FAQ?
-- [ ] O formulário contém apenas os campos indispensáveis?
-- [ ] A versão mobile carrega instantaneamente e possui CTAs confortáveis para toque no polegar?
+## 5. Rapid CRO Audit Checklist
+- [ ] Value proposition clear within 5 seconds?
+- [ ] Primary CTA visible above the fold without scrolling?
+- [ ] Button copy states tangible value rather than generic action?
+- [ ] Testimonials feature real names, roles, photos, and metrics?
+- [ ] Pricing, security, and migration objections answered in FAQ?
+- [ ] Form stripped to minimum required fields?
+- [ ] Mobile viewport loads fast with thumb-friendly 48x48px CTAs?

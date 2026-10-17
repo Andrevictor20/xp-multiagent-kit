@@ -1,9 +1,10 @@
 ---
 name: component-registry
-description: Registro e governança de componentes reaproveitáveis.
+description: Catalog and governance of reusable UI components to prevent duplication.
 ---
 
 # Component Registry
 
-Mantenha uma lista atualizada ou registro (`components/`) de botões, inputs, cards, diálogos, etc.
-Sempre consulte o Component Registry antes de criar um componente novo para evitar duplicações e *design system drift*.
+Maintain and consult a single catalog of reusable UI primitives and components (`components/`):
+- **Check Before Creating:** Always search the existing component registry (buttons, inputs, cards, modals, tables, badges) before creating a new component.
+- **Prevent Design Drift:** Extend existing variants via props/tokens rather than duplicating near-identical components.

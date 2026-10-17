@@ -28,11 +28,12 @@ mkdir -p "$GLOBAL_SKILLS_DIR"
 # 3. Configurar AGENTS.md como Global Dispatcher Minimalista (elimina duplicação de 5k tokens por turno)
 echo "🔗 Gerando AGENTS.md mestre global como dispatcher minimalista..."
 cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
-# Antigravity Global Dispatcher — XP Multi-Agent Kit v2
+# Global Agent Dispatcher — XP Multi-Agent Kit v3.0 (Agnostic Core)
 
-Regra mestra global para execução de agentes:
-1. Se o repositório/workspace ativo contiver um arquivo `AGENTS.md`, siga estritamente as diretrizes contidas nele como fonte única da verdade.
-2. Caso o workspace não contenha `AGENTS.md`, aplique a disciplina canônica do kit: TDD estrito (RED->GREEN->REFACTOR), roteamento por risco L0-L3, telemetria em 3 camadas, No Workarounds e persistência no `.agents/memory/PROJECT_MEMORY.md`.
+Master global rule for agent execution (Antigravity, OpenCode, Cursor, Qoder):
+1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
+2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, compact 4-line token telemetry (`xp-tokens --turn` / `agy-tokens --turn`), Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.
+3. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
 EOF
 
 # 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
@@ -69,13 +70,14 @@ ln -sfn "$KIT_DIR/.agents/rules" "$GLOBAL_CONFIG_DIR/rules"
 ln -sfn "$KIT_DIR/.agents/templates" "$GLOBAL_CONFIG_DIR/templates"
 ln -sfn "$KIT_DIR/.agents/memory" "$GLOBAL_CONFIG_DIR/memory"
 
-# 4.2. Renderizar hooks.json: materializa ${KIT_ROOT} em hooks.rendered.json (C2)
+# 4.2. Renderizar hooks.json diretamente para a configuração global
+HOOKS_SRC="$GLOBAL_CONFIG_DIR/hooks.json"
 if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
-  echo "🔗 Renderizando hooks.json com caminhos absolutos..."
+  echo "🔗 Renderizando hooks.json com caminhos absolutos em $GLOBAL_CONFIG_DIR/hooks.json..."
   python3 -c "
 import json
 src = '$KIT_DIR/.agents/hooks.json'
-dst = '$KIT_DIR/.agents/hooks.rendered.json'
+dst = '$GLOBAL_CONFIG_DIR/hooks.json'
 kit = '$KIT_DIR'
 try:
     with open(src) as f:
@@ -88,10 +90,10 @@ try:
 except Exception:
     pass
 " 2>/dev/null || true
+  rm -f "$KIT_DIR/.agents/hooks.rendered.json"
+else
+  HOOKS_SRC="$KIT_DIR/.agents/hooks.json"
 fi
-HOOKS_SRC="$KIT_DIR/.agents/hooks.rendered.json"
-[ -f "$HOOKS_SRC" ] || HOOKS_SRC="$KIT_DIR/.agents/hooks.json"
-ln -sf "$HOOKS_SRC" "$GLOBAL_CONFIG_DIR/hooks.json"
 
 # 4.3. Garantir paridade com Antigravity CLI
 CLI_DIR="$HOME/.gemini/antigravity-cli"
@@ -190,8 +192,19 @@ ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/agy-kit"
 ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/xp-kit"
 ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/agy-design"
 ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/xp-design"
+ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/xp-run"
+ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/xp-sanitize"
+ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$HOME/.local/bin/xp-turn"
+ln -sf "$KIT_DIR/scripts/evidence_recorder.py" "$HOME/.local/bin/xp-evidence"
+ln -sf "$KIT_DIR/scripts/conformance_report.py" "$HOME/.local/bin/xp-conformance"
+ln -sf "$KIT_DIR/scripts/skill_index.py" "$HOME/.local/bin/xp-skill-index"
+ln -sf "$KIT_DIR/scripts/agy-handoff" "$HOME/.local/bin/xp-handoff"
+ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/xp-health"
+ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/xp-effort"
+ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/agy-spec"
+ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/xp-spec"
 
-echo "   ✅ agy-tokens, xp-tokens, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
+echo "   ✅ agy-tokens, xp-tokens, xp-spec, agy-spec, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)

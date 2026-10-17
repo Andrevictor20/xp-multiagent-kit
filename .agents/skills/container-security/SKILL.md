@@ -1,14 +1,14 @@
 ---
 name: container-security
-description: Hardening de Dockerfiles, imagens non-root e builds.
+description: Dockerfile hardening, non-root execution, minimal base images, and SBOMs.
 ---
 
 # Container Security
 
-Quando lidar com Dockerfiles e orchestradores, certifique-se de:
-- Executar como usuário não-root.
-- Imagem base mínima (distroless/alpine).
-- Tags/versões pinnadas (não usar `latest`).
-- Secrets NUNCA dentro da imagem.
-- Sem flags `privileged` desnecessárias ou `host networking` desprotegido.
-- Suporte a verificação de vulnerabilidades da imagem e SBOM.
+Harden all Dockerfiles and container workloads before deployment:
+- **Non-Root Execution:** Always create and switch to an unprivileged user (`USER 10001:10001`).
+- **Minimal Base Images:** Use multi-stage builds with `distroless` or `alpine` runtime images.
+- **Pinned Versions:** Pin exact image tags and SHA256 digests; never use `:latest`.
+- **Zero Embedded Secrets:** Never copy `.env`, SSH keys, or credentials into image layers or build args.
+- **Least-Privilege Runtime:** Ban `--privileged`, host network/PID namespaces, and drop all Linux capabilities (`cap_drop: [ALL]`) with `readOnlyRootFilesystem: true`.
+- **Vulnerability Scanning:** Scan built images with Trivy/Grype and attach an SBOM in CI.

@@ -10,7 +10,7 @@
 ## 1. Contexto & Problema de Negócio
 
 - **Por que estamos construindo isso?**  
-  Modelos de IA possuem um viés sistemático de *over-engineering*: geram abstrações prematuras (fábricas para classes únicas, wrappers desnecessários), adicionam bibliotecas externas pesadas para utilidades que a plataforma ou a standard library já oferecem nativamente, e produzem explicações mais longas do que o código necessário. A análise do [Ponytail](file:///home/andrevmp/Downloads/xp-multiagent-kit/ponytail-main) comprovou que a aplicação de uma "Escada de 7 Degraus de Simplificação" e de um catálogo de substituição nativa reduz em média 54% das linhas de código, 22% dos tokens e 20% do custo, com 100% de conformidade com segurança.
+  Modelos de IA possuem um viés sistemático de *over-engineering*: geram abstrações prematuras (fábricas para classes únicas, wrappers desnecessários), adicionam bibliotecas externas pesadas para utilidades que a plataforma ou a standard library já oferecem nativamente, e produzem explicações mais longas do que o código necessário. A análise do [Ponytail](ponytail-main) comprovou que a aplicação de uma "Escada de 7 Degraus de Simplificação" e de um catálogo de substituição nativa reduz em média 54% das linhas de código, 22% dos tokens e 20% do custo, com 100% de conformidade com segurança.
   
 - **Impacto esperado:**  
   1. Redução permanente no footprint de código gerado pelo `builder`;

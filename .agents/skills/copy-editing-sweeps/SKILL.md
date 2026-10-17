@@ -1,60 +1,29 @@
 ---
 name: copy-editing-sweeps
-description: Edição de copy em 7 passadas contra clichês.
+description: 7-sweep copy editing framework to eliminate AI cliches and weak prose.
 ---
 
-# Copy Editing Sweeps: O Framework das 7 Passadas de Edição
+# Copy Editing Sweeps: The 7-Pass Editing Framework
 
-> **Propósito:** Polir e elevar textos existentes de forma metódica e focada. Uma revisão geral e dispersa quase sempre deixa passar vícios e inconsistências; o método de passadas sequenciais garante excelência linha por linha.
+Polish interface and marketing copy systematically using 7 sequential, single-focus passes.
 
----
+## 1. The 7 Sequential Editing Sweeps
+1. **Sweep 1 — Clarity:** Cut sentences over 25 words, remove unexplained jargon, and ensure instant first-read comprehension.
+2. **Sweep 2 — Voice & Tone:** Eliminate jarring tone shifts and keep brand personality consistent from hero to footer.
+3. **Sweep 3 — "So What?":** Connect every technical feature to a concrete user benefit (*"...which means you can..."*).
+4. **Sweep 4 — Prove It:** Replace unbacked claims (*"fastest on the market"*) with verifiable metrics, benchmarks, or named testimonials.
+5. **Sweep 5 — Specificity:** Replace vague phrases (*"save time"*) with concrete numbers (*"save 5 hours every week and approve payouts in 1 click"*).
+6. **Sweep 6 — Heightened Emotion:** Contrast the "before" state (stress, manual errors, delays) against the "after" state (calm, speed, control).
+7. **Sweep 7 — Zero Risk:** Place friction removers (free trial, no credit card, 1-click cancel, refund guarantee) directly beside CTAs.
 
-## 1. As 7 Passadas de Edição
+## 2. Immediate AI & Corporate Cliche Cut List
 
-Execute a revisão do texto passando exatamente por estas 7 etapas:
-
-### Passada 1: Clareza (*Clarity*)
-- **Foco:** Qualquer pessoa de fora do projeto compreende o que está escrito na primeira leitura?
-- **Ação:** Corte frases com mais de 25 palavras, elimine termos técnicos não explicados e simplifique construções rebuscadas.
-
-### Passada 2: Voz & Tom (*Voice & Tone*)
-- **Foco:** O tom está consistente do início ao fim?
-- **Ação:** Elimine oscilações bruscas (começar descontraído e de repente virar corporativo frio). Mantenha a personalidade da marca afiada.
-
-### Passada 3: "E Daí?" (*So What?*)
-- **Foco:** Cada frase técnica conecta diretamente a um benefício real para o usuário?
-- **Ação:** Para cada recurso listado, pergunte *"E daí?"* e adicione a ponte *"o que significa que você..."*.
-
-### Passada 4: Prove (*Prove It*)
-- **Foco:** Cada promessa ou afirmação é sustentada por fatos?
-- **Ação:** Substitua afirmações vazias como *"O mais rápido do mercado"* ou *"Amado por milhares"* por dados concretos, depoimentos reais ou números auditáveis.
-
-### Passada 5: Especificidade (*Specificity*)
-- **Foco:** O texto é vívido e preciso ou abstrato e genérico?
-- **Ação:** Substitua expressões vagas por números e prazos:
-  - *Vago:* "Economize tempo e melhore seu fluxo."
-  - *Específico:* "Economize 5 horas semanais e aprove pagamentos em 1 clique."
-
-### Passada 6: Emoção Elevada (*Heightened Emotion*)
-- **Foco:** O leitor sente a dor do problema e o alívio da solução?
-- **Ação:** Pinte o cenário do "antes" (estresse, desorganização, atrasos) e o contraste com o "depois" (tranquilidade, velocidade, controle).
-
-### Passada 7: Risco Zero (*Zero Risk*)
-- **Foco:** Todas as barreiras e medos finais de conversão foram neutralizados?
-- **Ação:** Verifique a presença de garantias de devolução, períodos de teste sem cartão, cancelamento fácil e suporte humanizado diretamente ao lado dos botões de ação.
-
----
-
-## 2. Lista de Corte Imediato de Palavras Vazias
-
-Corte ou substitua imediatamente os seguintes clichês de IA e corporativos:
-
-| Termo Fraco / Vício | Substituto Direto e Forte |
+| Weak / Slop Term | Strong Direct Replacement |
 | :--- | :--- |
-| Utilizar / Alavancar | **Usar** |
-| Facilitar / Viabilizar | **Ajudar / Fazer** |
-| Solução inovadora / disruptiva | *(Eliminar o adjetivo e descrever o resultado prático)* |
-| Robusto / De ponta | **Seguro / Confiável / Rápido** |
-| Perfeitamente integrado | **Conecta em 1 clique** |
-| Realmente / Muito / Extremamente | *(Corte o advérbio; use um verbo ou substantivo forte)* |
-| Travessão longo (`—` ou `–`) | **Ponto final, vírgula, dois-pontos ou hífen comum `-`** |
+| Utilize / Leverage | **Use** |
+| Facilitate / Enable | **Help / Let / Make** |
+| Innovative / Disruptive solution | *(Delete adjective; state the concrete outcome)* |
+| Robust / Cutting-edge | **Secure / Reliable / Fast** |
+| Seamlessly integrated | **Connects in 1 click** |
+| Really / Very / Extremely | *(Cut adverb; choose a stronger verb or noun)* |
+| Em-dash (`—`) or En-dash (`–`) | **Period, comma, colon, or standard hyphen `-`** |

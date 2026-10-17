@@ -20,6 +20,8 @@ Uso:
 
 import argparse
 import os
+import platform
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -38,7 +40,14 @@ from turn_telemetry import record_turn  # noqa: E402
 
 
 def build_argv(command: str) -> list:
-    """Escolhe o interpretador: bash para sintaxe POSIX quando o shell diverge."""
+    """Escolhe o interpretador: cmd.exe/bash no Windows; bash para sintaxe POSIX quando shell diverge."""
+    if platform.system() == "Windows":
+        bash = shutil.which("bash")
+        if bash:
+            return [bash, "-c", command]
+        comspec = os.environ.get("COMSPEC", "cmd.exe")
+        return [comspec, "/c", command]
+
     if os.environ.get("AGY_NO_SHELL_WRAP") or not needs_posix_wrapper():
         return [os.environ.get("SHELL", "/bin/sh"), "-c", command]
     return [posix_wrapper(), "-c", command]

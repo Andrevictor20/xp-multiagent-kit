@@ -1,6 +1,3 @@
-# Database Policy
+# Database Architecture & Migration Safety Policy
 
-- Proteger as queries contra injeções.
-- Garantir a integridade (FKs, Null constraints).
-- Migrations devem considerar a segurança da transição (schema compatibility) e devem ser reversíveis.
-- Revisões de DB (N+1, queries caras) devem ocorrer antes do merge de grandes funcionalidades.
+Require explicit indexing for foreign keys and filter predicates, prevent N+1 queries, enforce transaction boundaries, and execute zero-downtime Expand-and-Contract schema migrations.

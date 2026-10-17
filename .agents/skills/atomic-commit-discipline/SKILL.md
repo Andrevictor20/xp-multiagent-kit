@@ -1,62 +1,49 @@
 ---
 name: atomic-commit-discipline
-description: Commits atômicos, categorizados e testados.
+description: Atomic, categorized, CI-verified commits and token-efficient Git ops.
 ---
 
 # Atomic Commit Discipline
 
-## Regra de ouro
+## Golden Rule
+**Every commit on the main branch must pass the full CI pipeline and be immediately deployable.** Never push a broken commit intending to "fix it in the next commit".
 
-**Todo commit em branch principal passa no CI completo e é, por definição, deployável.** Não existe "commit quebrando que conserta no próximo". Se uma mudança não está pronta para produção, ela não vai para o branch principal ainda.
+## Commit Size & Scope
+- **One Commit = One Cohesive Change:** A small feature, bugfix, isolated refactor, or config update. Never mix unrelated concerns (e.g., large refactor + new feature) in a single commit.
+- Split multi-concern changes into sequential, independently verifiable commits.
+- Prefer frequent small commits over monolithic end-of-day merges.
 
-## Tamanho e escopo do commit
+## Conventional Commits Format
+Use `<type>(<optional-scope>): <concise imperative summary>`:
 
-- Um commit = uma unidade de mudança coerente: uma feature pequena, um fix, um refactor, um ajuste de config. Não misture categorias diferentes no mesmo commit (ex.: não junte um refactor grande com uma feature nova).
-- Se, ao preparar um commit, você perceber que ele mistura mais de uma preocupação, pare e separe em commits sequenciais menores antes de seguir.
-- Prefira várias entregas pequenas ao longo do dia a uma única entrega grande no fim — isso é "integração contínua de verdade", não uma versão disfarçada de merge grande no fim de um ciclo longo.
-
-## Convenção de mensagem (categorização por prefixo)
-
-Use **Conventional Commits** (`<tipo>(<escopo opcional>): <mensagem>`) para que o histórico seja legível e auditável:
-
-| Prefixo | Quando usar |
+| Prefix | Usage |
 |---|---|
-| `feat:` | Feature nova (pode incluir escopo, ex: `feat(api):`) |
-| `fix:` | Correção de bug |
-| `refactor:` | Refatoração de código que não adiciona feature nem corrige bug (inclui reescritas e remoção de duplicação) |
-| `perf:` | Alteração de código com foco na melhoria de performance |
-| `test:` | Adição, correção ou manutenção de testes (sem alterar código de produção) |
-| `docs:` | Atualizações exclusivas de documentação |
-| `chore:` | Ajustes de configuração, linting, dependências ou tarefas secundárias |
-| `build:` / `ci:` | Mudanças no pipeline de CI/CD, scripts de build ou infraestrutura |
+| `feat:` | New feature (e.g., `feat(api): add invoice export endpoint`) |
+| `fix:` | Bug fix |
+| `refactor:` | Code restructuring without behavior change |
+| `perf:` | Performance optimization |
+| `test:` | Adding or updating tests only |
+| `docs:` | Documentation-only changes |
+| `chore:` | Config, linting, or dependency maintenance |
+| `build:` / `ci:` | CI/CD pipeline, build scripts, or infra changes |
 
-Mensagens devem ser específicas o suficiente para que alguém (ou outro agente) entenda o que mudou sem abrir o diff — evite mensagens genéricas como "updates" ou "fixes".
+Write specific messages that explain *what* changed without opening the diff; ban vague messages like `"updates"` or `"fixes"`.
 
-## Antes de finalizar um commit, valide
+## Pre-Commit Verification Checklist
+1. Passes full CI gate (lint, security scan, test suite — see `ci-security-gate`).
+2. Uses accurate Conventional Commit prefix.
+3. Leaves zero broken or skipped tests.
+4. Decomposes large changes into small sequential commits.
 
-1. O commit passa no pipeline de CI completo (lint, segurança, testes) — veja a skill `ci-security-gate` para o detalhe do pipeline.
-2. O commit está categorizado corretamente com o prefixo certo.
-3. O commit não deixa o projeto em estado pior do que estava antes (nada quebrado, nenhum teste pulado).
-4. Se a mudança for grande, ela foi quebrada em múltiplos commits menores e sequenciais, cada um validável isoladamente.
+## Token-Efficient Git Operations (< 1.0k tokens)
+- **Status:** `git status -s` or `agy-git-ops status` (~50 tokens).
+- **Diff Inspection:** `git diff --stat` or `agy-git-ops diff`; inspect specific file diffs via `agy-compact --diff`.
+- **History:** `git log -n 5 --oneline` or `agy-git-ops log`.
+- **Commit Summary:** `git show --stat <hash>` instead of full `git show`.
+- **Push:** `git push --quiet` or `agy-git-ops push`.
 
-## Sinais de alerta a reportar
-
-- Commits muito grandes e infrequentes (ex.: um commit por dia com centenas de arquivos) — geralmente indica falta de integração contínua real, ou que uma refatoração de emergência está sendo necessária (ver skill `refactor-watchdog`).
-- Mensagens de commit vagas demais para reconstruir o histórico do projeto.
-- Qualquer commit que não passou no CI sendo enviado "temporariamente" com a intenção de corrigir depois.
-
-## Eficiência de Tokens em Operações Git (< 1.0k tokens)
-
-Para evitar inflar o contexto durante staging, commit e push:
-- **Status:** Use `git status -s` ou `agy-git-ops status` (~50 tokens vs ~400 tokens).
-- **Inspeção de Diff:** Use `git diff --stat` ou `agy-git-ops diff` para validar escopo. Diff detalhado somente via `agy-compact --diff` em arquivos específicos.
-- **Histórico:** Use `git log -n 5 --oneline` ou `agy-git-ops log`.
-- **Inspeção de Commit:** Use `git show --stat <hash>` em vez de `git show <hash>`.
-- **Push:** Use `git push --quiet` ou `agy-git-ops push`.
-
-## Uso em auditoria de projeto
-
-Se pedirem para avaliar a saúde de um projeto pelo histórico de commits, calcule e reporte:
-- % de commits por categoria (feature vs. fix vs. refactor/hardening vs. segurança vs. infra vs. testes vs. docs) — um projeto saudável raramente tem mais de ~40-50% só de features novas; o resto é o trabalho que sustenta o sistema em produção.
-- Commits por dia (throughput) e se há padrão de "explosão seguida de silêncio" (sinal de commits grandes/infrequentes em vez de small releases).
-- Se há evidência de commits de refatoração de emergência (muitas linhas movidas de uma vez, especialmente logo após um período de crescimento rápido de um único arquivo).
+## Repository Health Audit Metrics
+When auditing commit history, report:
+- **Category distribution (%):** Healthy production repos balance `feat` (~40-50%) with `fix`, `refactor`, `test`, `ci`, and `docs`.
+- **Throughput cadence:** Steady small releases vs. burst-then-silence monoliths.
+- **Emergency refactors:** Massive single-commit file splits following unchecked God-file growth (see `refactor-watchdog`).

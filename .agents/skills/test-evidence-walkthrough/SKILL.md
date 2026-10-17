@@ -1,17 +1,17 @@
 ---
 name: test-evidence-walkthrough
-description: Validação de evidência de testes nativos por risco.
+description: Native test execution evidence recording and verification by risk level.
 ---
 
 # Test Evidence Walkthrough
 
-Evidências vazias como "os testes passaram" não são aceitas. O nível de evidência exigido depende do tipo da tarefa.
+Verbal claims like *"tests passed"* are rejected. Every code change must provide verifiable execution evidence proportional to its risk level (`agy-evidence run` / `agy-evidence render`).
 
-## Evidence Levels
-- **L0 — Trivial**: (typo, documentação). Nenhuma evidência de teste exigida.
-- **L1 — Small**: (CSS simples, alterações declarativas). Comando e resultado do comando.
-- **L2 — Feature**: (nova funcionalidade). Execução do teste + output bruto (ex: colado no walkthrough).
-- **L3 — Release**: (mudança em ambiente). CI artifact / log do pipeline de aprovação de CI.
-- **L4 — Mudança Crítica**: Evidência originada de staging/produção, garantindo que foi validada além do ambiente de dev.
+## Evidence Levels by Risk
+- **L0 (Trivial — docs, typos, minor CSS):** Exempt from code test execution.
+- **L1 (Small — isolated fix/refactor):** Targeted test command + exit code + concise summary line.
+- **L2 (Feature — new module/API):** Targeted test execution + Conformance Report table (`walkthrough.md` receives the summary table; full raw log stays in `.agents/runtime/evidence/`).
+- **L3 (Critical — auth, payments, migrations, release):** Full test suite + SAST/SCA gate + CI artifact log.
+- **L4 (Production Release):** Post-deploy staging/production health check and RED telemetry verification.
 
-A tarefa não avança de fase (RED ou GREEN) se o nível de evidência exigido não for apresentado.
+Never advance from RED to GREEN or mark a task complete without the required evidence level.

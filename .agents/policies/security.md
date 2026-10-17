@@ -1,6 +1,3 @@
-# Security Policy
+# Security & Zero Trust Policy (SSDLC)
 
-- Seguir o Secure Software Development Life Cycle (SSDLC).
-- A verificação de segurança vai além do scanner (SAST). Envolve julgamento humano (Threat Modeling via `sentinel`).
-- Seguir restrições de Crypto, Container Security, e Supply Chain Security.
-- Vulnerabilidades altas bloqueiam releases.
+Enforce STRIDE threat modeling on L3 surfaces, strict input validation, BOLA/IDOR authorization checks, zero hardcoded secrets, non-root containers, and dependency vulnerability gates.

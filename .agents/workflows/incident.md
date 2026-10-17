@@ -1,13 +1,8 @@
 ---
 name: incident
-description: "Workflow rápido para mitigação de incidentes em produção."
+description: "Production incident response: immediate mitigation, rollback, and blameless post-mortem."
 ---
-# Incident Workflow
+# Incident Response Workflow
 
 ## Flow
-Passo 0: Fast Context Bootstrap (`.agents/memory/PROJECT_MEMORY.md`) → detect → stop rollout → rollback/mitigate → verify recovery → **Passo Final OBRIGATÓRIO (Hard-Enforcement Gate): Escrita Física em Disco no `.agents/memory/PROJECT_MEMORY.md` com incidente & lição aprendida `[L-NNN]` pelo `archivist`**
-
-## Guidelines
-- Prioridade máxima: restaurar disponibilidade.
-- TDD é obrigatório para o fix definitivo pós-incidente, mas o rollback pode e deve ser instantâneo se suportado pelo pipeline.
-- **Hard-Enforced Auto-Sync:** O `archivist` DEVE obrigatoriamente persistir em disco o incidente, a mitigação e a lição aprendida na seção de Gotchas & Hurdles do `.agents/memory/PROJECT_MEMORY.md`.
+Step 0: Read `.agents/memory/PROJECT_MEMORY.md` → Triage severity & blast radius → `shipper` executes immediate rollback or feature-flag kill switch → verify RED metrics recovery (Rate, Errors, Duration) → isolate root cause & add RED regression test → record `[L-NNN]` post-mortem in `.agents/memory/PROJECT_MEMORY.md`.

@@ -1,70 +1,32 @@
 ---
 name: software-evolution-and-roadmapping
-description: Roadmapping técnico, horizontes Now/Next/Later e Strangler Fig.
+description: Technical roadmapping, Now/Next/Later horizons, Strangler Fig, and RFC 8594.
 ---
 
 # Software Evolution & Strategic Technical Roadmapping
 
-> **Propósito:** Conectar a visão de produto e arquitetura a um plano de execução de longo prazo (6 a 24 meses), eliminando reescritas traumáticas ("Big Bang"), prevenindo obsolescência técnica (EOL) e garantindo escalabilidade econômica e sustentável.
+Connect product and architecture vision to a sustainable 6-24 month evolution plan without "Big Bang" rewrites or EOL obsolescence.
 
----
+## 1. Dynamic Horizons: Now / Next / Later
 
-## 1. O Modelo de Horizontes: Now / Next / Later
-
-Substitua cronogramas rígidos de longo prazo (diagramas de Gantt) que perdem validade na primeira mudança por um modelo dinâmico de 3 horizontes:
-
-| Horizonte | Foco Principal | Validação Exigida |
+| Horizon | Focus | Required Validation |
 | :--- | :--- | :--- |
-| **NOW (1–4 sem)** | Escopo contratado, granularidade alta | TDD estrito e Acceptance Criteria |
-| **NEXT (1–3 meses)** | Arquitetura preliminar e metas validadas | Spikes técnicos para mitigar risco |
-| **LATER (3–12+ meses)** | Direção de escala e mudanças estruturais | Gatilhos objetivos (*triggers*) de transição |
+| **NOW (1-4 wks)** | Committed scope, high granularity | Strict ATDD/TDD + Acceptance Criteria |
+| **NEXT (1-3 mos)** | Preliminary architecture & validated goals | Preliminary ADRs + technical spikes |
+| **LATER (3-12+ mos)** | Strategic scale & structural shifts | Objective transition triggers (metrics) |
 
-- **Now (Compromisso Imediato):** Tarefas ativas decompostas em Acceptance Criteria (ATDD), com dependências resolvidas e entrega contínua.
-- **Next (Planejamento Técnico Próximo):** Iniciativas com arquitetura desenhada (ADRs preliminares). Exige a execução de *Spikes técnicos* antes de entrarem em `Now` para eliminar incertezas de API ou desempenho.
-- **Later (Direção Arquitetural Estratégica):** Mudanças de paradigma (ex: migração de banco, quebra de serviços, internacionalização). Não detalhe código; documente apenas os gatilhos objetivos (*triggers*) que moverão a iniciativa para `Next`.
+## 2. Legacy Modernization: The Strangler Fig Pattern
+**Golden Rule:** Never approve from-scratch Big Bang rewrites. Migrate incrementally:
+1. **Edge Interception:** Place an API Gateway / reverse proxy (Nginx, Envoy) in front of the legacy system.
+2. **Vertical Slice Extraction:** Extract one bounded domain slice into the new module/service with full TDD and contract tests.
+3. **Shadowing & Canary Shift:** Mirror dark traffic to compare responses, then shift traffic gradually (`1% -> 10% -> 50% -> 100%`).
+4. **Pruning:** Delete dead legacy code once 100% of traffic runs stably on the new slice.
 
----
+## 3. Proactive Capacity Planning & FinOps
+- **Data Growth:** Project monthly row growth on core tables; plan partitioning, read replicas, or cold archival before tables cross tens of millions of rows.
+- **Connection & IOPS Ceilings:** Add `Cache-Aside` or read replicas whenever sustained peak pool/IOPS utilization exceeds **70%**.
+- **FinOps:** Audit oversized instances quarterly and commit stable baselines to reserved capacity.
 
-## 2. Modernização de Legado: O Padrão Strangler Fig
-
-**Regra de Ouro:** Nunca aprove reescritas totais do zero ("Second-System Syndrome"). Elas consomem meses sem gerar valor e costumam recriar os mesmos bugs do legado. Em vez disso, use o padrão *Strangler Fig*:
-
-1. **Interceptação na Borda (Edge Interception):**
-   - Coloque um proxy reverso (API Gateway, Nginx, Envoy) à frente do sistema legado.
-2. **Extração por Fatia Vertical (Vertical Slice Extraction):**
-   - Escolha um domínio coeso e bem delimitado (ex: Módulo de Notificações ou Faturamento).
-   - Implemente o novo serviço na nova arquitetura, com testes rigorosos (TDD) e conformidade de contrato.
-3. **Redirecionamento Gradual (Shadowing & Canary):**
-   - Use tráfego espelhado (*dark launching/shadow traffic*) para comparar respostas do novo serviço com o legado.
-   - Migre o tráfego progressivamente (1% → 10% → 50% → 100%).
-4. **Desativação (*Pruning*):**
-   - Remova o código morto do legado assim que o tráfego for 100% estabilizado no novo serviço.
-
----
-
-## 3. Planejamento de Capacidade & Escalabilidade (*Capacity Planning*)
-
-Não espere incidentes de indisponibilidade para readequar a infraestrutura. Monitore e projete proativamente:
-
-- **Gargalos Estruturais de Dados:**
-  - Estime o crescimento de linhas por mês em tabelas transacionais críticas.
-  - Planeje partições de tabela (*table partitioning*), arquivamento de dados frios (*cold storage*) ou leitura em réplicas antes que tabelas ultrapassem dezenas de milhões de linhas.
-- **Limites de IOPS e Conexões:**
-  - Meça o uso médio de conexões e pool de banco sob pico. Se o uso contínuo passar de **70% do teto**, provisione réplicas de leitura ou arquitetura de cache (*Cache-Aside*).
-- **FinOps & Economia de Nuvem:**
-  - Audite recursos superdimensionados trimestralmente. Troque instâncias sob demanda por reservas/savings plans para serviços estáveis de longo prazo.
-
----
-
-## 4. Governança de Ciclo de Vida, EOL & Sunset de APIs
-
-### 4.A Upgrades de Dependências Maiores (Major Versions)
-- Estabeleça um ciclo fixo (semestral ou anual) para atualização de versões de linguagens e frameworks (ex: LTS para LTS).
-- Softwares em versões sem suporte de segurança (End of Life) tornam-se automaticamente débito técnico de gravidade P1.
-
-### 4.B Protocolo de Desativação de APIs (*Sunset Policy*)
-Ao substituir endpoints ou contratos legados, cumpra o padrão **RFC 8594**:
-1. **Cabeçalhos de Deprecação:**
-   - Adicione cabeçalhos na resposta: `Deprecation: @<timestamp>` e `Sunset: <data_utc>`.
-2. **Janela de Transição:** Forneça no mínimo 90 a 180 dias entre a marcação de deprecação e o desligamento final.
-3. **Telemetria de Consumo Residual:** Monitore requisições com o cabeçalho antigo via logs JSON (`observability-and-slo-engineering`). Desligue o endpoint legado somente quando o tráfego atingir 0%.
+## 4. EOL Governance & API Sunset Policy (RFC 8594)
+- **Major Runtime/Framework Upgrades:** Schedule biannual/annual LTS upgrades; treat EOL dependencies as P1 security debt.
+- **RFC 8594 API Deprecation:** Emit `Deprecation: @<timestamp>` and `Sunset: <http-date>` headers, provide a 90-180 day migration window, and retire legacy endpoints only when JSON telemetry confirms `0%` residual traffic.

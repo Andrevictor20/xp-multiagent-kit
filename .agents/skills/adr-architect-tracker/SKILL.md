@@ -1,49 +1,43 @@
 ---
 name: adr-architect-tracker
-description: ADRs MADR 3.0 e detecção de desvio arquitetural.
+description: MADR 3.0 Architectural Decision Records and architectural drift detection.
 ---
 
-# ADR Architect Tracker Skill
+# ADR Architect Tracker
 
-Esta skill governa a documentação, rastreabilidade e governança de **Architectural Decision Records (ADRs)** no padrão MADR 3.0 (Markdown Architectural Decision Records), vinculando decisões técnicas diretamente à memória semântica do projeto (`.agents/memory/PROJECT_MEMORY.md`).
+Govern documentation, traceability, and enforcement of **Architectural Decision Records (ADRs)** using MADR 3.0, linking technical decisions directly to `.agents/memory/PROJECT_MEMORY.md`.
 
----
+## 1. When to Formalize an ADR
+Create an ADR whenever a design decision introduces:
+1. Adoption or replacement of a technology, framework, or database.
+2. Changes to consistency models or async communication (e.g., REST to gRPC/Kafka).
+3. Cross-cutting structural patterns (Clean Architecture, Hexagonal, Event Sourcing).
+4. Intentional trade-offs impacting security, performance, or operational cost.
 
-## 1. Quando Formalizar uma ADR?
-Uma ADR é obrigatória sempre que uma decisão de design de software introduzir:
-1. Escolha ou troca de tecnologia/framework/banco de dados.
-2. Mudança no modelo de consistência ou comunicação assíncrona (ex: de REST para gRPC/Kafka).
-3. Padrão estrutural que afeta múltiplos módulos (ex: adoção de Clean Architecture, Hexagonal ou Event Sourcing).
-4. Trade-off intencional com impacto na segurança, performance ou custo.
-
----
-
-## 2. Template Canônico MADR 3.0 (`docs/adr/ADR-NNN-[slug].md`)
+## 2. Canonical MADR 3.0 Template (`docs/adr/ADR-NNN-[slug].md`)
 
 ```markdown
-# ADR-005: Adoção do PostgreSQL com pgvector para Busca Semântica
+# ADR-005: Adopt PostgreSQL with pgvector for Semantic Search
 
-- **Status:** Aceito
-- **Decisores:** Time de Engenharia + Antigravity Agent
-- **Data:** 2026-09-25
+- **Status:** Accepted
+- **Deciders:** Engineering Team + Antigravity Agent
+- **Date:** 2026-09-25
 
-## Contexto e Problema
-Precisamos implementar busca vetorial rápida para chunks de documentação com menos de 50ms de latência P95, sem adicionar a sobrecarga operacional de gerenciar um cluster dedicado do Pinecone ou Qdrant.
+## Context and Problem Statement
+Need vector search for documentation chunks under 50ms P95 latency without managing a dedicated vector cluster.
 
-## Opções Consideradas
-1. Pinecone Gerenciado
-2. Qdrant Self-Hosted
-3. PostgreSQL com extensão `pgvector`
+## Considered Options
+1. Managed Pinecone
+2. Self-Hosted Qdrant
+3. PostgreSQL with `pgvector` extension
 
-## Decisão Tomada
-Optamos pela opção 3 (`pgvector`), porque já utilizamos PostgreSQL em produção para dados transacionais, eliminando custos adicionais de infraestrutura e simplificando backups transacionais atômicos (ACID).
+## Decision Outcome
+Chosen Option 3 (`pgvector`) because PostgreSQL already runs in production for transactional data, avoiding extra infrastructure cost and preserving ACID backups.
 
-## Consequências
-- **Positivas:** Zero custo de infraestrutura adicional; consistência transacional direta via joins SQL.
-- **Negativas:** Requer tuning de índices HNSW/IVFFlat à medida que a base ultrapassar 2 milhões de vetores.
+## Consequences
+- **Positive:** Zero extra infra cost; transactional consistency via SQL joins.
+- **Negative:** Requires HNSW/IVFFlat index tuning beyond 2M vectors.
 ```
 
----
-
-## 3. Detecção de Desvio Arquitetural (Architectural Drift)
-O `navigator` e o `refactor-warden` devem consultar periodicamente as ADRs existentes. Se um novo código implementar uma solução que contrarie uma ADR sem uma nova ADR de revogação/substituição, a PR ou entrega é **bloqueada pelo Quality Gate**.
+## 3. Architectural Drift Detection
+`navigator` and `refactor-warden` must cross-check active ADRs. Code that contradicts an accepted ADR without a superseding ADR is **blocked at the Quality Gate**.

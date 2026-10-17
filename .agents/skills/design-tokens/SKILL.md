@@ -1,37 +1,29 @@
 ---
 name: design-tokens
-description: Tokens visuais semânticos com Color e Shape Locks.
+description: Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock.
 ---
 
 # Design Tokens
 
-Sempre utilize tokens semânticos (`color.background`, `color.surface`, `color.accent`, `radius.outer`, `radius.inner`) em vez de valores brutos espalhados.
-
----
+Bind UI styles exclusively to semantic tokens (`color.background`, `color.surface`, `color.accent`, `radius.outer`, `radius.inner`) rather than scattered raw literals.
 
 ## 1. Color Consistency Lock
+- **Single Primary Accent:** Define at most 1 primary accent color with calibrated saturation (`< 80%`).
+- **Full-Page Lock:** Lock the chosen accent across the entire page (never shift from purple in Hero to blue in Features to green in Footer).
+- **Anti-Cliche Curated Palettes:**
+  - *Cold Luxury:* `#F5F6F8` bg, `#0B0D10` text, `#1F242D` surface, `#4B68FF` or `#10B981` accent.
+  - *Forest:* `#F8F9F5` bg, `#0E1711` text, `#1B2E22` deep surface, `#D97706` amber accent.
+  - *Black and Tan:* `#0A0A0A` dark bg, `#EDEDED` text, `#161616` surface, `#C8A265` warm tan accent.
+- **No Pure Black:** Use tinted off-black (`#0A0A0A`, `#111111`, `#0F172A`) instead of `#000000`.
 
-- **1 Acento Principal:** Defina no máximo 1 cor de acento primária com saturação calibrada (< 80%).
-- **Bloqueio de Consistência:** A cor de acento é travada para a página inteira. Não altere de roxo no Hero para azul na seção de recursos e verde no rodapé.
-- **Paletas Alternativas (Anti-AI Cliché):**
-  - *Cold Luxury:* `#F5F6F8` (Fundo claro), `#0B0D10` (Texto), `#1F242D` (Superfície), `#4B68FF` ou `#10B981` (Acento).
-  - *Forest:* `#F8F9F5` (Fundo), `#0E1711` (Texto), `#1B2E22` (Superfície profunda), `#D97706` (Acento âmbar).
-  - *Black and Tan:* `#0A0A0A` (Fundo escuro), `#EDEDED` (Texto), `#161616` (Superfície), `#C8A265` (Tan suave).
-- **Sem Preto Absoluto:** Use off-black matizado (`#0a0a0a`, `#111111`, `#0f172a`) em vez de `#000000` puro.
+## 2. Shape Consistency Lock & Concentric Radii
+- **Unified Radius Scale:** Commit to one geometry family per product (sharp `4px-8px` or tactile `16px-24px`).
+- **Concentric Math (Double-Bezel):** Compute nested inner radius strictly as:
+  `radius_inner = max(0, radius_outer - padding)`
+  Example: `rounded-[2rem]` outer container with `p-2` (`8px`) requires `rounded-[calc(2rem-8px)]` inner core.
 
----
-
-## 2. Shape Consistency Lock & Raios Concêntricos
-
-- **Consistência de Raios:** Escolha uma escala de raio de curvatura e mantenha-a consistente (ex: ou tudo nítido com `4px-8px`, ou tudo suave com `16px-24px`).
-- **Matemática Concêntrica (Double-Bezel):** Em containers aninhados, o raio interno deve ser calculado como:
-  $$\text{radius}_{\text{inner}} = \max(0, \text{radius}_{\text{outer}} - \text{padding})$$
-  Exemplo: `rounded-[2rem]` externo com `p-2` (8px) exige `rounded-[calc(2rem-8px)]` interno para evitar distorção óptica.
-
----
-
-## 3. Categorias de Tokens
-- **Cores Semânticas:** `background`, `surface`, `surface-elevated`, `text-primary`, `text-muted`, `accent`, `border-subtle`.
-- **Tipografia:** `font-sans`, `font-display`, `font-mono`, `leading-tight`, `leading-relaxed`, `tracking-tighter`.
-- **Espaçamento & Grid:** `gap-section` (`py-24` a `py-32`), `container-max` (`1400px`).
-- **Motion & Curvas:** `ease-out-expo` (`cubic-bezier(0.16, 1, 0.3, 1)`), `duration-normal` (`300ms`).
+## 3. Core Token Categories
+- **Semantic Colors:** `background`, `surface`, `surface-elevated`, `text-primary`, `text-muted`, `accent`, `border-subtle`.
+- **Typography:** `font-sans`, `font-display`, `font-mono`, `leading-tight`, `leading-relaxed`, `tracking-tighter`.
+- **Spacing & Layout:** `gap-section` (`py-24` to `py-32`), `container-max` (`1400px`).
+- **Motion Curves:** `ease-out-expo` (`cubic-bezier(0.16, 1, 0.3, 1)`), `duration-normal` (`300ms`).

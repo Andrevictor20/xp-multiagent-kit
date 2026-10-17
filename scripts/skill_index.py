@@ -81,12 +81,12 @@ def render_index(skills: List[Dict[str, Any]], max_line_chars: int = SKILL_INDEX
     É este arquivo que deve ser injetado no contexto, não os 74 SKILL.md.
     """
     lines = [
-        "# Índice de Skills (carregamento sob demanda)",
+        "# Skills Index (On-Demand Loading)",
         "",
-        "> Catálogo compacto. O corpo de cada skill só entra no contexto quando ativada.",
-        f"> {len(skills)} skills • teto por skill: {SKILL_BODY_MAX_BYTES // 1024} KB",
+        "> Compact catalog. Skill bodies are loaded on demand only when activated.",
+        f"> {len(skills)} skills • max body per skill: {SKILL_BODY_MAX_BYTES // 1024} KB",
         "",
-        "| Skill | Gatilho |",
+        "| Skill | Trigger |",
         "|-------|---------|",
     ]
     for skill in skills:

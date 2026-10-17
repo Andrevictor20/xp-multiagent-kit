@@ -1,12 +1,11 @@
 ---
 name: availability-security
-description: Proteção contra DoS, Rate Limiting e sobrecarga.
+description: DoS protection, rate limiting, timeouts, and resource exhaustion defense.
 ---
 
 # Availability Security
 
-Detecte e proteja a aplicação contra:
-- **Request flooding**: Múltiplas requisições, burst, concorrência abusiva.
-- **Resource exhaustion**: Payloads/JSON gigantes, paginação ilimitada, queries caras, regex catastrófica.
-- Não confunda Application DoS (rate limit, throttling) com Infrastructure DDoS (WAF, CDN, autoscaling).
-- Proteja endpoints sensíveis e pesados com timeouts e limites estritos.
+Protect application availability against resource exhaustion and abuse:
+- **Request Flooding:** Enforce per-IP and per-user/token rate limiting, burst quotas, and concurrency caps on expensive endpoints.
+- **Payload & Query Bounds:** Enforce strict request body size limits, JSON depth limits, mandatory pagination caps (`limit <= 100`), and ReDoS-safe regular expressions.
+- **App DoS vs. Infra DDoS:** Combine application-level throttling, queue backpressure, and strict I/O timeouts with edge WAF/CDN and autoscaling controls.

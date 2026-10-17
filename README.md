@@ -1,322 +1,270 @@
-# XP Multi-Agent Kit v2 (Antigravity)
+# XP Multi-Agent Kit v3.1 (Agnostic Core)
 
-Kit de skills, agentes, workflows e políticas para desenvolvimento em pair programming multi-agente, baseado na metodologia XP com IA e focado no roteamento adaptativo de tarefas (Task Routing) guiado pelo risco. É flexível (L0 a L3), orquestrando disciplinas essenciais: **ATDD/BDD & Pirâmide de Especificação (Contrato Humano-IA)**, **TDD Estrito & Matriz Multi-Camadas**, **Política Anti-Test-Bypass (Proibição de Burlar Testes)**, Secure Software Development (SSDLC), **Engenharia de Causa Raiz & Anti-Workaround**, **Code Deslop & Limpeza de Código de IA**, **DevOps & Zero-Downtime Deployments**, **Engenharia de Observabilidade & SLOs**, **Cloud Security & Zero Trust Architecture**, Arquitetura de Dados, **Engenharia de Frontend Anti-Slop**, **Motor de Conversion Copywriting & SEO Semântico** e **Memória Contínua em 4 Tiers (Karpathy LLM Wiki Pattern)**.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
+[![Hosts: Antigravity | OpenCode | Cursor | Codex | Qoder](https://img.shields.io/badge/hosts-5%20platforms-brightgreen.svg)](#supported-hosts--architecture)
+[![TDD: Strict RED-GREEN](https://img.shields.io/badge/TDD-strict-success.svg)](#strict-tdd--anti-test-bypass)
 
-> **Regra de Ouro**: Use o menor número de agentes, skills e etapas capaz de produzir uma mudança correta, testada, segura, acessível, observável e sustentável.
+A high-performance, token-efficient multi-agent governance kit designed for AI pair programming. Built on Extreme Programming (XP) disciplines, adaptive risk routing (L0–L3), and native cross-platform support across **Antigravity**, **OpenCode**, **Cursor**, **Codex**, and **Qoder** (both IDE and CLI environments).
 
-## Estrutura do Kit
+> **Golden Rule**: Always use the minimum number of agents, skills, and turns required to produce a correct, tested, secure, accessible, observable, and maintainable change.
+
+---
+
+## Architecture & Core Disciplines
 
 ```text
-.agents/
-├── agents/                 # Agentes responsáveis pela execução de papéis específicos
-│   ├── orchestrator        # Roteamento baseado em risco e Fast Context Bootstrap
-│   ├── navigator           # Analisa intenção, arquitetura, público, SEO e formaliza a Pirâmide de Especificação (AC + SbE + Gherkin)
-│   ├── designer            # Direção estética Anti-Slop, Copywriting, CRO, QA de UI e acessibilidade
-│   ├── sentinel            # Modelagem de ameaças, CloudSec Zero Trust, IaC Governance e SSDLC
-│   ├── test-guardian       # ATDD/TDD: acceptance tests parametrizados, matriz multi-testes, debugging sistemático, anti-test-bypass e Conformance Report
-│   ├── builder             # Implementa código (somente o necessário para o GREEN, sem workarounds)
-│   ├── refactor-warden     # Refatorações (Code Deslop, No God Files, eliminação de workarounds)
-│   ├── archivist           # Memória contínua em 4 Tiers, Handoffs, Lições Aprendidas e Memory Lint
-│   ├── release-gatekeeper  # Valida CI, scans de segurança, Conformance Report, auditoria anti-test-bypass e commits
-│   ├── shipper             # CD, Zero-Downtime (Blue/Green/Canary), Telemetria e Rollback
-│   └── genesis             # Setup inicial no momento zero (Scaffold, Test Harness, CI e Memory)
-│
-├── memory/                 # Diretório de memória viva e arquivo histórico
-│   ├── PROJECT_MEMORY.md   # Snapshot ativo de contexto (< 300 linhas, 4 Tiers)
-│   ├── REPO_MAP.md         # AST Repo Map de símbolos e estrutura (anti-exploração cega)
-│   ├── TOKEN_TELEMETRY.md  # Telemetria em 3 camadas e histórico de consumo
-│   ├── README.md           # Guia de governança de memória
-│   └── archive/            # Histórico acumulado de entregas podadas
-│       └── HISTORY.md
-│
-├── hooks.json              # Configuração nativa de hooks do ciclo de vida
-│
-├── skills/                 # Capabilities granulares que os agentes utilizam (74 Skills)
-│   ├── acceptance-test-driven            # ATDD: contrato humano-IA, Acceptance Criteria verificáveis e Pirâmide de Especificação
-│   ├── specification-by-example          # SbE: regras vagas convertidas em tabelas de exemplos parametrizados e executáveis
-│   ├── conformance-tracker               # Rastreabilidade AC → teste → status e emissão do Conformance Report
-│   ├── spec-driven-development           # SDD: especificação executável (Gherkin BDD) como fonte da verdade
-│   ├── tdd-safety-net                  # Matriz de testes (Unit, Integration, Contract, E2E, Fuzzing) e Anti-Test-Bypass
-│   ├── test-evidence-walkthrough       # Exigência de evidências reais L0 a L4
-│   ├── integration-testing             # Testes de integração em fronteiras de dados e APIs
-│   ├── systematic-debugging            # 4 Fases de debugging, rastreamento reverso e regra dos 3 fixes
-│   ├── no-workarounds                  # Proibição de remendos: corrija a fonte, nunca silencie o sinal
-│   ├── code-deslop-review              # Remoção de slop de IA, comentários redundantes e No God Files
-│   ├── token-budget-tracker            # Telemetria em 3 camadas, Pre-Flight Budget Gate e Modo Cirúrgico Atômico
-│   ├── ci-auto-heal                    # Monitoramento de CI e autocorreção sistemática (máx 3 tentativas)
-│   ├── zero-downtime-deployment        # Blue/Green, Canary graduais, Probes e Expand-and-Contract
-│   ├── infrastructure-as-code-governance # Governança e segurança de Terraform, Kubernetes e Compose
-│   ├── observability-and-slo-engineering # Logs JSON, Métricas RED (OpenTelemetry), Tracing e SLOs
-│   ├── cloud-security-and-zero-trust   # Autenticação OIDC, Cosign/SBOM, WAF, Rate Limit e Zero Trust
-│   ├── lesson-learned                  # Formalização institucional de lições aprendidas (L-001..L-NNN)
-│   ├── project-memory                  # Governança de 4 Tiers, Fast Bootstrap, Handoffs e Memory Lint
-│   ├── conversion-copywriting          # Escrita persuasiva de alta conversão, headlines magnéticas e CTAs
-│   ├── cro-landing-pages               # Otimização de conversão, redução de atrito e prova social
-│   ├── seo-content-engine              # SEO On-page, metatags, Schema.org JSON-LD e AI Search (GEO/AEO)
-│   ├── marketing-psychology            # Modelos mentais aplicados a UI (Ancoragem, Aversão à Perda, Hick's Law)
-│   ├── copy-editing-sweeps             # Protocolo de 7 passadas de edição de texto e corte de clichês
-│   ├── frontend-taste-engineering      # Framework Anti-Slop mestre (Brief inference, Dials, Skeletons)
-│   ├── visual-direction-studio         # Direção de arte em duas passadas, disciplina de hero e anti-clichê
-│   ├── minimalist-ui                   # Estética editorial e utilitarian minimalism (Linear/Notion vibes)
-│   ├── industrial-brutalist-ui         # Estética industrial, terminal militar e tipografia suíça
-│   ├── high-end-visual-design          # Design de agência $150k+ (Double-Bezel, Button-in-Button, mola)
-│   ├── redesign-ui-audit               # Protocolo Scan->Diagnose->Fix para modernização de código legado
-│   ├── image-to-code                   # Pipeline image-first para criação de UI de alta fidelidade
-│   ├── ui-quality-gate                 # Validação pré-release de acessibilidade, viewport e anti-slop
-│   ├── (skills especializadas de Segurança: threat-modeling, api-security, secrets-guardian, etc.)
-│   ├── (skills especializadas de Dados: database-architecture, migration-safety, etc.)
-│   └── (skills de fundação: task-routing, codebase-cartography, atomic-commit-discipline, etc.)
-│
-├── scripts/                # Utilitários CLI, rotadores de esforço, hooks e telemetria
-│   ├── agy-effort / agy-smart  # Roteamento inteligente de reasoning effort (low/med/high)
-│   ├── agy-repo-map        # Gerador do AST Repo Map compacto anti-busca cega
-│   ├── agy-tokens          # Telemetria de tokens em 3 camadas e auditoria de cota
-│   ├── agy-ci-heal         # CI/CD Auto-Healer autônomo (máx 3 tentativas)
-│   ├── agy-worktree        # Gerenciador de Git Worktrees para isolamento de subagentes
-│   ├── agy-sanitize        # Sanitizador de saídas verbosas para redução de payload
-│   ├── agy-handoff         # Gerador de handoff packets estruturados entre sessões/agentes
-│   ├── install-global.sh   # Instalador e sincronizador de comandos e hooks globais
-│   └── hooks/              # Implementações de hooks PreToolUse, PreInvocation e PostToolUse
-│
-├── workflows/              # Definições das rotas de execução
-│   ├── trivial.md          # L0: Alterações mínimas (ex: typo). Pula TDD e validações pesadas.
-│   ├── small.md            # L1: Alterações simples. Acceptance Criteria informais + TDD básico + Conformance resumido.
-│   ├── feature.md          # L2: Funcionalidade média. Pirâmide de Especificação obrigatória, Stop Gate humano e Conformance Report.
-│   ├── critical.md         # L3: Auth, Dados, Pagamentos. Threat model, ATDD/BDD integral e gates rigorosos.
-│   ├── spec-driven.md      # SDD/ATDD: Acceptance Criteria + SbE + Gherkin como fonte da verdade antes de qualquer código.
-│   ├── migration.md        # Migração estrutural segura com Expand-and-Contract e Zero Downtime.
-│   ├── performance-benchmark.md # Otimização de performance com profiling e baseline de SLOs.
-│   ├── bugfix.md           # Debugging sistemático, no-workarounds e regressão provada antes de corrigir.
-│   ├── incident.md         # Mitigação rápida em produção.
-│   └── release.md          # Conexão CI/CD com zero-downtime, telemetria e rollback automatizado.
-│
-├── policies/               # Diretrizes globais baseadas no risco e impacto
-│   ├── atdd-bdd-tdd.md     # Pirâmide de Especificação, contrato humano-IA, Anti-Self-Test e Hard Gate de conformidade
-│   ├── tdd.md              # Matriz de 8 tipos de testes, ciclo RED-GREEN e regras Anti-Test-Bypass
-│   ├── release.md          # Deploy sem downtime, autenticação OIDC, telemetria e rollback imediato
-│   ├── memory.md           # Política de 4 Tiers, Untrusted History, token budget e handoffs
-│   ├── frontend.md         # Política de frontend anti-slop, copywriting, WCAG AA, dials e viewport
-│   ├── design-system.md    # Locks de consistência de cores, formas e raios concêntricos
-│   ├── agent-handoff.md    # Contrato estruturado de transição entre agentes e sessões
-│   ├── security.md
-│   ├── database.md
-│   └── evidence.md
-│
-└── templates/              # Templates reutilizáveis para novos projetos
-    ├── PROJECT_MEMORY_TEMPLATE.md
-    └── SPEC-NNN-ATDD.md    # Spec ATDD: Contexto, Acceptance Criteria, SbE Tables, Gherkin, Invariantes e Conformance
+                                 [HUMAN GOAL]
+                                      │
+                         ┌────────────┴────────────┐
+                         ▼                         ▼
+                 Risk Triage (L0-L3)      Host Detection & Adapter
+                         │                (Antigravity/OpenCode/Cursor/Codex/Qoder)
+                         ▼
+             ATDD Specification Pyramid
+             (ACs → SbE Tables → Gherkin)
+                         │
+             ⏸️ Human Stop Gate (L2/L3)
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+    RED Test Harness             RTK Token Compression
+   (Multi-layer Matrix)          (Rust Token Killer v0.49)
+         │                               │
+         └───────────────┬───────────────┘
+                         ▼
+                GREEN Implementation
+             (Minimal code, No Workarounds)
+                         │
+         ┌───────────────┴───────────────┐
+         ▼                               ▼
+    Refactor & Deslop             Conformance Report
+   (No God Files <500)            (Traceability AC → Tests)
+                         │
+                         ▼
+             4-Tier Project Memory Sync
+           (Working, Episodic, Semantic, Procedural)
 ```
 
----
-
-## 📐 Pirâmide de Especificação (ATDD/BDD) & Contrato Humano-IA
-
-Resolve o problema central do desenvolvimento assistido por IA: **"100% dos testes passando, mas os testes não representam o requisito correto"**. Governado pela policy `atdd-bdd-tdd.md`.
-
-```text
-👤 HUMANO — "O que deve acontecer?"
-   Intent → Acceptance Criteria (ATDD) → Specification by Example (tabelas) → Cenários Gherkin (BDD)
-                                    ↓
-                    ⏸️ STOP GATE: aprovação humana da spec
-                                    ↓
-🤖 IA — "Como implementar corretamente?"
-   Acceptance Tests (RED) → Integration Tests (RED) → Unit Tests (RED) → Implementação (GREEN) → Refactor
-                                    ↓
-✅ VALIDAÇÃO — Conformance Report (AC → teste → status) → Review humano
-```
-
-- **Separação de contrato:** o humano define os Acceptance Criteria e valida as tabelas de exemplos; a IA converte a spec em testes e código. **Regra Anti-Self-Test:** a IA nunca define critérios E testes sem aprovação humana intermediária.
-- **Specification by Example (`specification-by-example`):** cada linha da tabela vira exatamente um caso de teste parametrizado (`pytest.mark.parametrize`, `test.each`, `#[rstest]`), cobrindo happy path, limites, erros e edge cases.
-- **Conformance Report (`conformance-tracker`):** matriz de rastreabilidade `AC → SbE Lines → Test File → Test Name → Status` com resumo "N/N critérios cobertos e aprovados". Critério sem teste ou teste RED = `NON-COMPLIANT` = entrega **bloqueada**.
-- **Ativação por risco:** L0 dispensado • L1 Acceptance Criteria informais + Conformance resumido • L2/L3 pirâmide completa com Stop Gate e Conformance Report obrigatórios (L3 adiciona cross-reference com o Threat Model STRIDE).
-- **Template:** `.agents/templates/SPEC-NNN-ATDD.md` (Contexto, AC, SbE, Gherkin, Contratos, Invariantes, Conformance Tracking e Notas de Implementação).
+1. **Specification Pyramid & Human-AI Contract Separation (`xp-spec`)**:
+   - Solves the silent failure mode: *"100% of tests pass, but the tests test the wrong requirement."*
+   - Humans define **WHAT** (Acceptance Criteria, Specification by Example tables, Gherkin scenarios).
+   - AI implements **HOW** (parameterized RED tests, minimal GREEN implementation, atomic refactoring).
+   - Strictly enforces the **Anti-Self-Test Rule**: AI never author both ACs and tests without human Stop Gate confirmation.
+2. **Strict TDD & Anti-Test-Bypass Matrix**:
+   - Zero Blind Mocks: production code must never mock its own core logic.
+   - Zero Empty Assertions: every test must assert business invariants and concrete values.
+   - Zero Unauthorized Skips: `.skip`, `xit`, or `@pytest.mark.skip` are strictly forbidden to hide failures.
+   - Failures must be resolved at the root cause; failing tests may never be commented out or deleted.
+3. **Continuous 4-Tier Memory & AST Cartography**:
+   - Fast Context Bootstrap (< 2,000 tokens) via `.agents/memory/PROJECT_MEMORY.md`.
+   - Hierarchical tiers: Working (active turn), Episodic (`archive/HISTORY.md`), Semantic (ADRs and architecture), Procedural (`[L-NNN]` lessons learned).
+   - AST dependency mapping via `code-review-graph` (`xp-graph`) to prevent blind file exploration.
+4. **Token Economy & Semantic Compression**:
+   - PreToolUse optimization hooks (`smart_tool_optimizer.py`) with loop detection and output clamping.
+   - Native integration with **RTK (Rust Token Killer)**: up to 90% semantic compression on command outputs.
+   - Ultra-compact 4-line ANSI color telemetry footer (`xp-tokens --turn`).
 
 ---
 
-## 🧪 Matriz de Diversidade de Testes & Política Anti-Test-Bypass
+## Supported Hosts & Architecture
 
-1. **A Matriz Multi-Camadas de Testes:**
-   - **Unitários:** Testam funções puras, cálculos de domínio e regras de negócio de forma isolada.
-   - **Integração:** Validam fronteiras reais com banco de dados, transações ACID, filas e endpoints HTTP.
-   - **Contrato / Schema:** Validam tipagem e compatibilidade de contratos de API entre frontend e backend.
-   - **Regressão:** Testes prévios criados antes de qualquer correção de bug para provar a falha e blindar o sistema.
-   - **End-to-End (E2E):** Validam fluxos completos de jornada crítica do usuário.
-   - **Propriedade / Fuzzing:** Testam invariantes com centenas de entradas pseudo-randômicas.
-   - **Segurança (SAST/DAST):** Testam controle de acesso (BOLA/IDOR), injeção e sanitização de dados.
-   - **Performance:** Avaliam latência sob carga e concorrência.
-2. **Política Inegociável Anti-Test-Bypass (Os 7 Pecados Capitais):**
-   - **Zero Mocks Cegos:** Proibição de mocar a própria lógica em teste ou usar mocks excessivos que não executam o código real.
-   - **Zero Asserções Vazias:** Proibição de testes sem `assert` ou com asserções tautológicas (`expect(true).toBe(true)`).
-   - **Zero Skips Não Autorizados:** Proibição de adicionar `.skip`, `xit` ou `@pytest.mark.skip` para esconder testes falhando.
-   - **Proibido Deletar Testes Quebrados:** Erros devem ser corrigidos na causa raiz do código de produção, nunca silenciados.
-   - **Asserção de Valor:** Obrigatoriedade de validar os dados reais de negócio (`id`, `status`), não apenas `typeof`.
+The kit provides native adapters for all major agentic AI environments:
+
+| Host | Supported Formats | Generated Configuration Files |
+|------|-------------------|--------------------------------|
+| **Antigravity** | IDE & CLI (`agy`) | `~/.gemini/config/AGENTS.md`, `hooks.json`, symlinked skills/agents |
+| **OpenCode** | IDE & CLI (`opencode`) | `opencode.json`, `.opencode/agent/*.md`, `.opencode/command/*.md` |
+| **Cursor** | IDE & CLI (`cursor`) | `.cursor/rules/*.mdc`, `.cursor/mcp.json`, `.cursorignore` |
+| **Codex** | CLI (`codex`) | `.codex/rules/xp-governance.md`, `.codex/mcp.json`, `.codexignore` |
+| **Qoder** | IDE & CLI (`qoder`) | `.qoder/rules/xp-governance.md`, `.qoder/mcp.json`, `.qoderignore` |
 
 ---
 
-## 🚀 Motor de DevOps, Zero-Downtime Deployments & Observabilidade
+## Installation & Setup Guide
 
-- **Zero-Downtime Deployments (`zero-downtime-deployment`):** Blue/Green, Canary Releases com tráfego gradual (1% $\rightarrow$ 10% $\rightarrow$ 50% $\rightarrow$ 100%) e Rolling Updates com Probes.
-- **Padrão Expand-and-Contract:** Compatibilidade paralela para migrações de banco e versões de API.
-- **Rollback Instantâneo Automatizado:** Abort imediato se taxa de erro 5xx > 1% ou latência p99 subir > 50%.
-- **Governança de IaC (`infrastructure-as-code-governance`):** Validação estática de Terraform, Kubernetes e Docker Compose.
-- **Engenharia de Observabilidade & SLOs (`observability-and-slo-engineering`):** Logs JSON com `correlation_id`, Métricas RED (OpenTelemetry) e Error Budgets.
-- **Cloud Security Zero Trust (`cloud-security-and-zero-trust`):** Pipelines OIDC sem segredos estáticos e assinatura Cosign/SBOM.
-
----
-
-## 🛠️ Suíte de Engenharia de Causa Raiz & Anti-Slop de Código
-
-- **Debugging Sistemático (`systematic-debugging`):** 4 Fases de investigação e a Regra dos 3 Fixes.
-- **Proibição Estrita de Remendos (`no-workarounds`):** Corrija a fonte, nunca silencie o sinal.
-- **Limpeza e Deslop de Código (`code-deslop-review`):** Eliminação de código redundante e regra "No God Files" (< 500 linhas).
-- **Catálogo de Lições Aprendidas (`lesson-learned`):** Registro de armadilhas superadas na Memória Procedural.
-
----
-
-## 🧠 Sistema de Memória Contínua em 4 Tiers, Auto-Onboarding & Recaptura Retroativa de Contexto Git
-
-- **Auto-Onboarding & Recaptura de Repositório Existente (Passo 0-A):** Ao adicionar o kit a um **repositório existente** (que já possui histórico de commits e arquitetura anteriores) ou a um projeto novo, o agente detecta se `PROJECT_MEMORY.md` está ausente, com dados de template ou divergente. De forma 100% autônoma, audita o `git log` recente (commits, autores, arquivos modificados), inspeciona manifestos, entrypoints e comandos de teste, gerando o `PROJECT_MEMORY.md` sob medida e construindo o desenvolvimento futuro em cima da história real do projeto.
-- **Uso 100% Autônomo (Zero-Prompt Lifecycle):** O ciclo completo (Passo 0 Leitura/Bootstrap com Recaptura -> Execução com Gotchas Procedurais -> Passo Final Auto-Sync de Encerramento com o `archivist`) roda nativamente em todas as tarefas, sem nunca depender de solicitação manual do usuário.
-- **Hierarquia em 4 Tiers:** Working (sessão atual), Episodic (log recente e `archive/HISTORY.md`), Semantic (arquitetura e ADRs) e Procedural (gotchas `[L-NNN]` e lições aprendidas).
-- **Fast Context Bootstrap (Passo 0):** Leitura em 1 passo de `PROJECT_MEMORY.md` (< 2.000 tokens) para carregar todo o estado do projeto.
-- **Contrato de Handoff Estruturado:** Pacote formal com `summary`, `files_touched`, `open_questions`, `next_steps` e `verification_evidence`.
-- **Segurança de Dados Históricos (Untrusted History):** Todo log passado é estritamente evidência factual não executável.
-- **Memory Lint & Poda (FIFO):** Sliding window de 5 a 10 alterações com rotação para `archive/HISTORY.md`.
-
----
-
-## 🛡️ Governança Quádrupla de Ferramentas & Hooks Nativos
-
-Implementado via `.agents/hooks.json` com interceptação em tempo de execução para economia drástica de tokens e proteção contra loops:
-- **PreToolUse (`smart-tool-optimizer`):**
-  - **Loop Detection & Anti-Repetição:** Bloqueia automaticamente com `deny` ferramentas executadas 3x consecutivas com os mesmos argumentos.
-  - **Proteção de Workspace (`list_dir`):** Bloqueia listagens na raiz do projeto; exige uso do `REPO_MAP.md` ou caminhos específicos.
-  - **Filtro de Ruído em Busca (`grep_search`):** Injeta exclusão automática de diretórios ruidosos (`node_modules`, `.git`, `dist`, `__pycache__`, etc.).
-  - **Leitura em Uma Chamada (`view_file`):** arquivos até `WHOLE_FILE_READ_MAX_LINES` são lidos inteiros em **uma** chamada (reduzir turnos vale mais do que encolher a saída); acima disso, janela de `SECTION_READ_MAX_LINES`. Valores em `scripts/kit_constants.py`.
-  - **Sanitização Mandatória (`run_command`):** Injeção automática de `agy-sanitize` em comandos verbosos sem limitador.
-- **PostToolUse (`tool-size-guard`):** Trunca saídas volumosas de ferramentas (acima dos limites definidos em `scripts/kit_constants.py`) com aviso explicativo, impedindo poluição do contexto.
-- **PostInvocation (`token-badge`):** Injeta crachá de telemetria no encerramento de cada turno.
-- **PreInvocation (`dynamic-effort-router`):** Auto-modulação dinâmica turno a turno para CLI (`agy-smart`, `agy-effort`).
-
----
-
-## ⚡ Modulação Inteligente de Raciocínio & CLI Effort Router
-
-- **Roteamento por Risco (Regra [L-019]):**
-  - **L0/L1 (Trivial/Small):** Opera em `--effort low`, economizando entre 3.000 e 8.000 tokens de raciocínio por turno em dúvidas, documentação e refatorações isoladas.
-  - **L2 (Feature):** Padrão `medium`. Exige Stop Gate explícito caso haja complexidade de integração.
-  - **L3 (Critical/Auth/Security):** Elabora plano e emite Stop Gate obrigatório para elevação do modelo para `high` antes de tocar em código.
-- **CLI Wrappers Inteligentes:**
-  - `agy-smart`: Analisa o prompt antes da chamada e seleciona automaticamente o esforço (`low`, `medium` ou `high`).
-  - `agy-effort <low|medium|high>`: Permite forçar o nível de esforço de raciocínio para qualquer comando.
-  - `agy-fast`: Atalho rápido para tarefas mecânicas com `--effort low`.
-  - `agy-deep`: Atalho para tarefas críticas ou salvaguarda de cota >80% com `--effort high`.
-
----
-
-## 📊 Telemetria de Tokens em 3 Camadas & Pre-Flight Gate
-
-- **3 Camadas de Monitoramento (`token-budget-tracker` / `agy-tokens`):**
-  1. **Janela de Mensagem / Turno:** Controle do payload de entrada, ferramentas e resposta.
-  2. **Janela Móvel de 5 Horas:** Monitoramento em tempo real do Language Server contra exaustão de cota de curto prazo.
-  3. **Cota Semanal:** Acompanhamento do limite semanal da conta.
-- **Rodapé Padronizado Obrigatório:** Toda resposta na IDE ou CLI inclui o consumo detalhado e porcentagens consumidas.
-- **Pre-Flight Gate & Modo Cirúrgico Atômico:** Alerta preventivo se o consumo ultrapassar 80% (5h ou Semana) ou 70% (Contexto), ativando commits atômicos imediatos para evitar perda de trabalho.
-- **Relatório Exaustivo sob Demanda:** Consultas sobre consumo no chat detalham limites, decomposição do consumo e tempo exato de renovação das cotas.
-
----
-
-## 🤖 CI/CD Auto-Healer & Loop de Autocorreção
-
-- **Monitoramento Autônomo (`ci-auto-heal` / `agy-ci-heal`):** Inspeciona pipelines de CI remotos (GitHub Actions via `gh run`) e locais.
-- **Extração Cirúrgica de Causa Raiz:** Isola a falha exata sem poluir o contexto com logs gigantes.
-- **Regra dos 3 Ciclos (Regra [L-003]):** Autocorreção atômica limitada a no máximo 3 iterações consecutivas, impedindo loops infinitos em caso de falha externa persistente.
-
----
-
-## 🗺️ AST Repo Map & Anti-Exploração Cega
-
-- **Visão Imediata da Arquitetura (`REPO_MAP.md` / `agy-repo-map`):** Gera um mapa compacto em árvore com arquivos e símbolos exportados (classes, funções, interfaces).
-- **Passo 0 Anti-Busca Cega:** Elimina rodadas inteiras de `list_dir` e `grep_search` redundantes no início de tarefas.
-
----
-
-## 🚀 Instalação e Configuração
-
-### 1. Instalação com Comando Único (One-Liner Portátil)
-
-Para instalar ou portar o kit para qualquer máquina com Antigravity (IDE e CLI):
+### 1. One-Liner Quick Install (Remote)
 
 ```bash
-# Instalação remota direta via terminal:
 curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | bash
 ```
 
-Se você já clonou o repositório, basta executar o instalador na raiz:
+### 2. Local Installation (Clone & Run)
 
 ```bash
+git clone https://github.com/Andrevictor20/xp-multiagent-kit.git
+cd xp-multiagent-kit
 ./install.sh
 ```
 
-O instalador abre um **wizard interativo** permitindo escolher entre:
-1. **Global (Recomendado):** Instala todas as ferramentas no `PATH` (`~/.local/bin/`), sincroniza agentes, skills e workflows com o Antigravity IDE & CLI (`~/.gemini/config/`), configura git hooks e adiciona ao shell RC.
-2. **Projeto Específico (Local):** Injeta `.agents/` (com symlinks para políticas e regras), `AGENTS.md`, `.geminiignore` e inicializa uma memória viva `PROJECT_MEMORY.md` isolada apenas no projeto escolhido.
-3. **Ambos:** Realiza a instalação global completa E já injeta o kit no projeto atual.
+The installer detects your operating system language (`$LANG`, `$LC_MESSAGES`) and launches an interactive bilingual wizard (English / Portuguese).
 
----
+### 3. Native Windows Installation (PowerShell & CMD)
 
-### 2. Modos Não-Interativos & Flags CLI
+On Windows 10/11, run natively using PowerShell or Command Prompt (CMD):
 
-Para automação, scripts ou CI/CD:
+```powershell
+# Interactive bilingual wizard via PowerShell:
+.\install.ps1
+
+# Non-interactive global installation for all hosts (PowerShell):
+.\install.ps1 -Scope global -Target all -Yes
+
+# Inject into a project repository with copy fallback:
+.\install.ps1 -ProjectDir "C:\path\to\my-project" -Target cursor,codex -Yes
+
+# From Command Prompt (CMD) or double-click in Explorer:
+install.cmd --global --target all --yes
+```
+
+> **Windows CLI Shims & User PATH**: The Windows installer automatically generates `.cmd` shims (`xp-tokens.cmd`, `xp-spec.cmd`, `xp-kit.cmd`, `xp-run.cmd`, etc.) in `%USERPROFILE%\.local\bin` and configures your User Environment `PATH` persistently in the Windows Registry.
+
+### 4. Non-Interactive Automation & Flags (Linux & macOS)
+
+For Linux and macOS scripts or CI/CD pipelines:
 
 ```bash
-# Instalação 100% global silenciosa:
-./install.sh --global --yes
+# Global installation for ALL supported hosts (Antigravity, OpenCode, Cursor, Codex, Qoder):
+./install.sh --global --target all --yes
 
-# Injetar o kit apenas em um projeto específico:
-./install.sh --project /caminho/do/meu-projeto --yes
+# Install only into specific hosts:
+./install.sh --global --target cursor,codex,opencode --yes
 
-# Instalação global + injeção imediata em um projeto:
-./install.sh --both /caminho/do/meu-projeto --yes
+# Inject the kit into a single project workspace:
+./install.sh --project /path/to/my-repo --target all --yes
 
-# Simulação segura sem alterações no disco (Dry-run):
+# Both: update global environment AND inject into a target project:
+./install.sh --both /path/to/my-repo --target cursor,qoder --yes
+
+# Specify language explicitly (en or pt):
+./install.sh --global --target all --lang en --yes
+
+# Safe preview with dry-run mode:
 ./install.sh --dry-run
 ```
 
+### 5. Bundled Toolchain
+
+The installation process automatically installs and links auxiliary performance tools:
+- **RTK (Rust Token Killer)**: Compiles from source or downloads binary to `~/.local/bin/rtk`.
+- **OpenDesign (`od`)**: Installs daemon and links visual CLI to `~/.local/bin/od`.
+- **CodeReviewGraph (`code-review-graph` / `crg`)**: Sets up isolated virtual environment in `~/.local/share/code-review-graph`.
+
 ---
 
-### 3. Utilitário CLI Unificado de Gestão (`agy-kit` / `xp-kit`)
+## Autonomous Updates & Notifications
 
-Após a instalação, o comando `agy-kit` fica disponível globalmente no seu terminal:
+The kit includes a non-blocking update manager that checks for remote updates:
 
 ```bash
-# Diagnóstico completo de integridade e dependências:
-agy-kit doctor
+# Check for updates and automatically upgrade the kit:
+xp-kit update
 
-# Injetar o kit em um novo projeto qualquer:
-agy-kit init /caminho/do/novo-projeto
+# Run diagnostic health check on the environment:
+xp-kit doctor
 
-# Re-sincronizar atualizações da instalação global:
-agy-kit sync
+# Synchronize global configuration across all hosts:
+xp-kit sync
+```
 
-# Verificar versão instalada:
-agy-kit version
+- **24-Hour Non-Blocking Cache**: Remote updates are checked asynchronously in `~/.xp_kit_update_cache.json` without slowing down CLI turns.
+- **Discrete Notifications**: When a new version is published, `xp-tokens` and `xp-kit` print a discrete notification:
+  ```text
+  ✨ An update is available: v3.1.0 -> v3.2.0 (Run 'xp-kit update' to upgrade)
+  ```
+
+---
+
+## Unified CLI Reference
+
+All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravity-native) aliases in `~/.local/bin`:
+
+### Governance & Spec Tools
+- `xp-kit` / `agy-kit`: Multi-host manager, installation wizard, doctor diagnostics, and auto-updater.
+- `xp-spec` / `agy-spec`: ATDD specification scaffolding and validator:
+  ```bash
+  # Scaffold a new ATDD spec:
+  xp-spec new user-authentication
+
+  # Validate spec structure (ACs, SbE table, Gherkin scenarios):
+  xp-spec validate .agents/specs/SPEC-004-user-authentication.md
+  ```
+- `xp-conformance` / `agy-conformance`: Generates the traceability matrix linking Acceptance Criteria to test executions.
+
+### Token Telemetry & Execution
+- `xp-tokens` / `agy-tokens`: Compact 4-line telemetry engine with color support and host-adaptive model catalog:
+  ```bash
+  # Print current turn footer with terminal colors:
+  xp-tokens --turn --color
+
+  # Target specific host model limit:
+  xp-tokens --turn --color --host cursor
+  ```
+- `xp-run` / `agy-run`: Executes commands with output sanitization, preserving exit codes via `pipefail`.
+- `xp-evidence` / `agy-evidence`: Records concrete test execution evidence for compliance audits.
+- `xp-handoff` / `agy-handoff`: Creates structured handoff packets between agents or sessions.
+
+### Design & Architecture Tools
+- `xp-design` / `agy-design` / `od`: OpenDesign visual canvas and UI token management.
+- `xp-graph` / `agy-graph` / `code-review-graph`: AST dependency analysis and blast-radius exploration.
+- `agy-smart` / `agy-effort`: Dynamic reasoning effort router (`low`, `medium`, `high`).
+- `agy-ci-heal`: Autonomous CI/CD pipeline diagnosis and auto-repair.
+
+---
+
+## Telemetry Footer Specification
+
+Every response produced by an agent governed by the kit ends with the mandatory compact 4-line footer:
+
+```text
+Contexto: [██░░░░░░░░░░░░░░░░░░] 11.2% (22.4k/200.0k)
+Limites:  5h: [██████████░░░░░░░░░░] 52.1% | Semanal: [███░░░░░░░░░░░░░░░░░] 18.4%
+Consumo:  Prompt: 1.2k | Saída: 450 | Turno: 1.6k | Total: 22.4k
+Modelo:   Claude Sonnet 3.7 (Host: Cursor) | Custo Estimado: $0.0082
 ```
 
 ---
 
-### 4. Ferramentas CLI Disponíveis no PATH (`~/.local/bin`)
+## Directory Layout
 
-- `agy-kit` / `xp-kit`: Instalador, inicializador de projetos e diagnóstico de integridade.
-- `agy-tokens`: Relatório ao vivo de telemetria em 3 camadas e auditoria de cotas.
-- `agy-smart`: Roteador inteligente de raciocínio baseado no prompt.
-- `agy-effort`: Executor com esforço parametrizado (`low`, `medium`, `high`).
-- `agy-debt`: Scanner de débitos técnicos e atalhos com alerta de apodrecimento (`rot risk`).
-- `agy-health`: Scanner de integridade das ferramentas, diretórios e links do kit.
-- `agy-repo-map`: Gerador e atualizador de AST Repo Map.
-- `agy-ci-heal`: Scanner e auto-healer autônomo de pipelines CI/CD.
-- `agy-sanitize`: Sanitizador de saídas verbosas para redução drástica de tokens.
-- `agy-handoff`: Gerador de pacotes de transição e handoff estruturado entre sessões.
+```text
+.agents/
+├── agents/                 # Specialized agent definitions (orchestrator, navigator, builder, etc.)
+├── memory/                 # 4-Tier living project memory and historical archives
+│   ├── PROJECT_MEMORY.md   # Active context snapshot (< 2,000 tokens)
+│   ├── REPO_MAP.md         # AST symbol tree for zero-blind exploration
+│   └── archive/HISTORY.md  # Rotated deliverable history
+├── policies/               # Non-negotiable policies (ATDD/TDD, Anti-Test-Bypass, Memory, Security)
+├── rules/                  # Active runtime rule enforcement
+├── skills/                 # 77 granular skills (token-dense English instruction sets)
+├── templates/              # Reusable templates (SPEC-NNN-ATDD.md, PROJECT_MEMORY_TEMPLATE.md)
+└── workflows/              # Structured workflow routes by risk level (L0 to L3, bugfix, migration)
 
+scripts/
+├── host_adapters.py        # Multi-host project configuration generator
+├── kit_installer.py        # Interactive & automated CLI installer
+├── mcp_installers.py       # RTK, OpenDesign, and CodeReviewGraph automated toolchain installers
+├── spec_tool.py            # xp-spec CLI tool for ATDD spec scaffolding and validation
+├── telemetry/              # Multi-host token tracking, model catalogs, and color formatting
+└── update_manager.py       # Autonomous remote update checker and updater
+```
 
+---
 
+## Contributing & Verification
+
+To verify the test suite across all modules:
+
+```bash
+# Run unit tests across all kit components:
+python3 -m unittest discover tests
+
+# Run specific enhancement test suites:
+python3 -m unittest tests/test_spec_003_enhancements.py tests/test_spec_003_v3.py
+```
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.\n

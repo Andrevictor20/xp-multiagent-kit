@@ -1,53 +1,39 @@
 ---
 name: lesson-learned
-description: Captura e formalização de lições aprendidas (L-NNN).
+description: Capture and formalize procedural lessons learned ([L-NNN]) in project memory.
 ---
 
-# Institutional Lessons Learned: Memória Procedural Permanente
+# Institutional Lessons Learned: Permanent Procedural Memory
 
-> **Propósito:** Quando um bug difícil é resolvido, um comportamento inesperado de biblioteca é superado ou um detalhe sutil de infraestrutura é descoberto, essa informação deve ser formalizada imediatamente como uma lição aprendida (`L-001..L-NNN`) para alimentar a **Memória Procedural** do projeto.
+Whenever a non-obvious bug is solved, a library quirk is uncovered, or an infrastructure pitfall is resolved, formalize it immediately as a numbered lesson (`[L-001]..[L-NNN]`) in Procedural Memory.
 
----
-
-## 1. Estrutura Canônica de uma Lição Aprendida
-
-Toda nova lição aprendida deve responder com precisão:
+## 1. Canonical Lesson Learned Structure
 
 ```markdown
-### 📘 [L-NNN] Título Claro do Problema e Contexto
+### 📘 [L-NNN] Clear Title of Problem and Context
 
-- **Contexto & Sintoma:** O que falhou e como o erro se manifestou?
-- **Causa Raiz Confirmada:** Por que o problema realmente aconteceu (explicando a mecânica técnica, não apenas a suposição)?
-- **Evidência Comprovada:** Teste ou comando que capturou e comprovou a resolução.
-- **Regra Prática para o Futuro:** O que fazer e o que NUNCA fazer daqui para frente neste repositório.
+- **Context & Symptom:** What failed and how the error manifested.
+- **Confirmed Root Cause:** Exact technical mechanism behind the failure (not guesses).
+- **Verified Evidence:** Test or command proving the fix.
+- **Actionable Rule:** What to ALWAYS do and NEVER do going forward in this repository.
 ```
 
----
+## 2. Reference Examples
 
-## 2. Exemplos de Lições Aprendidas
-
-### Exemplo 1: Peculiaridade de Biblioteca / Framework
 ```markdown
-### 📘 [L-001] Mutação Silenciosa de Estado no Hook useSyncExternalStore
-- **Contexto & Sintoma:** Componentes da barra lateral não renderizavam as atualizações de estado do WebSocket.
-- **Causa Raiz Confirmada:** O seletor retornava uma nova referência de array a cada tick, causando re-renderizações infinitas que eram ignoradas pelo bail-out do React.
-- **Evidência Comprovada:** `test/sidebar-sync.test.ts` passando com equality function customizada.
-- **Regra Prática:** Sempre envolva seletores que retornam arrays/objetos em `useCallback` ou passe comparadores por valor para o snapshot.
+### 📘 [L-001] Infinite Re-Render in useSyncExternalStore Selector
+- **Context & Symptom:** Sidebar failed to update on WebSocket state ticks.
+- **Confirmed Root Cause:** Selector returned a new array reference on every tick, triggering React bail-out loops.
+- **Verified Evidence:** `tests/sidebar-sync.test.ts` passing with stable selector reference.
+- **Actionable Rule:** Memoize selectors returning objects/arrays or provide a value equality comparator.
+
+### 📘 [L-002] iOS Safari Viewport Jump with `h-screen`
+- **Context & Symptom:** Bottom primary CTA overlapped by dynamic iOS Safari address bar.
+- **Confirmed Root Cause:** `100vh` ignores dynamic mobile browser chrome in WebKit.
+- **Verified Evidence:** Mobile viewport emulation check.
+- **Actionable Rule:** Always use `min-h-[100dvh]` for full-screen heroes and modals; ban `100vh`.
 ```
 
-### Exemplo 2: Quirks de Ambiente / Mobile Viewport
-```markdown
-### 📘 [L-002] Saltos de Layout no iOS Safari com `h-screen`
-- **Contexto & Sintoma:** O botão de CTA inferior era coberto pela barra retrátil de navegação no iPhone.
-- **Causa Raiz Confirmada:** `100vh` no WebKit do iOS ignora a barra inferior dinâmica do navegador.
-- **Evidência Comprovada:** Validação via device emulator.
-- **Regra Prática:** Use estritamente `min-h-[100dvh]` em containers de tela cheia. `100vh` é proibido em heroes e modais.
-```
-
----
-
-## 3. Conexão com a Memória de Projeto
-
-Ao registrar uma lição aprendida:
-1. O agente `archivist` inclui um resumo de 1-2 linhas na seção **6. Gotchas, Hurdles & Learned Playbooks (Procedural Memory)** do arquivo `.agents/memory/PROJECT_MEMORY.md`.
-2. Em novas sessões, o `orchestrator` lê essa seção no **Passo 0 (Fast Context Bootstrap)**, garantindo que o agente já inicie o chat ciente das armadilhas conhecidas do projeto.
+## 3. Memory Integration
+1. `archivist` appends a 1-2 line `[L-NNN]` entry to **Section 6 (Gotchas, Hurdles & Learned Playbooks)** of `.agents/memory/PROJECT_MEMORY.md`.
+2. `orchestrator` loads these rules during **Step 0 (Fast Context Bootstrap)** so future sessions never repeat past mistakes.

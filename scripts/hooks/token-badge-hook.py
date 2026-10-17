@@ -77,12 +77,13 @@ def record_local_turn(payload: dict) -> None:
 
 
 def run_live_report() -> None:
-    """Atualiza o relatório oficial quando o tracker do Antigravity está disponível."""
+    """Atualiza o relatório oficial apenas se solicitado via AGY_AUTO_REPORT=1."""
+    if os.environ.get("AGY_AUTO_REPORT") != "1":
+        return
     tracker_script = SCRIPTS_DIR / "token_tracker.py"
     if not tracker_script.is_file():
         return
     try:
-        # Executa no workspace atual para atualizar o TOKEN_TELEMETRY.md do projeto ativo
         subprocess.run(
             [sys.executable, str(tracker_script), "--report"],
             capture_output=True,

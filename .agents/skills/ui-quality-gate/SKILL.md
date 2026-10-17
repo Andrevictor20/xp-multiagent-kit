@@ -1,36 +1,32 @@
 ---
 name: ui-quality-gate
-description: Checklist pré-release: WCAG AA, 100dvh e qualidade visual.
+description: Pre-release UI checklist: WCAG AA contrast, 100dvh viewport, and Anti-Slop gate.
 ---
 
 # UI Quality Gate
 
-A direção estética e a qualidade de produção caminham juntas. Esta skill garante que o código final implementado é robusto, acessível, responsivo e livre de defeitos de layout e clichês de IA.
+Run this mandatory pre-commit / pre-release verification checklist on every frontend or UI task before delivery.
 
----
+## 1. Accessibility & Contrast (WCAG AA)
+- [ ] **Body & Heading Contrast:** Meets `>= 4.5:1` for normal text and `>= 3:1` for large text.
+- [ ] **CTA Button Contrast:** Button label is high-contrast against button fill (ban white-on-white or invisible ghost buttons).
+- [ ] **Form Control Contrast:** Input borders, placeholders, helper text, and error states pass contrast checks.
+- [ ] **Keyboard Focus:** Every interactive element displays a visible focus ring (`focus-visible:ring-2`).
+- [ ] **Semantic HTML:** Uses native `<button>`, `<a>`, `<nav>`, `<main>`, `<section>` (zero clickable `<div onClick>`).
 
-## Checklist de Validação Obrigatório (Pré-Commit / Pré-Release)
+## 2. Responsiveness & Viewport Stability
+- [ ] **Dynamic Viewport Height:** Uses `min-h-[100dvh]` for full-height heroes/modals (**never `h-screen` or `100vh`**).
+- [ ] **Single-Line Desktop Navbar:** Top navigation fits on one line on desktop (`max-h-[80px]`).
+- [ ] **No Wrapped CTA Labels:** Primary CTA button labels stay on a single line without awkward text wrapping.
+- [ ] **Mobile Grid Collapse:** Multi-column/asymmetric grids collapse cleanly to `grid-cols-1 w-full px-4` below `768px`.
 
-### 1. Acessibilidade & Contraste (WCAG AA)
-- [ ] **Contraste de Texto:** Atende no mínimo 4.5:1 para texto normal e 3:1 para texto grande.
-- [ ] **Contraste de Botões:** O texto de todos os CTAs é legível contra o fundo (proibido botão branco com texto branco ou botão transparente sem borda).
-- [ ] **Contraste de Formulários:** Inputs, placeholders, helper texts e estados de foco passam em 4.5:1 contra o fundo da seção.
-- [ ] **Foco de Teclado:** Todo elemento interativo possui anel de foco visível (`focus-visible:ring-2`).
-- [ ] **Semântica HTML:** Uso de `<button>`, `<a>`, `<nav>`, `<main>`, `<section>` em vez de divs genéricas com `onClick`.
+## 3. Motion & Rendering Performance
+- [ ] **Reduced Motion Support:** Respects `prefers-reduced-motion` with instant/static transitions.
+- [ ] **Zero Window Scroll Listeners:** Uses `IntersectionObserver`, Motion `useScroll`, or GSAP `ScrollTrigger` (never `window.addEventListener('scroll')`).
+- [ ] **GPU-Safe Properties:** Animates only `transform` and `opacity`; restricts `backdrop-blur` to fixed elements.
 
-### 2. Responsividade & Estabilidade de Viewport
-- [ ] **Viewport Stability:** Uso estrito de `min-h-[100dvh]` para heros e seções cheias (NUNCA usar `h-screen`, que causa saltos no iOS Safari).
-- [ ] **Navegação em Uma Linha:** Barra de navegação cabe em uma única linha no desktop, com altura máxima de `80px`.
-- [ ] **CTA Button Wrap Ban:** O texto dos botões principais de CTA cabe em uma única linha no desktop (sem quebra feia de linha).
-- [ ] **Colapso Mobile Explícito:** Layouts assimétricos colapsam com segurança para `grid-cols-1 w-full px-4` em telas `< 768px`.
-
-### 3. Movimento, Performance & Preferências
-- [ ] **Prefers-Reduced-Motion:** Animações e físicas colapsam para transições estáticas/instantâneas sob `prefers-reduced-motion`.
-- [ ] **Sem Listeners no Window:** Proibido `window.addEventListener('scroll')`. Uso exclusivo de Motion, ScrollTrigger ou IntersectionObserver.
-- [ ] **GPU-Safe:** Transições animam apenas `transform` e `opacity`.
-
-### 4. Filtro Anti-Slop (Livre de Clichês de IA)
-- [ ] **Zero Em-Dashes (`—`):** Nenhum travessão longo ou meia-risca em headlines, botões, pills, body copy ou legendas.
-- [ ] **Imagens Reais / Geradas:** Ausência de falsos screenshots desenhados com divs (`<div>` simulando tela de app).
-- [ ] **Hero Despoluído:** Headline com no máximo 2 linhas, subtexto com no máximo 20 palavras e CTA visível sem rolagem.
-- [ ] **Page Theme Lock:** A página mantém um único tema consistente do topo ao rodapé, sem inversões aleatórias no meio do scroll.
+## 4. Anti-Slop Aesthetic Filter
+- [ ] **Zero Em-Dashes (`—` / `–`):** None in headlines, eyebrows, buttons, pills, or body copy.
+- [ ] **No Fake Div Mockups:** Uses real or generated visual assets rather than crude `<div>` wireframe placeholders.
+- [ ] **Disciplined Hero:** Max 2 headline lines, `<= 20` subheadline words, primary CTA visible above the fold.
+- [ ] **Page Theme & Color Lock:** Single consistent theme and primary accent from top to bottom.

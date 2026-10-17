@@ -1,10 +1,3 @@
-# Design System Policy
+# Design System & Token Governance Policy
 
-- **Token Anchoring First (Descoberta Obrigatória)**: Antes de escrever qualquer CSS, JSX ou componente visual, inspecione obrigatoriamente os tokens existentes no projeto (`tokens.ts`, `theme.ts`, `ThemeContext.tsx`, `tailwind.config.*` ou variáveis CSS). É terminantemente proibido inventar valores hexadecimais arbitrários ou soltos. Reutilize sempre os tokens semânticos (`color.background`, `color.surface`, `color.accent`, `radius.inner`, `text.muted`).
-- **Color Consistency Lock**: Acento único de cor com saturação < 80%, aplicado de forma consistente por toda a página. Proibida a paleta clichê de IA (bege/latão/espresso ou gradientes roxos sem propósito) como default.
-- **Shape Consistency Lock & Raios Concêntricos**: A escala de bordas deve ser consistente e aplicar a matemática concêntrica em molduras aninhadas ($\text{radius}_{\text{inner}} = \max(0, \text{radius}_{\text{outer}} - \text{padding})$).
-- **Escala de Espaçamento 8pt Estrita**: Todo layout deve obedecer a múltiplos de 4px/8px (`4, 8, 12, 16, 24, 32, 48, 64px`). Proibido espaçamentos ímpares aleatórios (`gap-[17px]`, `p-[13px]`).
-- **Ergonomia e Alvos de Toque Mínimos**: Todo elemento interativo deve possuir alvo de toque mínimo de **48x48px** em mobile e **40x40px** em desktop, com feedback tátil no toque (`active:scale-[0.98]` ou transição suave ≤ 200ms).
-- **Adoção Honesta de Design Systems Oficiais**: Para interfaces corporativas ou de ecossistemas específicos (Fluent, Material 3, Carbon, Polaris, Primer, Radix Themes), utilize os pacotes oficiais. Não recrie CSS por aproximação manual sem necessidade.
-- **Prevenção Ativa de Drift**: Novos componentes devem seguir os padrões estruturais aprovados (Double-Bezel, Bento Diversity, Button-in-Button) e ser devidamente registrados no component registry.
-- **Integração OpenDesign & Antigravity (`agy-design` / `od`)**: Para prototipagem interativa, live sandboxes e exploração de templates, o kit integra o OpenDesign via CLI (`od`, `agy-design`) e servidor MCP (`~/.gemini/antigravity/mcp_config.json`). O agente `designer` pode inspecionar os 163 skills em `~/.local/share/open-design/skills/`, validar templates com `od lint` e rodar o estúdio com `agy-design studio` mantendo o Antigravity como runtime nativo.
+Enforce strict 8pt spatial grid (`4px`, `8px`, `16px`, `24px`, `32px`, `48px`), Color Lock (semantic surface/text/accent tokens, zero raw hex in components), and Shape Lock (consistent border-radius hierarchy).

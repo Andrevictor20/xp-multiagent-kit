@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
 scripts/kit_installer.py
-XP Multi-Agent Kit v2 — Motor de Instalação e Portabilidade Unificado (SPEC-002)
+XP Multi-Agent Kit v3.0 — Unified Agnostic Installer & Portability Engine (SPEC-002 & SPEC-003)
 
-Fornece verificação de dependências, instalação global e por projeto,
-configuração de PATH e diagnóstico de integridade (agy-kit doctor).
+Supports:
+- 4 Host Environments (IDE & CLI): Antigravity, OpenCode, Cursor, Qoder
+- Automatic Bilingual Localization (PT / EN) detected from OS locale or --lang
+- Global & Project-level installation, MCP auto-configuration, and health diagnostics
 """
 
 from __future__ import annotations
@@ -19,47 +21,47 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from scripts.host_adapters import (
+    HostAdapters,
+    SUPPORTED_TARGETS,
+    build_mcp_servers_dict,
+    detect_system_language,
+    get_i18n_messages,
+    normalize_targets,
+)
+from scripts.windows_support import (
+    SHIM_COMMANDS,
+    WindowsPathConfigurator,
+    generate_windows_shims,
+)
+
 
 class DependencyChecker:
-    """Verifica e diagnostica dependências do sistema operacional e ambiente."""
+    """Verifies OS and runtime dependencies."""
 
     REQUIRED_PYTHON = (3, 8)
 
     def check_python(self) -> Dict[str, Any]:
         info = sys.version_info
-        major = info[0]
-        minor = info[1]
+        major, minor = info[0], info[1]
         micro = info[2] if len(info) > 2 else 0
         ok = (major, minor) >= self.REQUIRED_PYTHON
         version_str = f"{major}.{minor}.{micro}"
-        if ok:
-            return {
-                "ok": True,
-                "major": major,
-                "minor": minor,
-                "micro": micro,
-                "version": version_str,
-                "message": f"Python {version_str} (compatível >= 3.8)",
-            }
-        return {
-            "ok": False,
-            "major": major,
-            "minor": minor,
-            "micro": micro,
-            "version": version_str,
-            "message": f"Python {version_str} incompatível: requer Python >= 3.8",
-        }
+        msg = (
+            f"Python {version_str} (compatível >= 3.8)"
+            if ok
+            else f"Python {version_str} incompatível: requer Python >= 3.8"
+        )
+        return {"ok": ok, "major": major, "minor": minor, "micro": micro, "version": version_str, "message": msg}
 
     def check_command(self, cmd: str, required: bool = True) -> Dict[str, Any]:
         path = shutil.which(cmd)
         if path:
-            return {
-                "ok": True,
-                "command": cmd,
-                "path": path,
-                "required": required,
-                "message": f"{cmd} encontrado em {path}",
-            }
+            return {"ok": True, "command": cmd, "path": path, "required": required, "message": f"{cmd} encontrado em {path}"}
         status_msg = "ERRO: Obrigatório" if required else "AVISO: Opcional"
         return {
             "ok": not required,
@@ -70,12 +72,8 @@ class DependencyChecker:
         }
 
     def detect_package_manager(self) -> Tuple[Optional[str], Optional[str]]:
-        system = platform.system().lower()
-        if system == "darwin":
-            if shutil.which("brew"):
-                return "brew", "brew install"
-            return "macos", "instale via Homebrew (https://brew.sh)"
-
+        if platform.system().lower() == "darwin":
+            return ("brew", "brew install") if shutil.which("brew") else ("macos", "instale via Homebrew (https://brew.sh)")
         pms = [
             ("apt-get", "apt", "sudo apt-get update && sudo apt-get install -y"),
             ("dnf", "dnf", "sudo dnf install -y"),
@@ -91,67 +89,53 @@ class DependencyChecker:
     def check_all(self) -> Dict[str, Any]:
         py_check = self.check_python()
         git_check = self.check_command("git", required=True)
-        gh_check = self.check_command("gh", required=False)
-        cargo_check = self.check_command("cargo", required=False)
-        rtk_check = self.check_command("rtk", required=False)
-        od_check = self.check_command("od", required=False)
-
-        can_proceed = py_check["ok"] and git_check["ok"]
         return {
-            "can_proceed": can_proceed,
+            "can_proceed": py_check["ok"] and git_check["ok"],
             "checks": {
                 "python": py_check,
                 "git": git_check,
-                "gh": gh_check,
-                "cargo": cargo_check,
-                "rtk": rtk_check,
-                "od": od_check,
+                "gh": self.check_command("gh", required=False),
+                "cargo": self.check_command("cargo", required=False),
+                "rtk": self.check_command("rtk", required=False),
+                "od": self.check_command("od", required=False),
             },
         }
 
 
 class PathConfigurator:
-    """Configura e adiciona caminhos ao PATH de forma idempotente no shell do usuário."""
+    """Idempotently configures ~/.local/bin in user shell RC files."""
 
     def __init__(self, rc_files: Optional[List[Path]] = None):
-        if rc_files is not None:
-            self.rc_files = rc_files
-        else:
-            home = Path.home()
-            self.rc_files = [
-                home / ".bashrc",
-                home / ".zshrc",
-                home / ".profile",
-            ]
+        home = Path.home()
+        self.rc_files = rc_files if rc_files is not None else [
+            home / ".bashrc",
+            home / ".zshrc",
+            home / ".profile",
+            home / ".zprofile",
+            home / ".bash_profile",
+        ]
 
     def ensure_path_in_rc(self, bin_dir: str) -> bool:
         added_any = False
-        export_line = f'export PATH="{bin_dir}:$PATH"'
-        identifier = f'# XP Multi-Agent Kit\n{export_line}\n'
-
+        identifier = f'# XP Multi-Agent Kit\nexport PATH="{bin_dir}:$PATH"\n'
         for rc_file in self.rc_files:
             if not rc_file.exists():
                 continue
             try:
                 content = rc_file.read_text(encoding="utf-8")
                 if bin_dir in content:
-                    continue  # Já configurado de forma idempotente
-                
-                # Adiciona no final com quebra de linha limpa
-                new_content = content
-                if not new_content.endswith("\n"):
-                    new_content += "\n"
-                new_content += f"\n{identifier}"
-                rc_file.write_text(new_content, encoding="utf-8")
+                    continue
+                if not content.endswith("\n"):
+                    content += "\n"
+                rc_file.write_text(f"{content}\n{identifier}", encoding="utf-8")
                 added_any = True
             except Exception:
                 continue
-
         return added_any
 
 
 class ProjectInstaller:
-    """Injeta e configura a governança do XP Multi-Agent Kit em um projeto isolado."""
+    """Injects XP Multi-Agent Kit governance into a project for Antigravity, OpenCode, Cursor, and/or Qoder."""
 
     def __init__(self, kit_dir: Optional[Path] = None):
         self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
@@ -161,9 +145,11 @@ class ProjectInstaller:
         project_dir: Path,
         use_symlinks: bool = True,
         dry_run: bool = False,
+        targets: Optional[Any] = None,
     ) -> Dict[str, Any]:
         actions: List[str] = []
         project_dir = Path(project_dir).resolve()
+        resolved_targets = normalize_targets(targets)
 
         if not dry_run:
             project_dir.mkdir(parents=True, exist_ok=True)
@@ -174,37 +160,33 @@ class ProjectInstaller:
             agents_dir.mkdir(parents=True, exist_ok=True)
         actions.append(f"Diretório .agents criado: {agents_dir}")
 
-        # Sincroniza subpastas do kit
-        folders_to_sync = ["policies", "rules", "workflows", "templates"]
-        for folder in folders_to_sync:
+        for folder in ["policies", "rules", "workflows", "templates", "skills", "agents"]:
             src = self.kit_dir / ".agents" / folder
             dst = agents_dir / folder
             if not src.exists():
                 continue
-
             if not dry_run:
                 if dst.exists() or dst.is_symlink():
                     if dst.is_symlink() or dst.is_file():
                         dst.unlink()
                     elif dst.is_dir():
                         shutil.rmtree(dst)
-
                 if use_symlinks:
-                    dst.symlink_to(src)
+                    try:
+                        dst.symlink_to(src)
+                    except OSError:
+                        shutil.copytree(src, dst)
                 else:
                     shutil.copytree(src, dst)
             actions.append(f"Subpasta .agents/{folder} sincronizada ({'symlink' if use_symlinks else 'cópia'})")
 
-        # Configura AGENTS.md na raiz do projeto
         project_agents_md = project_dir / "AGENTS.md"
         src_agents_md = self.kit_dir / "AGENTS.md"
         if src_agents_md.exists():
             if not dry_run:
-                if not project_agents_md.exists():
-                    shutil.copy(src_agents_md, project_agents_md)
+                shutil.copy(src_agents_md, project_agents_md)
             actions.append(f"AGENTS.md configurado na raiz de {project_dir}")
 
-        # Configura ignore rules (.geminiignore e .antigravityignore)
         ignore_template = self.kit_dir / "templates" / "universal.geminiignore"
         if ignore_template.exists():
             content = ignore_template.read_text(encoding="utf-8")
@@ -215,390 +197,122 @@ class ProjectInstaller:
                         ign_path.write_text(content, encoding="utf-8")
             actions.append("Arquivos .geminiignore e .antigravityignore implantados")
 
-        # Inicializa PROJECT_MEMORY.md se não existir
         memory_dir = agents_dir / "memory"
         project_memory = memory_dir / "PROJECT_MEMORY.md"
         if not dry_run:
             memory_dir.mkdir(parents=True, exist_ok=True)
             if not project_memory.exists():
-                init_mem_script = self.kit_dir / "scripts" / "agy-init-memory"
-                initialized = False
-                if init_mem_script.exists():
-                    try:
-                        res = subprocess.run(
-                            [sys.executable, str(init_mem_script), "--project-dir", str(project_dir)],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if res.returncode == 0 and project_memory.exists():
-                            initialized = True
-                    except Exception:
-                        pass
-
-                if not initialized and not project_memory.exists():
-                    template_file = self.kit_dir / "templates" / "PROJECT_MEMORY_TEMPLATE.md"
-                    if template_file.exists():
-                        raw = template_file.read_text(encoding="utf-8")
-                        rendered = raw.replace("{{PROJECT_NAME}}", project_dir.name)
-                        rendered = rendered.replace("{{LAST_UPDATED}}", "2026-10-02")
-                        rendered = rendered.replace("{{STATUS}}", "BOOTSTRAPPING")
-                        rendered = rendered.replace("{{VERSION}}", "v0.1.0")
-                        rendered = rendered.replace("{{TECH_STACK}}", "Agnóstico (stack a definir)")
-                        rendered = rendered.replace("{{PURPOSE}}", f"Projeto {project_dir.name}")
-                        rendered = rendered.replace("{{ARCHITECTURE}}", "Arquitetura inicial modular.")
-                        rendered = rendered.replace("{{BUILD_CMD}}", "make build")
-                        rendered = rendered.replace("{{TEST_CMD}}", "make test")
-                        rendered = rendered.replace("{{LINT_CMD}}", "make lint")
-                        rendered = rendered.replace("{{DEV_CMD}}", "make dev")
-                        rendered = rendered.replace("{{CI_STATUS}}", "CONFIGURED")
-                        rendered = rendered.replace("{{QUALITY_GATE}}", "TDD estrito + Zero Workarounds")
-                        rendered = rendered.replace("{{LAST_EVIDENCE}}", "EV-GENESIS-20261002-01")
-                        rendered = rendered.replace("{{ENV}}", "Local / Development")
-                        project_memory.write_text(rendered, encoding="utf-8")
-                    else:
-                        project_memory.write_text(
-                            f"# Memória do Projeto: {project_dir.name}\n\nStatus: BOOTSTRAPPING\n",
-                            encoding="utf-8",
-                        )
+                template_file = self.kit_dir / "templates" / "PROJECT_MEMORY_TEMPLATE.md"
+                if template_file.exists():
+                    raw = template_file.read_text(encoding="utf-8")
+                    replacements = {
+                        "{{PROJECT_NAME}}": project_dir.name,
+                        "{{LAST_UPDATED}}": "2026-10-16",
+                        "{{STATUS}}": "BOOTSTRAPPING",
+                        "{{VERSION}}": "v0.1.0",
+                        "{{TECH_STACK}}": "Agnostic",
+                        "{{PURPOSE}}": f"Project {project_dir.name}",
+                        "{{ARCHITECTURE}}": "Modular architecture",
+                        "{{BUILD_CMD}}": "make build",
+                        "{{TEST_CMD}}": "make test",
+                        "{{LINT_CMD}}": "make lint",
+                        "{{DEV_CMD}}": "make dev",
+                        "{{CI_STATUS}}": "CONFIGURED",
+                        "{{QUALITY_GATE}}": "Strict TDD + Zero Workarounds",
+                        "{{LAST_EVIDENCE}}": "EV-GENESIS-01",
+                        "{{ENV}}": "Local / Development",
+                    }
+                    for k, v in replacements.items():
+                        raw = raw.replace(k, v)
+                    project_memory.write_text(raw, encoding="utf-8")
+                else:
+                    project_memory.write_text(f"# Project Memory: {project_dir.name}\n\nStatus: BOOTSTRAPPING\n", encoding="utf-8")
                 actions.append("Memória isolada PROJECT_MEMORY.md inicializada")
             else:
                 actions.append("Memória existente preservada sem sobrescrita")
 
-        return {"ok": True, "actions": actions, "project_dir": str(project_dir)}
+        # Multi-Host Adapters (OpenCode, Cursor, Qoder)
+        adapters = HostAdapters(kit_dir=self.kit_dir)
+        if "opencode" in resolved_targets:
+            actions.extend(adapters.install_opencode_project(project_dir, dry_run=dry_run))
+        if "cursor" in resolved_targets:
+            actions.extend(adapters.install_cursor_project(project_dir, dry_run=dry_run))
+        if "qoder" in resolved_targets:
+            actions.extend(adapters.install_qoder_project(project_dir, dry_run=dry_run))
+        if "codex" in resolved_targets:
+            actions.extend(adapters.install_codex_project(project_dir, dry_run=dry_run))
+
+        return {"ok": True, "actions": actions, "project_dir": str(project_dir), "targets": resolved_targets}
 
 
-class OpenDesignInstaller:
-    """Instala e vincula o OpenDesign (od) em ~/.local/share/open-design e ~/.local/bin/od."""
-
-    REPO_URL = "https://github.com/opendesign/open-design.git"
-
-    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
-        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
-        self.home_dir = home_dir or Path.home()
-        self.od_dir = self.home_dir / ".local" / "share" / "open-design"
-        self.bin_dir = self.home_dir / ".local" / "bin"
-
-    def _run_clone_or_copy(self) -> Any:
-        """Clona o repositório oficial do OpenDesign ou copia se houver fonte local."""
-        self.od_dir.parent.mkdir(parents=True, exist_ok=True)
-        git_cmd = shutil.which("git")
-        if not git_cmd:
-            return None
-        res = subprocess.run(
-            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.od_dir)],
-            capture_output=True,
-            text=True,
-        )
-        return res
-
-    def install(self) -> Dict[str, Any]:
-        self.bin_dir.mkdir(parents=True, exist_ok=True)
-        daemon_script = self.od_dir / "apps" / "daemon" / "bin" / "od.mjs"
-
-        if not daemon_script.exists():
-            self._run_clone_or_copy()
-
-        if daemon_script.exists():
-            try:
-                daemon_script.chmod(daemon_script.stat().st_mode | 0o111)
-            except Exception:
-                pass
-
-            target_link = self.bin_dir / "od"
-            if target_link.exists() or target_link.is_symlink():
-                try:
-                    target_link.unlink()
-                except Exception:
-                    pass
-            try:
-                target_link.symlink_to(daemon_script)
-            except Exception:
-                wrapper_content = f'#!/usr/bin/env bash\nexec node "{daemon_script}" "$@"\n'
-                target_link.write_text(wrapper_content, encoding="utf-8")
-                target_link.chmod(target_link.stat().st_mode | 0o111)
-
-            agy_design_link = self.bin_dir / "agy-design"
-            if not agy_design_link.exists() and not agy_design_link.is_symlink():
-                try:
-                    agy_design_link.symlink_to(target_link)
-                except Exception:
-                    pass
-
-            return {
-                "ok": True,
-                "path": str(target_link),
-                "message": f"OpenDesign instalado com sucesso em {target_link}",
-            }
-
-        return {
-            "ok": False,
-            "path": None,
-            "message": "Falha ao instalar OpenDesign: script od.mjs não foi encontrado.",
-        }
-
-
-class CodeReviewGraphInstaller:
-    """Instala e vincula o CodeReviewGraph em ~/.local/share/code-review-graph e ~/.local/bin."""
-
-    REPO_URL = "https://github.com/tirth8205/code-review-graph.git"
-
-    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
-        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
-        self.home_dir = home_dir or Path.home()
-        self.crg_dir = self.home_dir / ".local" / "share" / "code-review-graph"
-        self.bin_dir = self.home_dir / ".local" / "bin"
-
-    def _run_clone_or_copy(self) -> Any:
-        """Copia do workspace se existir staging local, ou clona do GitHub."""
-        self.crg_dir.parent.mkdir(parents=True, exist_ok=True)
-        staging_dir = self.kit_dir / "code-review-graph-staging"
-        if staging_dir.exists() and (staging_dir / "pyproject.toml").exists():
-            if not self.crg_dir.exists():
-                shutil.copytree(str(staging_dir), str(self.crg_dir), dirs_exist_ok=True)
-            return True
-
-        git_cmd = shutil.which("git")
-        if not git_cmd:
-            return None
-        res = subprocess.run(
-            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.crg_dir)],
-            capture_output=True,
-            text=True,
-        )
-        return res
-
-    def _setup_venv_and_install(self) -> bool:
-        """Cria virtualenv com uv (se disponível) ou python3 -m venv e instala o pacote."""
-        venv_dir = self.crg_dir / ".venv"
-        uv_cmd = shutil.which("uv") or str(self.home_dir / ".local" / "bin" / "uv")
-        has_uv = bool(shutil.which("uv")) or Path(str(self.home_dir / ".local" / "bin" / "uv")).exists()
-
-        if has_uv:
-            real_uv = shutil.which("uv") or str(self.home_dir / ".local" / "bin" / "uv")
-            res = subprocess.run([real_uv, "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
-            if res.returncode == 0:
-                subprocess.run([real_uv, "pip", "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
-                return True
-
-        py_cmd = shutil.which("python3") or sys.executable
-        res = subprocess.run([py_cmd, "-m", "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
-        if res.returncode == 0:
-            pip_bin = venv_dir / "bin" / "pip"
-            subprocess.run([str(pip_bin), "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
-            return True
-        return False
-
-    def install(self) -> Dict[str, Any]:
-        self.bin_dir.mkdir(parents=True, exist_ok=True)
-        venv_bin = self.crg_dir / ".venv" / "bin" / "code-review-graph"
-
-        if not venv_bin.exists():
-            self._run_clone_or_copy()
-            self._setup_venv_and_install()
-
-        if venv_bin.exists():
-            try:
-                venv_bin.chmod(venv_bin.stat().st_mode | 0o111)
-            except Exception:
-                pass
-
-            created_links = []
-            for link_name in ["code-review-graph", "agy-graph", "agy-crg"]:
-                target_link = self.bin_dir / link_name
-                if target_link.exists() or target_link.is_symlink():
-                    try:
-                        target_link.unlink()
-                    except Exception:
-                        pass
-                try:
-                    target_link.symlink_to(venv_bin)
-                    created_links.append(str(target_link))
-                except Exception:
-                    wrapper_content = f'#!/usr/bin/env bash\nexec "{venv_bin}" "$@"\n'
-                    target_link.write_text(wrapper_content, encoding="utf-8")
-                    target_link.chmod(target_link.stat().st_mode | 0o111)
-                    created_links.append(str(target_link))
-
-            return {
-                "ok": True,
-                "path": str(self.bin_dir / "code-review-graph"),
-                "aliases": created_links,
-                "message": f"CodeReviewGraph instalado com sucesso em {self.bin_dir / 'code-review-graph'}",
-            }
-
-        return {
-            "ok": False,
-            "path": None,
-            "message": "Falha ao instalar CodeReviewGraph: binário .venv/bin/code-review-graph não foi encontrado.",
-        }
-
-
-class McpConfigurator:
-    """Configura permissões de auto-aprovação MCP e servidores nos ambientes Antigravity."""
-
-    def __init__(self, home_dir: Optional[Path] = None):
-        self.home_dir = home_dir or Path.home()
-
-    def configure_all(self) -> Dict[str, Any]:
-        gemini_dir = self.home_dir / ".gemini"
-        
-        settings_paths = [
-            gemini_dir / "config" / "settings.json",
-            gemini_dir / "antigravity-ide" / "settings.json",
-            gemini_dir / "antigravity-cli" / "settings.json",
-            gemini_dir / "settings.json",
-        ]
-
-        settings_update = {
-            "approval_mode": "auto",
-            "auto_approve": True,
-            "autoApprove": True,
-            "auto_approve_mcp": True,
-            "permissions": {
-                "call_mcp_tool": "allow",
-                "read_resource": "allow",
-                "list_resources": "allow",
-                "browser_subagent": "allow",
-                "read_url_content": "allow",
-                "run_command": "allow",
-            },
-        }
-
-        for p in settings_paths:
-            try:
-                p.parent.mkdir(parents=True, exist_ok=True)
-                data = {}
-                if p.exists():
-                    try:
-                        data = json.loads(p.read_text(encoding="utf-8"))
-                    except Exception:
-                        data = {}
-                data.update(settings_update)
-                p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            except Exception:
-                pass
-
-        mcp_paths = [
-            gemini_dir / "config" / "mcp_config.json",
-            gemini_dir / "antigravity-ide" / "mcp_config.json",
-            gemini_dir / "mcp_config.json",
-        ]
-
-        od_tools = [
-            "collect_brief", "confirm_brief", "list_projects", "get_active_context",
-            "get_artifact", "get_project", "get_file", "search_files", "list_files",
-            "create_artifact", "write_file", "delete_file", "delete_project",
-            "create_project", "list_skills", "list_plugins", "start_vela_login",
-            "get_vela_login_status", "start_run", "get_run", "cancel_run", "list_agents"
-        ]
-
-        crg_bin = self.home_dir / ".local" / "share" / "code-review-graph" / ".venv" / "bin" / "code-review-graph"
-        crg_cmd = str(crg_bin) if crg_bin.exists() else "code-review-graph"
-        crg_tools = (
-            "detect_changes_tool,get_minimal_context_tool,get_impact_radius_tool,"
-            "query_graph_tool,get_review_context_tool,get_architecture_overview_tool,"
-            "find_large_functions_tool,refactor_tool,list_flows_tool,get_affected_flows_tool"
-        )
-
-        for p in mcp_paths:
-            try:
-                p.parent.mkdir(parents=True, exist_ok=True)
-                mcp_data = {"mcpServers": {}}
-                if p.exists():
-                    try:
-                        mcp_data = json.loads(p.read_text(encoding="utf-8"))
-                    except Exception:
-                        mcp_data = {"mcpServers": {}}
-                if "mcpServers" not in mcp_data:
-                    mcp_data["mcpServers"] = {}
-
-                od_cfg = mcp_data["mcpServers"].get("open-design", {})
-                od_cfg.update({
-                    "command": "od",
-                    "args": ["mcp", "--daemon-url", "http://127.0.0.1:7456"],
-                })
-                # Remove propriedades fora do schema MCP para evitar warnings na IDE
-                od_cfg.pop("autoApprove", None)
-                od_cfg.pop("alwaysAllow", None)
-                mcp_data["mcpServers"]["open-design"] = od_cfg
-
-                # Configura code-review-graph
-                crg_cfg = mcp_data["mcpServers"].get("code-review-graph", {})
-                crg_cfg.update({
-                    "command": crg_cmd,
-                    "args": ["serve"],
-                    "env": {
-                        "CRG_TOOLS": crg_tools,
-                    },
-                })
-                crg_cfg.pop("autoApprove", None)
-                crg_cfg.pop("alwaysAllow", None)
-                mcp_data["mcpServers"]["code-review-graph"] = crg_cfg
-
-                # Remove propriedades de raiz que não pertencem ao schema padrão do mcp_config.json
-                mcp_data.pop("autoApprove", None)
-                mcp_data.pop("auto_approve", None)
-                mcp_data.pop("approval_mode", None)
-
-                p.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            except Exception:
-                pass
-
-        return {"ok": True, "message": "Configurações MCP e auto-aprovação sincronizadas com sucesso"}
+from scripts.mcp_installers import (  # noqa: E402, F401
+    CodeReviewGraphInstaller,
+    McpConfigurator,
+    OpenDesignInstaller,
+    RtkInstaller,
+)
 
 
 class GlobalInstaller:
-    """Orquestra a instalação e sincronização global do kit em ~/.gemini/config e ~/.local/bin."""
+    """Orchestrates global kit installation across Antigravity, OpenCode, Cursor, and Qoder."""
 
     def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
         self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
         self.home_dir = home_dir or Path.home()
 
-    def install_global(self, dry_run: bool = False) -> Dict[str, Any]:
+    def install_global(self, dry_run: bool = False, targets: Optional[Any] = None) -> Dict[str, Any]:
         actions: List[str] = []
+        resolved_targets = normalize_targets(targets or "all")
         if dry_run:
-            actions.append(f"[Dry-run] Simulação de instalação global a partir de {self.kit_dir}")
-            return {"ok": True, "actions": actions}
+            return {"ok": True, "actions": [f"[Dry-run] Global install from {self.kit_dir} for {resolved_targets}"]}
 
-        # Invoca o script de instalação global existente
         install_script = self.kit_dir / "scripts" / "install-global.sh"
-        if install_script.exists():
+        if install_script.exists() and platform.system() != "Windows" and shutil.which("bash"):
             res = subprocess.run(["bash", str(install_script)], capture_output=True, text=True)
             if res.returncode != 0:
                 return {"ok": False, "error": res.stderr, "actions": actions}
             actions.append("Script install-global.sh executado com sucesso")
 
-        # Configura PATH
-        bin_dir = str(self.home_dir / ".local" / "bin")
-        path_cfg = PathConfigurator()
-        if path_cfg.ensure_path_in_rc(bin_dir):
-            actions.append(f"Caminho {bin_dir} adicionado ao shell RC")
+        bin_path = self.home_dir / ".local" / "bin"
+        bin_dir = str(bin_path)
+        if platform.system() == "Windows":
+            shims = generate_windows_shims(bin_path, self.kit_dir)
+            actions.append(f"{len(shims)} shims .cmd gerados em {bin_dir}")
+            WindowsPathConfigurator().ensure_path_in_user_env(bin_dir)
         else:
-            actions.append(f"Caminho {bin_dir} já configurado no PATH")
+            PathConfigurator().ensure_path_in_rc(bin_dir)
+        McpConfigurator(home_dir=self.home_dir).configure_all()
+        OpenDesignInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
+        CodeReviewGraphInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
+        RtkInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
+        adapters = HostAdapters(kit_dir=self.kit_dir, home_dir=self.home_dir)
+        actions.extend(adapters.install_global_hosts(resolved_targets, dry_run=dry_run))
 
-        # Configura permissões MCP irrestritas e servidores
-        mcp_cfg = McpConfigurator(home_dir=self.home_dir)
-        mcp_res = mcp_cfg.configure_all()
-        if mcp_res.get("ok"):
-            actions.append("Permissões MCP e OpenDesign configuradas com auto-aprovação")
+        # Auto-discover and upgrade existing projects on the machine
+        project_installer = ProjectInstaller(kit_dir=self.kit_dir)
+        known_roots = [
+            self.home_dir / d
+            for d in (
+                "Downloads", "Projects", "workspace", "dev", "code", "src",
+                "source/repos", "source", "Documents"
+            )
+        ]
+        for root in known_roots:
+            if root.is_dir():
+                for child in root.iterdir():
+                    if child.is_dir() and child.resolve() != self.kit_dir.resolve():
+                        if (child / ".agents").is_dir() or (child / "AGENTS.md").is_file():
+                            p_res = project_installer.install_project(
+                                child, use_symlinks=True, dry_run=dry_run, targets=resolved_targets
+                            )
+                            if p_res.get("ok"):
+                                actions.append(f"Projeto existente sincronizado: {child.name}")
 
-        # Instala e vincula OpenDesign (od)
-        od_installer = OpenDesignInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir)
-        od_res = od_installer.install()
-        if od_res.get("ok"):
-            actions.append(f"OpenDesign (od) instalado com sucesso em {od_res.get('path')}")
-
-        # Instala e vincula CodeReviewGraph (crg / agy-graph)
-        crg_installer = CodeReviewGraphInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir)
-        crg_res = crg_installer.install()
-        if crg_res.get("ok"):
-            actions.append(f"CodeReviewGraph instalado com sucesso em {crg_res.get('path')}")
-
-        return {"ok": True, "actions": actions}
+        return {"ok": True, "actions": actions, "targets": resolved_targets}
 
 
 class KitDoctor:
-    """Audita a integridade do ambiente, dependências e configurações do kit."""
+    """Audits environment health, dependencies, and multi-IDE installations."""
 
     def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
         self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
@@ -607,302 +321,200 @@ class KitDoctor:
 
     def run_diagnostics(self) -> Dict[str, Any]:
         deps = self.checker.check_all()["checks"]
-        
-        # Diretórios Antigravity
         gemini_dir = self.home_dir / ".gemini"
-        config_dir = gemini_dir / "config"
-        ide_dir = gemini_dir / "antigravity-ide"
-        cli_dir = gemini_dir / "antigravity-cli"
         bin_dir = self.home_dir / ".local" / "bin"
-
         dirs_status = {
             "gemini_root": gemini_dir.is_dir(),
-            "config": config_dir.is_dir(),
-            "ide": ide_dir.is_dir(),
-            "cli": cli_dir.is_dir(),
+            "config": (gemini_dir / "config").is_dir(),
+            "ide": (gemini_dir / "antigravity-ide").is_dir(),
+            "cli": (gemini_dir / "antigravity-cli").is_dir(),
             "bin": bin_dir.is_dir(),
         }
-
-        path_env = os.environ.get("PATH", "")
-        path_ok = str(bin_dir) in path_env
-
-        # Binários essenciais no bin_dir
         essential_bins = [
-            "agy-tokens", "agy-run", "agy-debt", "agy-health", "agy-kit",
-            "od", "agy-design", "code-review-graph", "agy-graph", "agy-crg"
+            "agy-tokens", "xp-tokens", "agy-run", "xp-run", "agy-spec", "xp-spec",
+            "agy-debt", "agy-health", "agy-kit", "xp-kit", "od", "agy-design",
+            "code-review-graph", "agy-graph", "agy-crg",
         ]
-        installed_bins = {b: (bin_dir / b).exists() for b in essential_bins}
+        hosts_status = {
+            "antigravity": (self.home_dir / ".gemini" / "config" / "AGENTS.md").is_file(),
+            "opencode": (self.home_dir / ".config" / "opencode" / "opencode.json").is_file(),
+            "cursor": (self.home_dir / ".cursor" / "rules" / "00-xp-core.mdc").is_file(),
+            "qoder": (self.home_dir / ".qoder" / "rules" / "xp-governance.md").is_file(),
+            "codex": (self.home_dir / ".codex" / "rules" / "xp-governance.md").is_file(),
+        }
+        update_info = {}
+        try:
+            from scripts.update_manager import UpdateManager
+            update_info = UpdateManager(kit_dir=self.kit_dir, home_dir=self.home_dir).check_for_updates()
+        except Exception:
+            pass
 
         return {
             "python": deps["python"],
             "git": deps["git"],
             "gh": deps["gh"],
             "rtk": deps["rtk"],
-            "antigravity_dirs": {
-                "ok": all(dirs_status.values()),
-                "status": dirs_status,
-                "message": "Diretórios Antigravity verificados",
-            },
-            "path_ok": path_ok,
-            "installed_bins": installed_bins,
+            "antigravity_dirs": {"ok": all(dirs_status.values()), "status": dirs_status, "message": "Diretórios verificados"},
+            "path_ok": str(bin_dir) in os.environ.get("PATH", ""),
+            "installed_bins": {b: (bin_dir / b).exists() for b in essential_bins},
+            "hosts_status": hosts_status,
+            "update_info": update_info,
         }
 
-    def print_report(self) -> None:
+    def print_report(self, lang: Optional[str] = None) -> None:
+        m = get_i18n_messages(lang)
         diag = self.run_diagnostics()
         print("=" * 68)
-        print(" 🏥 XP MULTI-AGENT KIT — DIAGNÓSTICO DO AMBIENTE (agy-kit doctor)")
+        print(f" {m['doctor_title']} (xp-kit / agy-kit doctor)")
         print("=" * 68)
-        py = diag["python"]
-        git = diag["git"]
-        print(f"• Python : {'✅' if py['ok'] else '❌'} {py['message']}")
-        print(f"• Git    : {'✅' if git['ok'] else '❌'} {git['message']}")
-        
-        dirs = diag["antigravity_dirs"]
-        print(f"• Pastas : {'✅' if dirs['ok'] else '⚠️'} ~/.gemini/ (config, ide, cli)")
-        print(f"• PATH   : {'✅' if diag['path_ok'] else '⚠️'} ~/.local/bin está no PATH: {diag['path_ok']}")
-        
+        for k in ("python", "git"):
+            item = diag[k]
+            print(f"• {k.capitalize():7}: {'✅' if item['ok'] else '❌'} {item['message']}")
+
+        hosts = diag.get("hosts_status", {})
+        if hosts:
+            print("\n💻 Ambientes IDE / CLI:")
+            for h_name, ok in hosts.items():
+                print(f"  - {h_name.capitalize():13}: {'✅ Configurado' if ok else '⚪ Não detectado'}")
+
         installed = diag.get("installed_bins", {})
         if installed:
-            print("\n📦 Binários Globais:")
+            print(f"\n{m['global_bins']}")
             for b, exists in installed.items():
-                print(f"  - {b:15}: {'✅ Instalado' if exists else '❌ Ausente'}")
+                print(f"  - {b:18}: {m['installed'] if exists else m['missing']}")
+
+        up = diag.get("update_info", {})
+        if up.get("has_update"):
+            print("\n" + "=" * 68)
+            print(f"💡 [XP-KIT] Nova atualização disponível ({up.get('latest_version')})!")
+            print("   Execute 'xp-kit update' para sincronizar com as últimas correções.")
         print("=" * 68)
 
 
-def interactive_wizard(kit_dir: Path, dry_run: bool = False) -> int:
-    """Wizard interativo de instalação do kit."""
+def interactive_wizard(kit_dir: Path, dry_run: bool = False, lang: Optional[str] = None) -> int:
+    """Bilingual (PT/EN) interactive installation wizard with multi-IDE/CLI target selection."""
+    m = get_i18n_messages(lang)
     print("=" * 68)
-    print(" 🚀 INSTALADOR UNIFICADO — XP MULTI-AGENT KIT v2")
+    print(f" {m['wizard_title']}")
     if dry_run:
-        print(" ⚠️  [MODO SIMULAÇÃO / DRY-RUN ATIVO]")
+        print(f" {m['dry_run_banner']}")
     print("=" * 68)
-    print("\nComo deseja instalar o kit?")
-    print("  [1] Global (Recomendado)")
-    print("      -> Instala ferramentas em ~/.local/bin/ e sincroniza com")
-    print("         Antigravity IDE & CLI (~/.gemini/config/).")
-    print("  [2] Projeto Específico (Local)")
-    print("      -> Injeta .agents/, AGENTS.md e memória isolada apenas em um repositório.")
-    print("  [3] Ambos")
-    print("      -> Realiza a instalação global E aplica no projeto especificado.\n")
+    print(f"\n{m['choose_scope']}")
+    print(f"  {m['opt_global']}")
+    print(f"  {m['opt_project']}")
+    print(f"  {m['opt_both']}\n")
 
     try:
-        choice = input("Escolha uma opção [1/2/3] (padrão: 1): ").strip() or "1"
+        choice = input(m["prompt_scope"]).strip() or "1"
+        print(f"\n{m['choose_targets']}")
+        for opt_key in ("opt_t_all", "opt_t_agy", "opt_t_oc", "opt_t_cur", "opt_t_qod", "opt_t_cod"):
+            print(f"  {m[opt_key]}")
+        t_choice = input(f"\n{m['prompt_targets']}").strip() or "1"
     except (EOFError, KeyboardInterrupt):
-        print("\nOperação cancelada pelo usuário.")
+        print(f"\n{m['cancelled']}")
         return 1
 
-    checker = DependencyChecker()
-    dep_summary = checker.check_all()
-    if not dep_summary["can_proceed"]:
-        print("❌ Dependências essenciais ausentes. Por favor, instale Python >= 3.8 e Git.")
+    target_map = {"1": "all", "2": "antigravity", "3": "opencode", "4": "cursor", "5": "qoder", "6": "codex"}
+    targets = normalize_targets(target_map.get(t_choice, "all"))
+
+    if not DependencyChecker().check_all()["can_proceed"]:
+        print(m["deps_missing"])
         return 1
 
     if choice == "1":
-        print("\n⏳ Executando instalação global...")
-        installer = GlobalInstaller(kit_dir=kit_dir)
-        res = installer.install_global(dry_run=dry_run)
-        if res["ok"]:
-            print("✅ Instalação global concluída com sucesso!")
-            return 0
-        print(f"❌ Falha na instalação global: {res.get('error')}")
-        return 1
+        print(f"\n{m['installing_global']}")
+        res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=dry_run, targets=targets)
+        print(m["global_ok"] if res["ok"] else f"{m['global_fail']} {res.get('error')}")
+        return 0 if res["ok"] else 1
 
-    elif choice in ["2", "3"]:
+    if choice in ("2", "3"):
         try:
-            p_dir_input = input("Informe o caminho do projeto (padrão: diretório atual): ").strip()
+            p_input = input(m["prompt_project_dir"]).strip()
         except (EOFError, KeyboardInterrupt):
-            print("\nOperação cancelada.")
+            print(f"\n{m['cancelled']}")
             return 1
-        
-        target_path = Path(p_dir_input).resolve() if p_dir_input else Path.cwd()
-        
+        target_path = Path(p_input).resolve() if p_input else Path.cwd()
         if choice == "3":
-            print("\n⏳ Executando instalação global...")
-            g_installer = GlobalInstaller(kit_dir=kit_dir)
-            g_res = g_installer.install_global(dry_run=dry_run)
+            print(f"\n{m['installing_global']}")
+            g_res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=dry_run, targets=targets)
             if not g_res["ok"]:
-                print(f"❌ Falha na instalação global: {g_res.get('error')}")
+                print(f"{m['global_fail']} {g_res.get('error')}")
                 return 1
+        print(f"\n{m['installing_project']} {target_path}...")
+        p_res = ProjectInstaller(kit_dir=kit_dir).install_project(target_path, use_symlinks=True, dry_run=dry_run, targets=targets)
+        print(f"{m['project_ok']} {target_path}!" if p_res["ok"] else f"{m['project_fail']} {p_res.get('error')}")
+        return 0 if p_res["ok"] else 1
 
-        print(f"\n⏳ Injetando kit no projeto: {target_path}...")
-        p_installer = ProjectInstaller(kit_dir=kit_dir)
-        p_res = p_installer.install_project(target_path, use_symlinks=True, dry_run=dry_run)
-        if p_res["ok"]:
-            print(f"✅ Kit injetado com sucesso no projeto {target_path}!")
-            return 0
-        print(f"❌ Falha ao injetar no projeto: {p_res.get('error')}")
-        return 1
-
-    print("❌ Opção inválida. Operação abortada.")
+    print(m["invalid_option"])
     return 1
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="XP Multi-Agent Kit — Instalador e Gerenciador Unificado (agy-kit)",
-    )
-    parser.add_argument(
-        "command",
-        nargs="?",
-        choices=["install", "doctor", "init", "sync", "version"],
-        help="Subcomando opcional",
-    )
-    parser.add_argument(
-        "--global",
-        "-g",
-        dest="install_global",
-        action="store_true",
-        help="Instala o kit globalmente para o Antigravity IDE e CLI",
-    )
-    parser.add_argument(
-        "--project",
-        "-p",
-        dest="project_path",
-        type=str,
-        help="Injeta o kit em um diretório de projeto específico",
-    )
-    parser.add_argument(
-        "--both",
-        dest="both_path",
-        type=str,
-        help="Instala globalmente E aplica no projeto especificado",
-    )
-    parser.add_argument(
-        "--yes",
-        "-y",
-        action="store_true",
-        help="Modo automático / não-interativo (assume respostas padrão)",
-    )
-    parser.add_argument(
-        "--no-deps",
-        action="store_true",
-        help="Pula verificação de dependências do sistema operacional",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Simula a execução sem realizar alterações no disco",
-    )
-    parser.add_argument(
-        "--configure-mcp",
-        action="store_true",
-        help="Aplica permissões irrestritas e auto-aprovação para MCP e OpenDesign",
-    )
-    parser.add_argument(
-        "--install-opendesign",
-        action="store_true",
-        help="Instala e vincula o OpenDesign (od) em ~/.local/share/open-design e ~/.local/bin/od",
-    )
-    parser.add_argument(
-        "--install-graph",
-        action="store_true",
-        help="Instala e vincula o CodeReviewGraph em ~/.local/share/code-review-graph e ~/.local/bin",
-    )
+    parser = argparse.ArgumentParser(description="XP Multi-Agent Kit v3.1 — Unified Agnostic Installer (xp-kit / agy-kit)")
+    parser.add_argument("command", nargs="?", choices=["install", "doctor", "init", "sync", "version", "update"])
+    parser.add_argument("path", nargs="?", default=None, help="Optional project path for init/install")
+    parser.add_argument("--global", "-g", dest="install_global", action="store_true", help="Install globally")
+    parser.add_argument("--project", "-p", dest="project_path", type=str, help="Inject into specific project directory")
+    parser.add_argument("--both", dest="both_path", type=str, help="Install globally and inject into project")
+    parser.add_argument("--target", "-t", default="all", help="Target host(s): all, antigravity, opencode, cursor, qoder, codex")
+    parser.add_argument("--lang", "-l", default=None, choices=["pt", "en", "auto"], help="Language override (pt, en, auto)")
+    parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode")
+    parser.add_argument("--no-deps", action="store_true", help="Skip OS dependency checks")
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without writing to disk")
+    parser.add_argument("--configure-mcp", action="store_true", help="Configure MCP servers and auto-approval")
+    parser.add_argument("--install-opendesign", action="store_true", help="Install OpenDesign (od)")
+    parser.add_argument("--install-graph", action="store_true", help="Install CodeReviewGraph (crg)")
 
     args = parser.parse_args(argv)
     kit_dir = Path(__file__).resolve().parent.parent
+    lang = None if args.lang == "auto" else args.lang
+    m = get_i18n_messages(lang)
+    targets = normalize_targets(args.target)
 
-    # Subcomando ou flag --configure-mcp
-    if args.configure_mcp:
-        configurator = McpConfigurator()
-        res = configurator.configure_all()
-        if res["ok"]:
-            print("✅ Permissões MCP e auto-aprovação configuradas com sucesso!")
-            return 0
-        print(f"❌ Falha ao configurar MCP: {res.get('message')}")
-        return 1
-
-    # Subcomando ou flag --install-opendesign
-    if args.install_opendesign:
-        od_installer = OpenDesignInstaller(kit_dir=kit_dir)
-        res = od_installer.install()
-        if res["ok"]:
-            print(f"✅ OpenDesign instalado com sucesso em {res.get('path')}!")
-            return 0
-        print(f"❌ Falha ao instalar OpenDesign: {res.get('message')}")
-        return 1
-
-    # Subcomando ou flag --install-graph
-    if args.install_graph:
-        crg_installer = CodeReviewGraphInstaller(kit_dir=kit_dir)
-        res = crg_installer.install()
-        if res["ok"]:
-            print(f"✅ CodeReviewGraph instalado com sucesso em {res.get('path')}!")
-            return 0
-        print(f"❌ Falha ao instalar CodeReviewGraph: {res.get('message')}")
-        return 1
-
-    # Subcomando 'version'
     if args.command == "version":
-        print("XP Multi-Agent Kit v2.39.0 (Unified Installer & Portability)")
+        print("XP Multi-Agent Kit v3.1.0")
         return 0
-
-    # Subcomando 'doctor'
+    if args.command == "update":
+        from scripts.update_manager import main as update_main
+        return update_main()
     if args.command == "doctor":
-        doctor = KitDoctor(kit_dir=kit_dir)
-        doctor.print_report()
+        KitDoctor(kit_dir=kit_dir).print_report(lang=lang)
         return 0
+    if args.configure_mcp:
+        return 0 if McpConfigurator().configure_all()["ok"] else 1
+    if args.install_opendesign:
+        return 0 if OpenDesignInstaller(kit_dir=kit_dir).install()["ok"] else 1
+    if args.install_graph:
+        return 0 if CodeReviewGraphInstaller(kit_dir=kit_dir).install()["ok"] else 1
+    if args.path and not args.project_path:
+        args.project_path = str(Path(args.path).resolve())
+    if args.command == "init" and not args.project_path:
+        args.project_path = str(Path.cwd())
+    if args.command == "sync" and not args.install_global and not args.project_path:
+        args.install_global = True
 
-    # Checagem de dependências
-    if not args.no_deps:
-        checker = DependencyChecker()
-        summary = checker.check_all()
-        if not summary["can_proceed"]:
-            print("❌ Falha nas dependências essenciais (Python >= 3.8 ou Git ausentes).")
+    if not args.no_deps and (args.install_global or args.project_path or args.both_path or args.yes):
+        if not DependencyChecker().check_all()["can_proceed"]:
+            print(m["deps_missing"])
             return 1
 
-    # Subcomando 'init' (equivalente a --project)
-    if args.command == "init":
-        p_path = Path(args.project_path or ".").resolve()
-        installer = ProjectInstaller(kit_dir=kit_dir)
-        res = installer.install_project(p_path, use_symlinks=True, dry_run=args.dry_run)
-        if res["ok"]:
-            print(f"✅ Kit injetado com sucesso no projeto {p_path}!")
-            return 0
-        return 1
-
-    # Subcomando 'sync' (equivalente a --global)
-    if args.command == "sync":
-        installer = GlobalInstaller(kit_dir=kit_dir)
-        res = installer.install_global(dry_run=args.dry_run)
-        return 0 if res["ok"] else 1
-
-    # Trata flag --both
     if args.both_path:
-        p_path = Path(args.both_path).resolve()
-        g_installer = GlobalInstaller(kit_dir=kit_dir)
-        g_res = g_installer.install_global(dry_run=args.dry_run)
+        g_res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
         if not g_res["ok"]:
             return 1
-        p_installer = ProjectInstaller(kit_dir=kit_dir)
-        p_res = p_installer.install_project(p_path, use_symlinks=True, dry_run=args.dry_run)
+        p_res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.both_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
         return 0 if p_res["ok"] else 1
 
-    # Trata flag --project
+    if args.install_global or (args.yes and not args.project_path):
+        res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
+        return 0 if res["ok"] else 1
+
     if args.project_path:
-        p_path = Path(args.project_path).resolve()
         p_installer = ProjectInstaller(kit_dir=kit_dir)
-        p_res = p_installer.install_project(p_path, use_symlinks=True, dry_run=args.dry_run)
-        return 0 if p_res["ok"] else 1
+        res = p_installer.install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
+        return 0 if res["ok"] else 1
 
-    # Trata flag --global
-    if args.install_global:
-        g_installer = GlobalInstaller(kit_dir=kit_dir)
-        g_res = g_installer.install_global(dry_run=args.dry_run)
-        return 0 if g_res["ok"] else 1
-
-    # Se nenhum argumento ou comando foi fornecido
-    if not (args.command or args.install_global or args.project_path or args.both_path):
-        if sys.stdin.isatty() and not (args.yes or args.dry_run):
-            return interactive_wizard(kit_dir, dry_run=args.dry_run)
-        else:
-            # Default não interativo ou dry-run: instala/simula globalmente
-            g_installer = GlobalInstaller(kit_dir=kit_dir)
-            g_res = g_installer.install_global(dry_run=args.dry_run)
-            if args.dry_run:
-                for act in g_res.get("actions", []):
-                    print(f"  {act}")
-            return 0 if g_res["ok"] else 1
+    return interactive_wizard(kit_dir=kit_dir, dry_run=args.dry_run, lang=lang)
 
 
 if __name__ == "__main__":

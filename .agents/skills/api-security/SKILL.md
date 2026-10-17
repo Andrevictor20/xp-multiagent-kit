@@ -1,13 +1,13 @@
 ---
 name: api-security
-description: Segurança de APIs e OWASP API Security Top 10.
+description: API security hardening and OWASP API Security Top 10 controls.
 ---
 
 # API Security
 
-Garanta proteção explícita contra as vulnerabilidades mais comuns:
-- SQL/NoSQL Injection (exija queries parametrizadas/ORM seguro).
-- XSS (sanitize inputs, cuide do DOM/React).
-- SSRF (valide destino e protocolo de requisições externas).
-- Mass assignment, Parameter pollution e Excessive data exposure.
-- Rate limiting, CORS, e paginação segura.
+Enforce explicit protection against OWASP API Security Top 10 vulnerabilities:
+- **Injection (SQL/NoSQL/Command):** Require parameterized queries and safe ORM bindings; ban raw string interpolation.
+- **XSS & Output Encoding:** Sanitize untrusted inputs and enforce safe DOM/template rendering.
+- **SSRF:** Validate target URLs, protocols, and DNS resolution; block internal/metadata CIDRs (`169.254.169.254`, `127.0.0.0/8`, RFC1918).
+- **Mass Assignment & Data Exposure:** Bind explicit allowlisted DTO fields on input and serialize only public DTO fields on output.
+- **Perimeter Controls:** Enforce strict CORS origins, rate limiting, and bounded pagination limits.

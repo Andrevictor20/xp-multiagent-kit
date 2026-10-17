@@ -1,84 +1,84 @@
-# Índice de Skills (carregamento sob demanda)
+# Skills Index (On-Demand Loading)
 
-> Catálogo compacto. O corpo de cada skill só entra no contexto quando ativada.
-> 77 skills • teto por skill: 5 KB
+> Compact catalog. Skill bodies are loaded on demand only when activated.
+> 77 skills • max body per skill: 5 KB
 
-| Skill | Gatilho |
+| Skill | Trigger |
 |-------|---------|
-| `acceptance-test-driven` | ATDD/BDD com separação de contrato humano-IA e Pirâmide de Especificação. |
-| `accessibility-engineering` | Acessibilidade: teclado, contraste WCAG AA e ARIA. |
-| `adr-architect-tracker` | ADRs MADR 3.0 e detecção de desvio arquitetural. |
-| `api-contracts` | Design e versionamento de contratos OpenAPI e schemas. |
-| `api-security` | Segurança de APIs e OWASP API Security Top 10. |
-| `async-messaging-and-resilience` | Mensageria assíncrona, EDA, Outbox Pattern, DLQ, idempotência e Circuit Breaker. |
-| `atomic-commit-discipline` | Commits atômicos, categorizados e testados. |
-| `authentication-security` | Auditoria de autenticação, JWT, sessões e MFA. |
-| `authorization-security` | Controle de acesso, permissões e prevenção BOLA/IDOR. |
-| `availability-security` | Proteção contra DoS, Rate Limiting e sobrecarga. |
-| `backend-performance-testing` | Testes de carga, estresse, benchmark de backend, profiling e detecção de gargalos. |
-| `browser-e2e-playwright` | Testes E2E headless com Playwright e traces. |
-| `caching-architecture` | Arquitetura de cache, Redis/Memcached, Cache-Aside e mitigação de stampede/avalanche. |
-| `ci-auto-heal` | Monitoramento de CI/CD e autocorreção autônoma (máx 3). |
-| `ci-security-gate` | Pipeline CI com lint, testes, auditoria e SAST. |
-| `cloud-security-and-zero-trust` | Zero Trust, OIDC federado, Cosign e mTLS. |
-| `code-deslop-review` | Remoção de código redundante e regra No God Files. |
-| `codebase-cartography` | Mapeamento estrutural de dependências e impacto. |
-| `component-architecture` | Componentes modulares, estados e micro-interações. |
-| `component-registry` | Registro e governança de componentes reaproveitáveis. |
-| `conformance-tracker` | Rastreamento de cobertura de Acceptance Criteria e geração de Conformance Report. |
-| `container-security` | Hardening de Dockerfiles, imagens non-root e builds. |
-| `conversion-copywriting` | Copywriting de conversão e ponte de benefícios. |
-| `copy-editing-sweeps` | Edição de copy em 7 passadas contra clichês. |
-| `cro-landing-pages` | Otimização de conversão (CRO) e redução de atrito. |
-| `crypto-guardian` | Auditoria de primitivas criptográficas e chaves. |
-| `database-architecture` | Modelagem SQL/NoSQL, índices e concorrência. |
-| `dependency-governance` | Avaliação de risco e governança de novas dependências. |
-| `deploy-pipeline-conductor` | Condução de CD, contêineres e rollout gradual. |
-| `design-system-architecture` | Governança de Design System de tokens a páginas. |
-| `design-tokens` | Tokens visuais semânticos com Color e Shape Locks. |
-| `diff-simplifier-review` | Revisão minimalista de diff e remoção de over-engineering. |
-| `frontend-performance` | Core Web Vitals (LCP, INP, CLS) e renderização GPU-safe. |
-| `frontend-taste-engineering` | Direção estética Anti-Slop e calibração por dials. |
-| `git-worktree-workspace` | Isolamento de subagentes em Git Worktrees limpos. |
-| `high-end-visual-design` | Design visual $150k+: Double-Bezel e física de mola. |
-| `image-to-code` | Pipeline image-first para implementação de UI fiel. |
-| `industrial-brutalist-ui` | Engenharia de UI brutalista industrial e grid 90°. |
-| `infrastructure-as-code-governance` | Governança e segurança em IaC (Terraform, K8s). |
-| `integration-testing` | Testes de integração em banco, filas e APIs reais. |
-| `lesson-learned` | Captura e formalização de lições aprendidas (L-NNN). |
-| `living-docs-keeper` | Manutenção contínua de documentação viva e decisões. |
-| `marketing-psychology` | Economia comportamental (Hick, Ancoragem) em UI. |
-| `mcp-server-governance` | Governança, segurança e integração de servidores MCP. |
-| `migration-safety` | Migrações de banco expand-and-contract sem downtime. |
-| `minimalist-ui` | Interfaces minimalistas, Linear/Notion e whitespace. |
-| `mutation-testing-sentinel` | Auditoria de robustez de testes via injeção de mutações. |
-| `no-workarounds` | Correção na causa raiz, proibindo remendos e casts. |
-| `observability-and-slo-engineering` | Engenharia de observabilidade: logs JSON, métricas RED, tracing, SLOs e pós-deploy. |
-| `pair-navigator` | Navegação em pair programming e combate ao over-engineering. |
-| `privacy-review` | Revisão de privacidade, LGPD/GDPR e proteção de PII. |
-| `project-brief-architect` | Entrevista técnica e requisitos no Momento Zero. |
-| `project-memory` | Memória contínua em 4 Tiers, Fast Bootstrap e Onboarding. |
-| `property-based-testing` | Testes baseados em propriedades e fuzzing estruturado. |
-| `redesign-ui-audit` | Auditoria e modernização de UI sem quebrar layout. |
-| `refactor-watchdog` | Vigilância contra duplicação e arquivos grandes (>500 linhas). |
-| `responsive-architecture` | Arquitetura de layout fluido e responsividade real. |
-| `secrets-guardian` | Prevenção contra vazamento de credenciais e chaves. |
-| `security-observability` | Monitoramento e auditoria em tempo real de segurança. |
-| `security-sentinel-review` | Revisão proativa de segurança e superfícies sensíveis. |
-| `security-testing` | Casos de teste SAST/DAST contra injeções e falhas. |
-| `seo-content-engine` | SEO On-Page, Schema.org JSON-LD e AI Search (GEO/AEO). |
-| `software-evolution-and-roadmapping` | Planejamento a longo prazo, roadmapping Now/Next/Later, Strangler Fig e ciclo de vida (EOL). |
-| `spec-driven-development` | Engenharia guiada por especificação formal (SDD) com ATDD/BDD integrado. |
-| `specification-by-example` | Transformação de regras vagas em tabelas de exemplos concretos e executáveis. |
-| `supply-chain-security` | Segurança de dependências e integridade de cadeia (SCA). |
-| `systematic-debugging` | Debugging sistemático em 4 fases e investigação de causa raiz. |
-| `task-routing` | Roteamento de tarefas por superfícies e níveis de risco (L0-L3). |
-| `tdd-safety-net` | Ciclo RED-GREEN-REFACTOR e Anti-Test-Bypass estrito. |
-| `test-evidence-walkthrough` | Validação de evidência de testes nativos por risco. |
-| `test-harness-bootstrap` | Harness de testes no Momento Zero antes de features. |
-| `threat-modeling` | Modelagem de ameaças usando STRIDE e Trust Boundaries. |
-| `token-budget-tracker` | Telemetria de tokens em 3 camadas e Modo Cirúrgico. |
-| `ui-quality-gate` | Checklist pré-release: WCAG AA, 100dvh e qualidade visual. |
-| `visual-direction-studio` | Definição de direção visual deliberada sem UI genérica. |
-| `visual-regression` | Controle e testes de regressão visual para fidelidade de UI. |
-| `zero-downtime-deployment` | Deploy Zero-Downtime (Blue/Green, Canary) e rollback. |
+| `acceptance-test-driven` | ATDD/BDD with human-AI contract separation and Specification Pyramid. |
+| `accessibility-engineering` | Web accessibility: keyboard navigation, WCAG AA contrast, and semantic ARIA. |
+| `adr-architect-tracker` | MADR 3.0 Architectural Decision Records and architectural drift detection. |
+| `api-contracts` | OpenAPI contract design, versioning, DTO schemas, and error modeling. |
+| `api-security` | API security hardening and OWASP API Security Top 10 controls. |
+| `async-messaging-and-resilience` | Async messaging, EDA, Outbox Pattern, DLQ, idempotency, and Circuit Breaker. |
+| `atomic-commit-discipline` | Atomic, categorized, CI-verified commits and token-efficient Git ops. |
+| `authentication-security` | Authentication auditing: password hashing, JWT validation, sessions, MFA. |
+| `authorization-security` | Access control, RBAC/ABAC permissions, tenant isolation, and BOLA/IDOR defense. |
+| `availability-security` | DoS protection, rate limiting, timeouts, and resource exhaustion defense. |
+| `backend-performance-testing` | Backend load, stress, spike, and soak testing, profiling, and SLO gates. |
+| `browser-e2e-playwright` | Headless E2E browser testing with Playwright, auto-wait locators, and traces. |
+| `caching-architecture` | Redis/Memcached caching, Cache-Aside, and stampede/avalanche/penetration defense. |
+| `ci-auto-heal` | Autonomous CI/CD failure diagnosis and root-cause self-healing (max 3 iterations). |
+| `ci-security-gate` | Mandatory CI pipeline gate with linting, dependency audit, SAST, and tests. |
+| `cloud-security-and-zero-trust` | Zero Trust cloud security, federated OIDC CI/CD, Cosign signing, and mTLS. |
+| `code-deslop-review` | Systematic AI code cleanup, dead-code removal, and <500-line No God Files rule. |
+| `codebase-cartography` | AST dependency graph mapping and blast-radius analysis via code-review-graph. |
+| `component-architecture` | Modular UI components, token anchoring, 6-state machine, and mobile ergonomics. |
+| `component-registry` | Catalog and governance of reusable UI components to prevent duplication. |
+| `conformance-tracker` | Traceability between Acceptance Criteria and tests via Conformance Report. |
+| `container-security` | Dockerfile hardening, non-root execution, minimal base images, and SBOMs. |
+| `conversion-copywriting` | High-conversion UI copywriting, benefit bridges, hero headlines, and CTAs. |
+| `copy-editing-sweeps` | 7-sweep copy editing framework to eliminate AI cliches and weak prose. |
+| `cro-landing-pages` | Conversion Rate Optimization (CRO), 5-second test, CTA hierarchy, and forms. |
+| `crypto-guardian` | Cryptographic primitive auditing, key management, and ban on weak ciphers. |
+| `database-architecture` | SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention. |
+| `dependency-governance` | Third-party dependency risk evaluation, license audit, and bloat prevention. |
+| `deploy-pipeline-conductor` | Continuous deployment (CD) pipelines, staging promotion, health checks, rollback. |
+| `design-system-architecture` | Design System governance from semantic tokens and primitives to page templates. |
+| `design-tokens` | Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock. |
+| `diff-simplifier-review` | Minimalist git diff review, YAGNI enforcement, and over-engineering removal. |
+| `frontend-performance` | Core Web Vitals (LCP, INP, CLS), 60fps GPU animations, and scroll optimization. |
+| `frontend-taste-engineering` | Anti-Slop aesthetic direction, 3-dial calibration, and design system routing. |
+| `git-worktree-workspace` | Subagent isolation in clean Git Worktrees via agy-worktree. |
+| `high-end-visual-design` | $150k+ Awwwards-tier visual design: Double-Bezel chassis and spring physics. |
+| `image-to-code` | Image-first UI pipeline: reference generation, token extraction, and code. |
+| `industrial-brutalist-ui` | Industrial brutalist UI engineering: 90-degree grids, Swiss print, CRT telemetry. |
+| `infrastructure-as-code-governance` | IaC governance and security for Terraform, OpenTofu, Kubernetes, and Docker. |
+| `integration-testing` | Boundary integration tests across real databases, queues, and external APIs. |
+| `lesson-learned` | Capture and formalize procedural lessons learned ([L-NNN]) in project memory. |
+| `living-docs-keeper` | Continuous maintenance of living project documentation and technical decisions. |
+| `marketing-psychology` | Behavioral economics (Loss Aversion, Price Anchoring, Hick's Law) in UI. |
+| `mcp-server-governance` | Zero Trust security, payload sanitization, and governance for MCP servers. |
+| `migration-safety` | Zero-downtime database migrations using the expand-and-contract pattern. |
+| `minimalist-ui` | Utilitarian minimalist UI (Linear/Notion aesthetic), 1px borders, whitespace. |
+| `mutation-testing-sentinel` | Test suite robustness auditing via mutation injection and >=80% mutation score. |
+| `no-workarounds` | Root-cause fixes only: ban workarounds, type casts, linter suppression, sleeps. |
+| `observability-and-slo-engineering` | Observability engineering: JSON logs, RED metrics, OpenTelemetry tracing, SLOs. |
+| `pair-navigator` | Pair programming navigation, minimal viable proposals, anti-over-engineering. |
+| `privacy-review` | Privacy review, GDPR/LGPD compliance, data minimization, and PII protection. |
+| `project-brief-architect` | Zero-Moment technical interview and structured project brief for Genesis. |
+| `project-memory` | 4-Tier continuous project memory, Fast Context Bootstrap, and auto-onboarding. |
+| `property-based-testing` | Property-Based Testing (PBT), invariant verification, and structured fuzzing. |
+| `redesign-ui-audit` | Surgical UI audit and modernization without breaking existing layouts. |
+| `refactor-watchdog` | Continuous refactoring watchdog against duplication and God files (>500 lines). |
+| `responsive-architecture` | Fluid responsive layout architecture, mobile hierarchy, and 48px touch targets. |
+| `secrets-guardian` | Credential leak prevention across code, .env, Git history, and build artifacts. |
+| `security-observability` | Real-time security monitoring, audit logging, and PII/secret log redaction. |
+| `security-sentinel-review` | Proactive security architecture review across auth, PII, payments, and inputs. |
+| `security-testing` | Proactive SAST/DAST and negative security test cases against auth bypass/injection. |
+| `seo-content-engine` | Technical On-Page SEO, Schema.org JSON-LD, and AI Search optimization (GEO/AEO). |
+| `software-evolution-and-roadmapping` | Technical roadmapping, Now/Next/Later horizons, Strangler Fig, and RFC 8594. |
+| `spec-driven-development` | Formal Specification-Driven Development (SDD) as single source of truth. |
+| `specification-by-example` | Convert ambiguous business rules into executable Specification by Example tables. |
+| `supply-chain-security` | Software supply chain security (SCA), lockfile integrity, and anti-typosquatting. |
+| `systematic-debugging` | 4-phase scientific debugging, backward tracing, and the 3-Fix Circuit Breaker. |
+| `task-routing` | Risk-based task routing (L0-L3) and surface-to-skill capability mapping. |
+| `tdd-safety-net` | Strict RED-GREEN-REFACTOR cycle, Anti-Test-Bypass, and surgical test execution. |
+| `test-evidence-walkthrough` | Native test execution evidence recording and verification by risk level. |
+| `test-harness-bootstrap` | Moment-Zero test harness setup: runner, directory layout, CI step, smoke test. |
+| `threat-modeling` | STRIDE threat modeling, trust boundaries, and security test derivation for L3. |
+| `token-budget-tracker` | 3-tier token telemetry, Pre-Flight budget gates, and Surgical Atomic Mode. |
+| `ui-quality-gate` | Pre-release UI checklist: WCAG AA contrast, 100dvh viewport, and Anti-Slop gate. |
+| `visual-direction-studio` | Deliberate $150k+ visual direction, Hero discipline, and Anti-Slop layout rules. |
+| `visual-regression` | Visual regression testing across viewports, interactive states, and dark mode. |
+| `zero-downtime-deployment` | Zero-downtime deployment (Blue/Green, Canary, Rolling) and automated rollback. |

@@ -1,46 +1,29 @@
 ---
 name: image-to-code
-description: Pipeline image-first para implementação de UI fiel.
+description: Image-first UI pipeline: reference generation, token extraction, and code.
 ---
 
-# Image-to-Code: Pipeline de Design Orientado a Imagem
+# Image-to-Code: Visual Reference-Driven UI Pipeline
 
-> **Propósito:** Em tarefas visuais onde a qualidade estética é prioritária, o fluxo orientado a imagens elimina adivinhações e estabelece uma referência visual de alta fidelidade antes de escrever o código de produção.
+Eliminate visual guesswork by generating or inspecting a high-fidelity visual reference before writing production frontend code.
 
----
-
-## 1. O Fluxo de Execução Obrigatório
-
+## 1. Mandatory 3-Step Execution Flow
 ```text
-1. Geração de Imagem de Referência por Seção
-        ↓
-2. Inspeção Profunda e Extração do Design System
-        ↓
-3. Implementação Fiel em Código Frontend
+1. Generate/Load Section Reference Image -> 2. Extract Design System Tokens -> 3. Implement Faithful UI Code
 ```
 
----
+## 2. Reference Generation & Granularity Rules
+1. **One Image Per Section:** When generating visual references (`image-generator` / `od`), produce a widescreen (`16:9` or `16:10`) image per section so typography, controls, and spacing remain crisp.
+2. **Uncluttered Hero Focus:** Keep the hero composition focused with strong contrast and clear hierarchy rather than crowded miniature cards.
+3. **Dedicated Detail Views:** Generate dedicated close-up references for intricate components instead of cropping low-resolution regions.
 
-## 2. Regras de Geração e Granularidade
+## 3. Systematic Extraction Protocol
+Before coding, extract and document:
+- **Typographic Hierarchy:** Display vs. subheadline vs. body scale, weight, and tracking.
+- **Spatial Relationships:** Headline-to-CTA gap, card padding, and section margins (mapped to 4px/8px scale).
+- **Control Geometry:** Button radii, border treatments, solid vs. outline fills.
+- **Color & Surface Tokens:** Background canvas, elevated card surfaces, primary accent, and muted text hues.
+- **Media Framing:** Aspect ratios, tonal overlays, and bezel borders.
 
-1. **Uma Imagem por Seção:** Quando gerar referências visuais com a ferramenta `generate_image`, gere uma imagem horizontal (16:9 ou 16:10) por seção para manter a tipografia, botões e espaçamentos perfeitamente legíveis e inspecionáveis.
-2. **Hero com Foco Único:** Mantenha o hero despoluído, com abertura forte, contraste evidente e sem poluição de dezenas de cartões amontoados.
-3. **Sem Recortes de Baixa Resolução:** Se uma seção precisar de detalhes mais finos, gere uma imagem dedicada de detalhe em vez de tentar cortar pedaços desfocados de uma imagem grande.
-
----
-
-## 3. Protocolo de Extração Sistemática
-
-Antes de codificar, inspecione a imagem e extraia formalmente:
-- **Hierarquia Tipográfica:** Proporção entre títulos de display, subtítulos e textos de apoio.
-- **Relações Espaciais:** Distâncias entre headline e CTA, padding interno de cartões, margens de seção.
-- **Forma dos Controles:** Raio de curvatura dos botões, estilos de borda, preenchimento vs contorno.
-- **Cores & Acentos:** Cor primária de fundo, acento de destaque, matizes dos textos secundários.
-- **Tratamento de Mídia:** Aspect ratio dos frames de imagem, sobreposições tonais e contrastes.
-
----
-
-## 4. Tradução para Código
-
-- O código é a camada de materialização fiel do design inspecionado.
-- Garanta que a estrutura de componentes espelha o ritmo visual da imagem gerada, aplicando Tailwind e Motion para dar vida às interações.
+## 4. Code Materialization
+Translate extracted tokens and layout proportions directly into semantic HTML, Tailwind/CSS tokens, and GPU-safe micro-interactions.

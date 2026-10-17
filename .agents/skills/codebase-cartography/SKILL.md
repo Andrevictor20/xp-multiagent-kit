@@ -1,37 +1,33 @@
 ---
 name: codebase-cartography
-description: Mapeamento estrutural de dependências e impacto.
+description: AST dependency graph mapping and blast-radius analysis via code-review-graph.
 ---
 
 # Codebase Cartography (CodeReviewGraph)
 
-Mapeamento estrutural determinístico baseado em AST (Tree-sitter) e grafo de dependências via MCP e CLI (`agy-graph` / `code-review-graph`). Substitui varreduras ingênuas por contexto cirúrgico de ~100 a 800 tokens.
+Deterministic AST (Tree-sitter) and dependency graph mapping via MCP (`code-review-graph`) and CLI (`agy-graph`). Replaces blind file scans with surgical ~100-800 token context.
 
-## 1. Ferramentas MCP Essenciais (Ordem de Uso)
+## 1. Essential MCP Tools (Execution Order)
+1. **Surgical Initial Context (~100 tokens):**
+   - Call `get_minimal_context_tool(task="<task description>")` before reading files.
+2. **Blast Radius Mapping:**
+   - Call `get_impact_radius_tool(files=[...])` to map transitive callers, dependents, and affected downstream modules.
+3. **Callers & Test Coverage Lookup:**
+   - Call `query_graph_tool(pattern="callers_of", target="<symbol>")` to locate all invocation sites.
+   - Call `query_graph_tool(pattern="tests_for", target="<symbol>")` to find existing tests and identify test gaps.
+4. **Change Risk Analysis:**
+   - Call `detect_changes_tool(detail_level="minimal")` to compute risk scores, affected execution flows, and untested functions.
+5. **Architecture & Module Clusters:**
+   - Call `get_architecture_overview_tool()` to inspect Leiden functional communities and inter-module edges without reading full files.
 
-1. **Contexto Inicial Cirúrgico (~100 tokens):**
-   - Chame `get_minimal_context_tool(task="<descrição da tarefa>")` antes de inspecionar qualquer arquivo.
-2. **Raio de Explosão (Blast Radius):**
-   - Chame `get_impact_radius_tool(files=[...])` para mapear todos os chamadores transitivos, dependentes e módulos downstream afetados.
-3. **Mapeamento de Chamadas e Testes:**
-   - Chame `query_graph_tool(pattern="callers_of", target="<símbolo>")` para saber quem invoca a função/classe.
-   - Chame `query_graph_tool(pattern="tests_for", target="<símbolo>")` para identificar testes diretos ou indiretos existentes e lacunas de teste (*test gaps*).
-4. **Análise de Mudança e Risco:**
-   - Chame `detect_changes_tool(detail_level="minimal")` para obter pontuação de risco (Alto, Médio, Baixo), fluxos de execução afetados e funções não testadas.
-5. **Visão Arquitetural & Comunidades:**
-   - Chame `get_architecture_overview_tool()` para compreender os clusters funcionais (Leiden) e dependências entre módulos sem ler arquivos inteiros.
+## 2. Companion CLI (`agy-graph` / `code-review-graph`)
+- `agy-graph query callers_of <symbol>`: Direct and transitive callers.
+- `agy-graph query tests_for <symbol>`: Tests covering the symbol.
+- `agy-graph dead-code`: Unreferenced functions and classes.
+- `agy-graph detect-changes --brief`: Compact risk and impact summary.
+- `agy-graph update --skip-flows`: Fast incremental index update (~2s) after edits.
 
-## 2. CLI de Apoio (`agy-graph` / `code-review-graph`)
-
-Em ambientes de terminal ou pipelines:
-- `agy-graph query callers_of <symbol>`: Chamadores diretos e indiretos.
-- `agy-graph query tests_for <symbol>`: Casos de teste que cobrem o símbolo.
-- `agy-graph dead-code`: Funções e classes sem chamadores ou testes.
-- `agy-graph detect-changes --brief`: Painel de risco e economia de tokens.
-- `agy-graph update --skip-flows`: Atualização incremental rápida (~2s) após edições.
-
-## 3. Disciplina de Economia de Tokens
-- Sempre prefira consultas estruturadas de grafo em vez de ler arquivos inteiros com `view_file`.
-- Mantenha `detail_level="minimal"` como padrão. Use "standard" apenas se os nós retornados forem insuficientes.
-- Orçamento padrão: no máximo 3 chamadas de grafo (~800 tokens totais) por ciclo de análise.
-- O grafo serve para delimitar o escopo cirúrgico; leia apenas os trechos estritamente necessários antes de editar.
+## 3. Token Economy Discipline
+- Prefer structured graph queries over full-file `view_file` scans.
+- Default to `detail_level="minimal"`; escalate to `"standard"` only when needed.
+- Budget at most 3 graph calls (~800 total tokens) per analysis cycle, then read only the exact line ranges required.

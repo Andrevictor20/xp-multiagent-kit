@@ -1,49 +1,34 @@
 ---
 name: spec-driven-development
-description: Engenharia guiada por especificação formal (SDD).
+description: Formal Specification-Driven Development (SDD) as single source of truth.
 ---
 
-# Spec-Driven Development (SDD) Skill
+# Spec-Driven Development (SDD)
 
-Esta skill governa a metodologia de **Spec-Driven Development (SDD)** no XP Multi-Agent Kit. Em vez de partir de prompts abertos ("vibe coding"), o sistema trata a **especificação estruturada e versionada como a única fonte da verdade**, tratando o código como um artefato derivado e verificável.
+Treat the versioned, human-approved specification (`SPEC-NNN-ATDD.md`) as the single source of truth and production code as its verifiable derivative.
 
-> **Ecossistema ATDD/BDD:** Esta skill faz parte da Pirâmide de Especificação e integra-se com:
-> - **`acceptance-test-driven`:** Governa Acceptance Criteria e o contrato humano-IA.
-> - **`specification-by-example`:** Transforma regras em tabelas parametrizadas de exemplos.
-> - **`conformance-tracker`:** Rastreia cobertura AC → testes → status.
-> - **Policy `atdd-bdd-tdd.md`:** Governança formal da Pirâmide de Especificação.
+> **Specification Pyramid Integration:** Works alongside `acceptance-test-driven`, `specification-by-example`, `conformance-tracker`, and `.agents/policies/atdd-bdd-tdd.md`.
 
----
+## 1. Core SDD Principles
+1. **Spec as Source of Truth:** Generate zero production code before the structured Markdown specification is approved.
+2. **Machine-Testable Gherkin ACs:** Express every requirement as verifiable `Given / When / Then` scenarios.
+3. **Specification by Example (SbE):** Attach parameterized example tables for multi-condition business rules.
+4. **Bidirectional Sync:** Tests mirror spec scenarios 1:1. When the spec changes, update tests first (**RED**), then update production code (**GREEN**).
+5. **Living Specs:** Store specs in `.agents/specs/` or `docs/specs/` and keep them synchronized.
 
-## 1. Princípios Fundamentais (Maturidade Nível 3)
-1. **Spec as Source of Truth:** Nenhum código é gerado antes que a especificação em Markdown estruturado seja aprovada.
-2. **Acceptance Criteria em Gherkin:** Todo requisito deve ser expresso em cenários `Given / When / Then` testáveis por máquina.
-3. **Specification by Example:** Regras de negócio com múltiplas condições DEVEM ser acompanhadas de tabelas SbE parametrizadas.
-4. **Validação Bidirecional:** A suíte de testes deve espelhar 1:1 os cenários da especificação. Se a spec mudar, a suíte de testes quebra (RED) e o código é corrigido (GREEN).
-5. **Living Spec:** Especificações residem em `.agents/specs/` ou `docs/specs/` e são mantidas vivas e sincronizadas.
+## 2. Canonical `SPEC-NNN-ATDD.md` Structure
+1. **Business Context & Problem Statement**
+2. **Acceptance Criteria (ATDD):** `Given / When / Then / Metric`
+3. **Specification by Example (SbE):** Parameterized tables covering happy paths, boundaries, and errors
+4. **Gherkin BDD Scenarios:** `Scenario` and `Scenario Outline`
+5. **Domain Contract & Interfaces:** Schemas, endpoints, events
+6. **Invariants & Properties:** Rules that must never be violated
+7. **Conformance Tracking:** Populated via `agy-conformance` post-implementation
 
----
-
-## 2. Estrutura Canônica da Especificação
-
-Utilize o template expandido **`SPEC-NNN-ATDD.md`** (em `.agents/templates/`) que inclui:
-
-1. **Contexto & Problema de Negócio**
-2. **Acceptance Criteria (ATDD)** — critérios verificáveis com Dado/Quando/Então/Métrica
-3. **Specification by Example (SbE)** — tabelas parametrizadas com edge cases
-4. **Cenários de Aceite (Gherkin BDD)** — `Given / When / Then` + `Scenario Outline`
-5. **Contrato de Domínio & Interfaces** — schemas, endpoints, eventos
-6. **Invariantes & Propriedades** — regras que nunca podem ser violadas
-7. **Conformance Tracking** — preenchido pela IA após implementação
-
----
-
-## 3. Ciclo Operacional do Agente
-1. **`navigator`**: Formula a especificação canônica com base no pedido do usuário, incluindo AC, SbE e Gherkin.
-2. **Stop Gate (Aprovação do Usuário):** Apresenta a especificação e obtém o "De Acordo" formal.
-3. **`test-guardian`**: Converte os Acceptance Criteria e tabelas SbE em testes parametrizados que falham (**RED**).
-4. **`test-guardian`**: Decompõe em Integration e Unit Tests (**RED**).
-5. **`builder`**: Codifica exclusivamente a lógica necessária para satisfazer os cenários da spec (**GREEN**).
-6. **`conformance-tracker`**: Gera Conformance Report com rastreabilidade completa.
-7. **`archivist`**: Arquiva a spec em disco e atualiza o `PROJECT_MEMORY.md`.
-
+## 3. Agent Operational Cycle
+1. **`navigator`:** Drafts `SPEC-NNN-ATDD.md` (AC + SbE + Gherkin).
+2. **Stop Gate:** Pauses for explicit human approval.
+3. **`test-guardian`:** Converts AC and SbE rows into failing Acceptance, Integration, and Unit Tests (**RED**).
+4. **`builder`:** Implements minimal production code to pass all spec scenarios (**GREEN**).
+5. **`conformance-tracker`:** Runs `agy-conformance` to verify N/N compliance.
+6. **`archivist`:** Archives spec and updates `PROJECT_MEMORY.md`.

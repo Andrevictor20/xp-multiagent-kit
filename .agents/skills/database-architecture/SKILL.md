@@ -1,14 +1,12 @@
 ---
 name: database-architecture
-description: Modelagem SQL/NoSQL, índices e concorrência.
+description: SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention.
 ---
 
 # Database Architecture
 
-Antes de implementar funcionalidades que afetam a camada de dados estruturalmente, valide o seguinte:
-- Normalização vs desnormalização.
-- Integridade referencial (foreign keys, unique constraints).
-- Concorrência (isolation, locks).
-- Performance (índices adequados, N+1, query plans, pagination).
-- Práticas de ORM seguras (evitar SQL dinâmico, cuidado com chamadas crú/raw).
-- Pool de conexões e retenção de dados.
+Validate structural data-layer changes before implementation:
+- **Schema Integrity:** Enforce explicit foreign keys, `NOT NULL` constraints, `UNIQUE` indexes, and `CHECK` invariants; balance normalization vs. read-optimized denormalization deliberately.
+- **Concurrency & Locking:** Choose appropriate transaction isolation levels, optimistic (`version` column) or pessimistic (`SELECT ... FOR UPDATE`) locking for financial/inventory mutations.
+- **Query Performance:** Index foreign keys and filter/sort columns, eliminate N+1 queries via eager loading/joins, inspect `EXPLAIN ANALYZE` plans, and use cursor/keyset pagination on large tables.
+- **Safe ORM & Pooling:** Use parameterized queries only, configure bounded connection pools with timeouts, and define data retention/archival policies.

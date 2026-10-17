@@ -1,57 +1,44 @@
 ---
 name: ci-auto-heal
-description: Monitoramento de CI/CD e autocorreção autônoma (máx 3).
+description: Autonomous CI/CD failure diagnosis and root-cause self-healing (max 3 iterations).
 ---
 
-# CI/CD Auto-Heal & Self-Correction Skill
+# CI/CD Auto-Heal & Self-Correction
 
-Esta skill governa a autonomia do Antigravity para monitorar esteiras remotas (GitHub Actions) e locais, diagnosticar quebras e aplicar autocorreção na causa raiz sem exigir que o desenvolvedor aponte o erro manualmente.
+Autonomously monitor local and remote CI pipelines (GitHub Actions), isolate failure logs with minimal token cost, and fix root causes.
 
----
+## 1. Activation Triggers
+- After `git push`, release, or deployment workflow triggers.
+- Failures detected by `agy-ci-heal --status` or `gh run list`.
+- Invocations from `/release`, `/incident`, or `/bugfix` workflows.
 
-## 1. Gatilhos de Ativação
-- Após `git push` ou acionamento de release / deploy.
-- Falha reportada pelo comando `agy-ci-heal --status` ou `gh run list`.
-- Invocação via workflows de `/release`, `/incident` ou `/bugfix`.
+## 2. 5-Step Operational Protocol
 
----
+### Step 1: Surgical Failure Diagnosis
+Extract only the failing log block (95% token reduction; never run unfiltered `gh run view --log`):
+```bash
+agy-ci-heal --diagnose-run <run-id>
+# or: agy-git-ops ci-log <run-id>
+# or: gh run view <run-id> --log-failed | agy-compact --ci
+```
 
-## 2. Protocolo Operacional em 5 Etapas
-
-### Etapa 1: Diagnóstico Cirúrgico da Falha
-1. Obtenha o log isolado da falha através de:
-   ```bash
-   agy-ci-heal --diagnose-run <run-id>
-   # ou: agy-git-ops ci-log <run-id>
-   # ou: gh run view <run-id> --log-failed | agy-compact --ci
-   ```
-2. Analise o bloco extraído sem carregar logs inteiros no contexto da conversa (economia de 95% dos tokens de CI). É proibido rodar `gh run view --log` sem filtro.
-
-### Etapa 2: Investigação de Causa Raiz (4 Fases)
-1. **Fase 1 (Compreensão):** Identifique o arquivo, linha, dependência ou variável de ambiente responsável.
-2. **Fase 2 (Isolamento):** Verifique se o erro é transiente (timeout de rede/serviço) ou determinístico (teste quebrado, tipagem, migração, lint).
-3. **Fase 3 (Reprodução Local):** Execute o comando de teste ou validação localmente:
-   ```bash
-   npm test
-   # ou pytest -v, cargo test, etc.
-   ```
-4. **Fase 4 (Correção na Fonte):** Aplique a correção no código de produção ou configuração.
+### Step 2: 4-Phase Root-Cause Investigation
+1. **Comprehension:** Identify exact failing file, line, dependency, or env var.
+2. **Isolation:** Distinguish transient infra/network timeouts from deterministic failures (tests, types, migrations, lint).
+3. **Local Reproduction:** Run the targeted failing check locally (`python3 -m unittest ...`, `npm test`, `pytest`).
+4. **Source Fix:** Fix the root cause in production code or config.
    > [!CAUTION]
-   > **Tolerância Zero para Anti-Patterns:** É estritamente proibido silenciar linters (`eslint-disable`), mascarar tipos (`as any`, `@ts-ignore`) ou pular testes (`test.skip`) para forçar o CI a passar.
+   > **Zero Bypass Tolerance:** Never silence linters (`eslint-disable`), mask types (`as any`, `@ts-ignore`), or skip tests (`test.skip`) to force green CI.
 
-### Etapa 3: Validação Local Estrita (TDD GREEN)
-Execute a suíte localmente para obter evidência nativa de aprovação antes de qualquer envio remoto.
+### Step 3: Strict Local Verification (TDD GREEN)
+Confirm the targeted test and linter pass locally before pushing.
 
-### Etapa 4: Commit Atômico & Re-Disparo
-1. Crie commit semântico padronizado:
-   ```bash
-   git commit -m "fix(ci): <descrição concisa> [run #<run-id>] (auto-heal [iter <N>/3])"
-   ```
-2. Re-envie as alterações:
-   ```bash
-   git push origin <branch>
-   ```
+### Step 4: Atomic Commit & Re-Trigger
+```bash
+git commit -m "fix(ci): <concise fix> [run #<run-id>] (auto-heal [iter <N>/3])"
+git push origin <branch>
+```
 
-### Etapa 5: Salvaguarda da Regra dos 3 Fixes (`[L-003]`)
-- O loop é limitado a **no máximo 3 iterações consecutivas**.
-- Se na 3ª tentativa a esteira continuar falhando, o agente deve **parar imediatamente**, registrar o log do diagnóstico e solicitar intervenção humana, prevenindo loops infinitos e desperdício de minutos de runner e tokens.
+### Step 5: 3-Fix Circuit Breaker (`[L-003]`)
+- Cap auto-heal loops at **maximum 3 consecutive iterations**.
+- If iteration 3 still fails, **STOP immediately**, record diagnostics, and escalate to the user.

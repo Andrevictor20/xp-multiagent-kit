@@ -224,6 +224,17 @@ class TestCliMainParser(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         mock_diag.assert_called_once()
 
+    @patch("scripts.kit_installer.ProjectInstaller.install_project")
+    @patch("scripts.kit_installer.DependencyChecker.check_all")
+    def test_cli_init_positional_path(self, mock_check, mock_project):
+        mock_check.return_value = {"can_proceed": True, "checks": {}}
+        mock_project.return_value = {"ok": True}
+        exit_code = main(["init", "/tmp/custom_project", "--yes"])
+        self.assertEqual(exit_code, 0)
+        mock_project.assert_called_once()
+        called_path = str(mock_project.call_args[0][0])
+        self.assertEqual(called_path, str(Path("/tmp/custom_project").resolve()))
+
     @patch("scripts.kit_installer.CodeReviewGraphInstaller.install")
     def test_cli_install_graph_flag(self, mock_install):
         mock_install.return_value = {"ok": True, "path": "/bin/code-review-graph"}

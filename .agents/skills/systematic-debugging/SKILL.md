@@ -1,90 +1,38 @@
 ---
 name: systematic-debugging
-description: Debugging sistemático em 4 fases e investigação de causa raiz.
+description: 4-phase scientific debugging, backward tracing, and the 3-Fix Circuit Breaker.
 ---
 
-# Systematic Debugging: Investigação Metódica de Causa Raiz
+# Systematic Debugging: 4-Phase Root-Cause Investigation
 
-> **A Lei de Ferro do Debugging:**
-> ```text
-> NENHUMA CORREÇÃO É PERMITIDA ANTES DA INVESTIGAÇÃO DA CAUSA RAIZ
-> ```
-> Correções que atuam apenas no sintoma são falhas de engenharia. Tentar palpites aleatórios desperdiça tempo, esgota tokens e cria novos bugs.
+> **Iron Law of Debugging:** `NO CODE FIX IS PERMITTED BEFORE ROOT-CAUSE INVESTIGATION.` Guessing and patching symptoms wastes tokens and spawns new bugs.
 
----
-
-## 1. As Quatro Fases Obrigatórias
-
-Você DEVE concluir cada fase sequencialmente antes de propor qualquer código:
-
+## 1. The 4 Mandatory Sequential Phases
 ```text
-Fase 1: Investigação da Causa Raiz
-            ↓
-Fase 2: Análise de Padrões & Comparações
-            ↓
-Fase 3: Hipótese Científica & Teste Mínimo
-            ↓
-Fase 4: Implementação com Teste Falhando (TDD)
+Phase 1: Root-Cause Investigation -> Phase 2: Pattern Comparison -> Phase 3: Single Hypothesis Test -> Phase 4: TDD Regression Fix
 ```
 
----
+### Phase 1: Root-Cause Investigation (Before Touching Code)
+1. **Read Full Error Output:** Inspect exact stack trace lines, error codes, and file paths without skimming.
+2. **Deterministic Reproduction:** Isolate the exact steps or input that trigger the failure 100% reliably.
+3. **Recent Change Check:** Inspect `git status -s` and `git diff --stat` for recent code, config, or dependency changes.
+4. **Backward Data Tracing:** Trace corrupted state or invalid values backward through the call chain to the **origin source**, not where the crash surfaced.
 
-### Fase 1: Investigação da Causa Raiz (Antes de Tocar no Código)
+### Phase 2: Pattern Analysis & Comparison
+1. Locate a working reference flow in the same codebase.
+2. Diff every assumption, parameter, and lifecycle step between the working flow and the broken flow.
 
-1. **Leitura Rigorosa das Mensagens de Erro:**
-   - Não ignore warnings ou detalhes da stack trace. Leia linhas exatas, códigos de erro e caminhos de arquivo.
-2. **Reprodução Determinística:**
-   - Isole os passos exatos para disparar o erro de forma 100% reproduzível. Se for intermitente, colete dados e instrumente; não tente adivinhar.
-3. **Mapeamento de Alterações Recentes:**
-   - O que mudou no código, nas dependências ou no ambiente que possa ter disparado o problema? (`git diff`, commits recentes).
-4. **Rastreamento Reverso de Dados (*Backward Tracing*):**
-   - Onde o valor inválido ou estado corrompido foi gerado pela primeira vez?
-   - Rastreie a cadeia de chamadas de trás para frente até encontrar o ponto de origem exato (a fonte), não onde o erro explodiu (o sintoma).
+### Phase 3: Scientific Hypothesis & Minimal Probe
+1. **State One Explicit Hypothesis:** *"The root cause is X because Y."*
+2. **Test One Variable at a Time:** Apply the smallest possible diagnostic probe to confirm or refute the hypothesis. If refuted, discard cleanly and formulate a new hypothesis — never stack unverified patches.
 
----
+### Phase 4: TDD Implementation & The 3-Fix Rule
+1. **Write a Failing Regression Test (RED):** Reproduce the exact bug in an automated test first.
+2. **Fix the Root Cause (GREEN):** Resolve the fault at its origin without opportunistic side refactors.
+3. **Verify Surgical Suite:** Confirm the new regression test and module suite pass.
+4. **THE 3-FIX RULE (Stop & Question Architecture):** If **3 consecutive fix attempts** fail or trigger new regressions, **STOP IMMEDIATELY**. Three failures indicate an architectural flaw or misunderstood contract — escalate and align with the user instead of attempting a 4th blind patch.
 
-### Fase 2: Análise de Padrões & Comparações
-
-1. **Busca por Exemplos Funcionais:**
-   - Existe código similar na mesma base de código que funciona corretamente?
-2. **Comparação Cirúrgica:**
-   - Liste todas as diferenças, por menores que sejam, entre o fluxo que funciona e o fluxo que falha.
-3. **Checagem de Premissas e Contratos:**
-   - O que a função que quebrou assume como verdade sobre seus parâmetros, ambiente ou tempo de execução?
-
----
-
-### Fase 3: Hipótese Científica & Teste Mínimo
-
-1. **Formule Uma Única Hipótese Explícita:**
-   - Declare claramente: *"Acredito que a causa raiz é X porque Y."*
-2. **Teste com Alteração Mínima:**
-   - Modifique a menor quantidade possível de código ou dados para testar a hipótese. Isole uma única variável por vez.
-3. **Validação:**
-   - Se o teste confirmar a hipótese $\rightarrow$ avance para a Fase 4.
-   - Se o teste refutar a hipótese $\rightarrow$ formule uma NOVA hipótese. Não empilhe remendos sobre hipóteses não comprovadas.
-
----
-
-### Fase 4: Implementação TDD & A Regra dos 3 Fixes
-
-1. **Crie um Teste Automatizado Falhando (**RED**):**
-   - Escreva o teste de regressão que reproduz a falha exata antes de alterar o código de produção.
-2. **Implemente a Correção Focada na Causa Raiz (**GREEN**):**
-   - Resolva o problema na fonte. Sem refatorações oportunistas ou mudanças extras em paralelo.
-3. **Valide a Correção:**
-   - O teste novo passou? Nenhum teste existente quebrou?
-4. **A REGRA DOS 3 FIXES (STOP & QUESTION THE ARCHITECTURE):**
-   - Se você tentar **3 correções consecutivas** e o problema persistir ou gerar novos sintomas em outros lugares, **PARE IMEDIATAMENTE**.
-   - Três falhas consecutivas indicam um **problema arquitetural ou acoplamento indevido**, não um bug simples.
-   - Discuta o problema com o usuário ou repense a arquitetura em vez de tentar um 4º remendo às cegas.
-
----
-
-## 2. Sinais de Alerta (Quando você está fazendo errado)
-
-Pare imediatamente se você se pegar pensando:
-- *"Vou mudar isso aqui rapidinho para ver se passa nos testes."*
-- *"Não entendi muito bem por que quebrou, mas essa linha resolveu."*
-- *"Vou pular o teste de regressão e verificar manualmente."*
-- *"Mais uma tentativa de fix e vai funcionar..."* (quando já falhou 2+ vezes).
+## 2. Red Flags (Stop Immediately If You Think This)
+- *"Let me tweak this line quickly to see if tests pass."*
+- *"I'm not sure why it failed, but this guard fixed it."*
+- *"I'll skip the regression test and check manually."*

@@ -1,49 +1,37 @@
 ---
 name: high-end-visual-design
-description: Design visual $150k+: Double-Bezel e física de mola.
+description: $150k+ Awwwards-tier visual design: Double-Bezel chassis and spring physics.
 ---
 
-# High-End Visual Design & Motion Choreography (Awwwards-Tier)
+# High-End Visual Design & Motion Choreography ($150k+ Tier)
 
-> **Propósito:** Criar interfaces digitais com profundidade tátil, ritmo espacial refinado, acabamento de hardware usinado e micro-interações fluidas de alto padrão.
+Craft digital interfaces with tactile hardware depth, generous spatial rhythm, concentric geometry, and fluid spring choreography.
 
----
+## 1. Precision Component Architecture
 
-## 1. Arquitetura de Componentes de Alta Precisão
+### 1.A The "Double-Bezel" (Concentric Machined Chassis)
+Never float a card with a flat grey border; build a two-layer chassis:
+- **Outer Shell:** `bg-black/5 dark:bg-white/5 ring-1 ring-black/5 dark:border-white/10 p-2 rounded-[2rem]`.
+- **Inner Core:** `bg-white dark:bg-zinc-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] rounded-[calc(2rem-0.5rem)] p-6`.
 
-### 1.A The "Double-Bezel" (Doppelrand / Molduras Concêntricas)
-Nunca coloque um card ou imagem flutuando com borda genérica cinza. Construa um chassi usinado:
-- **Outer Shell (Casca Externa):** Wrapper `div` com fundo sutil (`bg-black/5` ou `bg-white/5`), linha ultrafina de borda (`ring-1 ring-black/5` ou `border border-white/10`), padding específico (ex: `p-2`) e raio externo generoso (`rounded-[2rem]`).
-- **Inner Core (Núcleo Interno):** Container de conteúdo com fundo próprio, realce interno (`shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)]`) e raio matematicamente menor calculado para manter concentricidade: `rounded-[calc(2rem-0.5rem)]`.
+### 1.B Nested Pill CTA ("Button-in-Button")
+- Solid pill button (`rounded-full px-6 py-3`) with trailing arrow (`↗`) housed inside its own circular badge (`w-8 h-8 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center`).
+- Apply tactile press (`active:scale-[0.98]`) and diagonal icon shift on hover (`group-hover:translate-x-1 group-hover:-translate-y-[1px]`).
 
-### 1.B Nested CTA & "Button-in-Button" Trailing Icon
-- Botões interativos em formato de pílula sólida (`rounded-full px-6 py-3`).
-- **Ícone Aninhado:** O ícone de seta (`↗`) NUNCA fica solto no texto; fica aninhado em seu próprio círculo interno (`w-8 h-8 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center`), alinhado com o padding direito do botão.
-- No hover, o botão escala fisicamente no clique (`active:scale-[0.98]`) e o círculo com a seta se desloca sutilmente na diagonal (`group-hover:translate-x-1 group-hover:-translate-y-[1px]`).
+## 2. Spatial Rhythm & Macro-Whitespace
+- **Generous Section Breathing:** Pad vertical sections with `py-24` to `py-40`.
+- **Eyebrow Pills:** `rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium` (max 1 per 3 sections).
+- **Asymmetric Grids:** Pair asymmetric spans (`col-span-8` + `col-span-4`) that collapse cleanly to `grid-cols-1 w-full px-4` below `768px`.
 
----
-
-## 2. Ritmo Espacial & Macro-Whitespace
-
-- **Padding de Seção Dobrado:** Seções respiram com `py-24` a `py-40`.
-- **Eyebrow Tags:** Rótulos pequenos em pílula (`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-medium`).
-- **Contenção e Grid:** Layouts assimétricos (ex: `col-span-8` ao lado de dois cards `col-span-4`), caindo com segurança para `grid-cols-1 w-full px-4` em viewports menores que `768px`.
-
----
-
-## 3. Coreografia de Movimento (Dinâmica de Fluidos e Mola)
-
-- **Curvas Customizadas:** Nunca use transições padrão `linear` ou `ease-in-out`. Use curvas com inércia:
+## 3. Fluid & Spring Motion Choreography
+- **Inertial Curves:** Replace `linear`/`ease-in-out` with custom spring/inertial curves:
   ```css
   transition: all 0.7s cubic-bezier(0.32, 0.72, 0, 1);
   ```
-- **Entrada em Rolagem:** Fade-up suave com desfoque progressivo (`translate-y-12 blur-sm opacity-0` para `translate-y-0 blur-0 opacity-100` sobre `700ms`).
-- **Navegação em Ilha Flutuante:** Navbar destacada do topo da página como uma pílula de vidro flutuante (`mt-6 mx-auto w-max rounded-full backdrop-blur-xl`).
+- **Scroll Reveal:** Progressive fade-up (`translate-y-12 blur-sm opacity-0` -> `translate-y-0 blur-0 opacity-100` over `700ms`).
+- **Floating Island Navbar:** Detached glass pill navbar (`mt-6 mx-auto w-max rounded-full backdrop-blur-xl`).
 
----
-
-## 4. Salvaguardas de Performance
-
-- **Aceleração GPU Estrita:** Anime exclusivamente `transform` e `opacity`.
-- **Restrição de Backdrop Blur:** Aplique `backdrop-blur` apenas em elementos fixos ou sticky (navbars, overlays). NUNCA em containers de rolagem contínua.
-- **Camada de Grão/Ruído Fixa:** Noise texturas sempre em camada fixa `pointer-events-none` (`fixed inset-0 z-50 pointer-events-none`).
+## 4. Performance Guardrails
+- **Strict GPU Acceleration:** Animate only `transform` and `opacity`.
+- **Scoped Backdrop Blur:** Apply `backdrop-blur` only to fixed/sticky navbars and modals, never scrolling containers.
+- **Fixed Grain Overlay:** Keep noise textures on a fixed `pointer-events-none` layer (`fixed inset-0 z-50 pointer-events-none`).

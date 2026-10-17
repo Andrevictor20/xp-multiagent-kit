@@ -1,56 +1,38 @@
 ---
 name: redesign-ui-audit
-description: Auditoria e modernização de UI sem quebrar layout.
+description: Surgical UI audit and modernization without breaking existing layouts.
 ---
 
-# Redesign UI Audit: Protocolo de Modernização de Interfaces
+# Redesign UI Audit: Surgical Interface Modernization
 
-> **Propósito:** Elevar websites e apps existentes para um padrão visual premium sem quebrar o que já funciona. Funciona com qualquer stack (Tailwind, CSS Modules, Styled Components ou Vanilla CSS).
+Upgrade existing web and mobile interfaces to a high-craft visual standard without breaking functional layouts (`Scan -> Diagnose -> Fix`).
 
----
+## 1. Execution Cycle
+1. **Scan:** Inspect existing framework, styling system (Tailwind, CSS Modules, Vanilla CSS), and tokens.
+2. **Diagnose:** Audit against the checklist below to flag AI clichés and visual weaknesses.
+3. **Fix:** Apply incremental, surgical upgrades within the current stack rather than rewriting from scratch.
 
-## 1. O Ciclo de Execução: Scan → Diagnose → Fix
+## 2. Redesign Audit Checklist
 
-1. **Scan (Mapeamento):** Ler a base de código, identificar framework, tokens e estrutura existente.
-2. **Diagnose (Diagnóstico):** Rodar a auditoria visual abaixo listando fraquezas, inconsistências e padrões genéricos de IA.
-3. **Fix (Correção Cirúrgica):** Aplicar melhorias graduais na stack atual. Não reescrever tudo do zero.
+### Typography
+- [ ] Replace generic browser/Inter defaults with distinctive fonts (`Geist`, `Cabinet Grotesk`, `Satoshi`, `Outfit`).
+- [ ] Apply tight tracking on display headings (`tracking-tight`) and wider tracking on uppercase metadata.
+- [ ] Constrain body measure to `~65ch` with `line-height: 1.6`.
+- [ ] Enforce `tabular-nums` / monospace on all numeric counters and tables.
 
----
+### Colors & Surfaces
+- [ ] Replace pure `#000000` backgrounds with tinted charcoal/off-black (`#0A0A0A`, `#121212`).
+- [ ] Cap accent saturation below `80%` and remove generic purple/blue AI glows in favor of a single locked accent.
+- [ ] Tint shadows to match surface hue; eliminate jarring dark sections dropped mid-scroll on light pages.
 
-## 2. Checklist de Auditoria de Redesign
+### Layout & Alignment
+- [ ] Upgrade monotonous 3-equal-card rows into asymmetric bento grids or 2-column splits.
+- [ ] Replace `100vh` / `h-screen` with `min-h-[100dvh]` for iOS Safari stability.
+- [ ] Constrain page containers (`max-w-7xl mx-auto`) and align card CTAs at the bottom (`mt-auto`).
 
-### Tipografia
-- [ ] Substituir fontes padrão de navegador ou Inter genérico por opções com personalidade (`Geist`, `Cabinet Grotesk`, `Satoshi`, `Outfit`).
-- [ ] Aplicar tracking negativo em títulos grandes (`tracking-tight`) e positivo em pequenos metadados.
-- [ ] Limitar a largura do texto de parágrafos a aproximadamente `65ch` com `line-height` relaxado (`1.6`).
-- [ ] Usar figuras tabulares (`font-variant-numeric: tabular-nums` / `font-mono`) em números e métricas.
+### Interactivity & States
+- [ ] Add tactile press feedback (`active:scale-[0.98]`) and visible keyboard focus rings (`focus-visible:ring-2`).
+- [ ] Replace generic spinners with layout-matching skeleton loaders and smooth `200-300ms` transitions.
 
-### Cores e Superfícies
-- [ ] Substituir fundos pretos puros `#000000` por carvão ou off-black matizado (`#0a0a0a`, `#121212`).
-- [ ] Limitar saturação de acentos a < 80%.
-- [ ] Remover gradientes roxos/azuis automáticos de IA em favor de bases neutras sólidas e acento único.
-- [ ] Colorir sombras para acompanhar a matiz do fundo em vez de usar preto fosco desbotado.
-- [ ] Evitar seções escuras avulsas jogadas no meio de uma página clara sem transição intencional.
-
-### Layout e Alinhamento
-- [ ] Substituir fileiras de 3 cards idênticos por layouts assimétricos (bento grid, 2 colunas zig-zag ou carrossel).
-- [ ] Substituir `100vh` por `min-h-[100dvh]` para evitar saltos no mobile (iOS Safari).
-- [ ] Travar containers com `max-w-7xl mx-auto`.
-- [ ] Garantir que botões de CTA fiquem perfeitamente alinhados na base de colunas ou cartões com alturas de texto variadas (`mt-auto`).
-
-### Interatividade e Estados
-- [ ] Adicionar feedback tátil no clique (`active:scale-[0.98]` ou `active:translate-y-[1px]`).
-- [ ] Garantir anéis de foco visíveis (`focus-visible:ring-2`) para navegação por teclado (WCAG AA).
-- [ ] Substituir spinners genéricos por skeletal loaders que espelham o formato final do layout.
-- [ ] Adicionar transições suaves (200-300ms) em todos os elementos interativos.
-
----
-
-## 3. Ordem de Prioridade de Correção (Máximo Impacto com Mínimo Risco)
-
-1. **Troca Tipográfica** (Maior salto estético instantâneo com menor risco de quebra).
-2. **Limpeza da Paleta de Cores** (Desaturação e unificação de tons neutros).
-3. **Estados de Hover e Ativo** (Traz dinamismo e vida imediata à interface).
-4. **Espaçamento e Grid** (Ajuste de padding vertical e limites de container).
-5. **Substituição de Componentes Genéricos** (Bento grids e seções assimétricas).
-6. **Polimento de Estados de Vazio, Erro e Carregamento**.
+## 3. Priority Fix Order (Highest Impact, Lowest Risk)
+1. Typography swap -> 2. Color palette cleanup -> 3. Hover/active/focus states -> 4. Spacing & grid rhythm -> 5. Bento/asymmetric layout upgrades -> 6. Empty/loading/error state polish.

@@ -869,13 +869,8 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
         self.assertIn("4.5k", footer)
     def test_parse_transcript_data_propagates_eff_rolling(self):
         """Garante que eff_rolling não é substituído por RollingWindowStats vazio quando rolling=None."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            base = Path(tmpdir)
-            t1 = base / "brain" / "conv1" / ".system_generated" / "logs" / "transcript.jsonl"
-            t1.parent.mkdir(parents=True)
-            t1.write_text('{"type":"USER_INPUT","content":"test message with some words"}\n', encoding="utf-8")
-
-            # Inspeciona diretório temporário
+        fake_rolling = RollingWindowStats(tokens_5h=42000, tokens_7d=150000)
+        with unittest.mock.patch("scripts.telemetry.parser.calculate_rolling_windows", return_value=fake_rolling):
             stats = parse_transcript_data(
                 conversation_id="conv-roll-test",
                 model_name="gemini-3.8-flash",
@@ -887,10 +882,8 @@ class TestQuotaSnapshotAndProjection(unittest.TestCase):
             # O limite de 5h e semanal deve refletir o modelo
             self.assertEqual(stats.rolling.limit_5h, 800_000)
             self.assertEqual(stats.rolling.limit_7d, 10_000_000)
-            # Verifica que os tokens consumidos reais calculados não são perdidos
-            expected_rolling = calculate_rolling_windows()
-            self.assertEqual(stats.rolling.tokens_5h, expected_rolling.tokens_5h)
-            self.assertEqual(stats.rolling.tokens_7d, expected_rolling.tokens_7d)
+            self.assertEqual(stats.rolling.tokens_5h, 42000)
+            self.assertEqual(stats.rolling.tokens_7d, 150000)
 
     def test_provider_limits_for_claude_in_rolling_and_footer(self):
         """Verifica se modelos Claude recebem os limites de cota corretos de Claude (100k / 2M) em rolling, e não geram dados estimados falsos no footer quando offline."""

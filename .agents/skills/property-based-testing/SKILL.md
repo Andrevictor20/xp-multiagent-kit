@@ -1,39 +1,29 @@
 ---
 name: property-based-testing
-description: Testes baseados em propriedades e fuzzing estruturado.
+description: Property-Based Testing (PBT), invariant verification, and structured fuzzing.
 ---
 
-# Property-Based Testing Skill
+# Property-Based Testing (PBT)
 
-Esta skill governa a aplicação de **Property-Based Testing (PBT)** no XP Multi-Agent Kit, utilizando geradores aleatórios controlados e *shrinking* para encontrar falhas obscuras e contra-exemplos mínimos em algoritmos e regras de negócio complexas.
+Use controlled random input generators and automatic shrinking to uncover edge-case bugs and minimal counterexamples that fixed example tests miss.
 
----
+## 1. Universal Invariants to Test
+1. **Idempotence:** `f(f(x)) == f(x)` (sanitizers, normalizers, deduplication).
+2. **Round-Trip:** `deserialize(serialize(x)) == x` (parsers, codecs, DTOs).
+3. **Commutativity / Associativity:** Processing order does not alter aggregate totals.
+4. **Metamorphic Relations:** Predictable output transformations when inputs scale or permute.
 
-## 1. Por que Testes Baseados em Propriedades?
-Testes unitários baseados em exemplos fixos testam apenas os casos em que o desenvolvedor pensou. O Property-Based Testing inverte essa dinâmica: o desenvolvedor define **invariantes universais** que devem sempre ser válidas para qualquer entrada, e a ferramenta gera centenas de casos de teste agressivos automaticamente.
-
-### Invariantes Canônicos:
-1. **Idempotência:** `f(f(x)) == f(x)` (ex: sanitização de strings, deduplicação).
-2. **Round-trip (Serialização/Deserialização):** `deserialize(serialize(obj)) == obj`.
-3. **Comutatividade / Associatividade:** Ordem de processamento não altera o resultado consolidado.
-4. **Metamorfismo:** Relações previsíveis entre entradas alteradas e saídas correspondentes.
-
----
-
-## 2. Bibliotecas Recomendadas
+## 2. Recommended Libraries
 - **Python:** [Hypothesis](https://hypothesis.readthedocs.io/)
 - **TypeScript / JavaScript:** [fast-check](https://github.com/dubzzz/fast-check)
-- **Rust:** [proptest](https://github.com/proptest-rs/proptest) ou [quickcheck](https://github.com/BurntSushi/quickcheck)
-- **Go:** [testing/quick](https://pkg.go.dev/testing/quick) ou [rapid](https://github.com/flyingmutant/rapid)
+- **Rust:** [proptest](https://github.com/proptest-rs/proptest) / `quickcheck`
+- **Go:** `testing/quick` / [rapid](https://github.com/flyingmutant/rapid)
 
----
-
-## 3. Exemplo Prático de Invariante com Hypothesis
+## 3. Canonical Hypothesis Example
 
 ```python
 from hypothesis import given, strategies as st
 
-# Exemplo de invariante: qualquer lista ordenada preserva o tamanho original e os mesmos elementos
 @given(st.lists(st.integers()))
 def test_sorting_preserves_length_and_elements(lst):
     sorted_lst = custom_sort(lst)
@@ -42,10 +32,8 @@ def test_sorting_preserves_length_and_elements(lst):
     assert set(sorted_lst) == set(lst)
 ```
 
----
-
-## 4. Integração com o Test-Guardian
-O `test-guardian` aplica Property-Based Testing obrigatoriamente em:
-- Parsers, encoders e decoders de dados.
-- Algoritmos de cálculo de juros, taxas, descontos e divisões fracionárias.
-- Motores de permissão e controle de acesso RBAC/ABAC.
+## 4. Mandatory `test-guardian` Targets
+Apply Property-Based Testing whenever implementing:
+- Parsers, serializers, encoders, and decoders.
+- Financial math (interest, fees, discounts, fractional rounding/allocation).
+- RBAC/ABAC permission evaluation engines.

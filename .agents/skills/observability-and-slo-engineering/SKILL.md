@@ -1,83 +1,48 @@
 ---
 name: observability-and-slo-engineering
-description: Engenharia de observabilidade: logs JSON, métricas RED, tracing, SLOs e pós-deploy.
+description: Observability engineering: JSON logs, RED metrics, OpenTelemetry tracing, SLOs.
 ---
 
 # Observability, Telemetry & SLO Engineering
 
-> **Propósito:** Transformar a observabilidade de um mero repositório de logs em um **motor ativo de telemetria e confiabilidade**, permitindo diagnosticar incidentes em segundos, correlacionar requisições distribuídas e disparar alertas acionáveis baseados em SLOs e consumo de Error Budget.
+Turn observability into an active reliability engine for rapid incident diagnosis, distributed trace correlation, and SLO error-budget governance.
 
----
+## 1. The 3 Pillars of Observability
 
-## 1. Os 3 Pilares da Observabilidade
-
-1. **Logs Estruturados:** JSON em linha única com `correlation_id` e contexto rico.
-2. **Métricas RED & Filas:** Rate, Errors, Duration (p50/p90/p99) e monitoramento de fila (*queue lag*).
-3. **Distributed Tracing:** OpenTelemetry Trace Context (`traceparent`) entre serviços.
-
----
-
-### 1.A Logs Estruturados em JSON
-- **Regra:** Todo log de aplicação em produção deve ser emitido como um objeto JSON em linha única no `stdout`.
-- **Campos Obrigatórios:**
-  ```json
-  {
-    "timestamp": "2026-08-28T16:10:00.123Z",
-    "level": "INFO",
-    "service": "billing-service",
-    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
-    "span_id": "00f067aa0ba902b7",
-    "correlation_id": "req-987654321",
-    "user_id": "usr-12345",
-    "message": "Payment processed successfully",
-    "duration_ms": 142.5
-  }
-  ```
-- **Segurança de PII:** Nunca registre dados sensíveis (senhas, tokens JWT, números de cartão ou dados pessoais sensíveis) nos logs.
-
----
-
-### 1.B Métricas de Aplicação: O Padrão RED
-Para todos os serviços e endpoints HTTP/gRPC, colete as três métricas essenciais:
-1. **Rate (Taxa):** Número de requisições por segundo (`http_requests_total`).
-2. **Errors (Erros):** Número de requisições que falharam com HTTP 5xx (`http_requests_errors_total`).
-3. **Duration (Duração):** Distribuição de latência e tempos de resposta em percentis p50, p90, p95 e p99 (`http_request_duration_seconds_bucket`).
-
----
-
-### 1.C Distributed Tracing (Rastreamento Distribuído)
-- **OpenTelemetry Standard:** Propague o cabeçalho `traceparent` (W3C Trace Context) em todas as chamadas HTTP e mensagens assíncronas (Kafka, RabbitMQ, SQS).
-- **Spans em Operações Críticas:** Crie spans dedicados para consultas de banco de dados, chamadas a APIs externas e operações pesadas de I/O para identificar gargalos imediatamente.
-
----
-
-## 2. Engenharia de SLIs, SLOs & Error Budgets
-
-```text
-SLI (O que é medido) → SLO (A meta combinada) → Error Budget (A margem permitida de falha)
+### 1.A Single-Line Structured JSON Logs
+Emit all production logs to `stdout` as single-line JSON objects with zero PII (never log passwords, JWTs, credit cards, or secrets):
+```json
+{
+  "timestamp": "2026-08-28T16:10:00.123Z",
+  "level": "INFO",
+  "service": "billing-service",
+  "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+  "span_id": "00f067aa0ba902b7",
+  "correlation_id": "req-987654321",
+  "user_id": "usr-12345",
+  "message": "Payment processed successfully",
+  "duration_ms": 142.5
+}
 ```
 
-1. **Service Level Indicator (SLI):**
-   - *Exemplo de Disponibilidade:* `Requisições HTTP bem-sucedidas (não-5xx) / Total de requisições válidas`.
-   - *Exemplo de Latência:* `Requisições atendidas em menos de 200ms / Total de requisições`.
-2. **Service Level Objective (SLO):**
-   - *Meta:* `99.9% de disponibilidade no período de 30 dias` (permite até ~43 minutos de indisponibilidade por mês).
-   - *Meta de Latência:* `95% das requisições com latência inferior a 250ms`.
-3. **Error Budget (Orçamento de Erro):**
-   - A margem de erro aceitável (`100% - 99.9% = 0.1%`).
-   - Se o consumo do Error Budget for acelerado (ex: queimar 50% do orçamento em 1 hora), **novos deploys de features devem ser congelados** para priorizar a estabilização e confiabilidade do sistema.
+### 1.B Application Metrics: The RED Pattern
+Track for every HTTP/gRPC endpoint and queue consumer:
+1. **Rate:** Requests per second (`http_requests_total`).
+2. **Errors:** Failing requests (`http_requests_errors_total`, HTTP 5xx).
+3. **Duration:** Latency histograms (`p50`, `p90`, `p95`, `p99` via `http_request_duration_seconds_bucket`) plus queue lag.
 
----
+### 1.C Distributed Tracing (OpenTelemetry)
+- Propagate W3C `traceparent` headers across all HTTP calls and async message brokers (Kafka, RabbitMQ, SQS).
+- Wrap DB queries, external API calls, and heavy I/O in dedicated spans.
 
-## 3. Alertas Acionáveis & Prevenção de Fadiga (*Alert Fatigue*)
+## 2. SLIs, SLOs & Error Budgets
+```text
+SLI (Measured Metric) -> SLO (Target Threshold) -> Error Budget (Allowed Failure Margin)
+```
+- **Availability SLI/SLO Example:** `non-5xx requests / total valid requests >= 99.9%` over 30 days (~43m allowed downtime/month).
+- **Latency SLI/SLO Example:** `95% of requests < 250ms`.
+- **Error Budget Freeze:** If error-budget burn spikes (e.g., 50% burned in 1h), **freeze feature deployments** and prioritize reliability fixes.
 
-- **Regra de Ouro:** Alertas que acionam plantonistas (PagerDuty, Slack) devem indicar **SINTOMAS REAIS QUE IMPACTAM O USUÁRIO** (consumo de Error Budget, 5xx elevado, P99 degradado), nunca métricas internas transitórias (como CPU momentânea).
-- **Combate à Fadiga:** Alertas que disparam com frequência e são ignorados por rotina criam falsa sensação de cobertura. Devem ser excluídos ou recalibrados imediatamente.
-
----
-
-## 4. Janela de Monitoramento Pós-Deploy
-
-O health check do deploy responde apenas se a aplicação subiu. A saúde real é validada na janela pós-deploy:
-1. Mantenha acompanhamento ativo de taxa de erro e latência P95/P99 por **5 a 15 minutos** após qualquer deploy em produção.
-2. Se houver degradação anormal ou aceleração de queima de Error Budget nessa janela, inicie rollback imediatamente, mesmo que o health check inicial tenha sido aprovado.
+## 3. Actionable Alerts & Post-Deploy Window
+- **Symptom-Based Paging:** Page on-call engineers only on user-impacting symptoms (Error Budget burn rate, 5xx spike, P99 degradation), never noisy transient CPU blips.
+- **Post-Deploy Observation Window:** Actively monitor RED metrics for **5-15 minutes** after every production deploy; trigger immediate rollback on abnormal error or latency spikes.

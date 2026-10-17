@@ -1,27 +1,22 @@
 ---
 name: cloud-security-and-zero-trust
-description: Zero Trust, OIDC federado, Cosign e mTLS.
+description: Zero Trust cloud security, federated OIDC CI/CD, Cosign signing, and mTLS.
 ---
 
 # Cloud Security, Zero Trust & OIDC CD Pipelines
 
-> **Propósito:** Blindar a infraestrutura e os pipelines de entrega contínua eliminando credenciais estáticas de longa duração, garantindo a integridade criptográfica de containers e aplicando o modelo de **Zero Trust** em todos os perímetros de nuvem.
+Eliminate long-lived static cloud credentials, enforce cryptographic container provenance, and apply **Zero Trust** across cloud perimeters.
 
----
+## 1. Keyless CI/CD via Federated OIDC
+> **Golden Rule:** NEVER store static cloud keys (`AWS_SECRET_ACCESS_KEY`, GCP service account JSONs) in CI/CD secrets.
 
-## 1. Eliminação de Segredos Estáticos em CI/CD (OIDC Federated Auth)
-
-> **⚠️ REGRA DE OURO:** NUNCA armazene credenciais de nuvem estáticas de longa duração (como `AWS_SECRET_ACCESS_KEY` ou chaves de serviço do GCP) nos secrets do GitHub Actions ou do GitLab CI.
-
-### Como Funciona a Autenticação OIDC:
-1. O GitHub Actions emite um token JWT de curta duração assinado pelo GitHub.
-2. O provedor de nuvem (AWS/GCP/Azure) valida o token via **OpenID Connect (OIDC)** e assume uma Role temporária com escopo estrito apenas para a branch e repositório autorizados.
-3. As credenciais temporárias expiram automaticamente após a execução do job.
+1. CI runner requests a short-lived signed OIDC JWT.
+2. Cloud provider (AWS/GCP/Azure) validates the OIDC token and issues temporary role credentials scoped to the repository and branch.
+3. Credentials expire automatically when the job finishes.
 
 ```yaml
-# Exemplo no GitHub Actions:
 permissions:
-  id-token: write # Obrigatório para solicitar o token OIDC
+  id-token: write
   contents: read
 
 steps:
@@ -32,38 +27,20 @@ steps:
       aws-region: us-east-1
 ```
 
----
+## 2. Supply Chain Integrity (Cosign & SBOM)
+1. **Keyless Image Signing (Sigstore Cosign):**
+   ```bash
+   cosign sign --yes $IMAGE_URI
+   ```
+2. **SBOM Generation & Attestation (Syft):**
+   ```bash
+   syft $IMAGE_URI -o spdx-json > sbom.json
+   cosign attach sbom --sbom sbom.json $IMAGE_URI
+   ```
+3. **Cluster Admission Control (Kyverno / OPA Gatekeeper):** Reject any pod whose image lacks a valid CI-issued Cosign signature.
 
-## 2. Cadeia de Suprimentos & Assinatura de Imagens (Cosign & SBOM)
-
-Para garantir que o código que está rodando em produção é exatamente o que foi compilado e testado no CI:
-
-1. **Assinatura de Imagens com Cosign (Sigstore):**
-   - Assine a imagem do container no pipeline de CI com chave efêmera via OIDC (Keyless signing):
-     ```bash
-     cosign sign --yes $IMAGE_URI
-     ```
-2. **Geração de SBOM (Software Bill of Materials):**
-   - Gere o inventário completo de dependências da imagem utilizando ferramentas como **Syft**:
-     ```bash
-     syft $IMAGE_URI -o spdx-json > sbom.json
-     cosign attach sbom --sbom sbom.json $IMAGE_URI
-     ```
-3. **Validação de Admissão no Cluster (Kyverno / OPA Gatekeeper):**
-   - O cluster Kubernetes rejeita qualquer pod cuja imagem não contenha uma assinatura Cosign válida emitida pelo pipeline de CI da organização.
-
----
-
-## 3. Defesa em Profundidade (Zero Trust Architecture)
-
-Em uma arquitetura Zero Trust, a rede interna nunca é considerada confiável:
-
-1. **Mutual TLS (mTLS):** Toda comunicação serviço a serviço deve ser criptografada e autenticada mutuamente via Service Mesh (Istio, Linkerd) ou certificados mTLS.
-2. **Web Application Firewall (WAF) & Rate Limiting:**
-   - Proteção contra OWASP Top 10 (SQLi, XSS), bots abusivos e ataques DDoS.
-   - Aplicação de Rate Limiting por IP e por Token JWT em endpoints sensíveis (Login, Checkout, APIs públicas).
-3. **Proteção contra SSRF (Server-Side Request Forgery):**
-   - Bloquear acesso de containers a endpoints de metadados da nuvem (`169.254.169.254`) via NetworkPolicies ou iptables.
-   - Validar rigorosamente qualquer URL fornecida pelo usuário antes de realizar requisições HTTP internas.
-4. **Isolamento de Egress (Saída de Rede):**
-   - Containers só devem se comunicar com a internet pública se houver uma necessidade explícita declarada. Bloqueie conexões de saída arbitrárias por padrão.
+## 3. Zero Trust Defense in Depth
+1. **Mutual TLS (mTLS):** Encrypt and mutually authenticate all service-to-service traffic (Istio, Linkerd, or native mTLS).
+2. **WAF & Rate Limiting:** Enforce OWASP Top 10 filtering and per-IP/per-JWT rate limits on sensitive endpoints.
+3. **SSRF & Metadata Protection:** Block container access to cloud metadata (`169.254.169.254`) via NetworkPolicies/iptables and validate all outbound URLs.
+4. **Egress Isolation:** Deny arbitrary outbound internet traffic from workloads by default; allowlist required external hosts only.

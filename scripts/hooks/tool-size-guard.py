@@ -120,6 +120,41 @@ def process_tool_payload(
         # Houve economia mesmo sem flood: devolve o output já limpo
         clamped_content = denoised
 
+    # AC-5: Autonomous Self-Correction & Error Reflexion Trigger
+    failure_detected = False
+    if tool_name in ("run_command", "RUN_COMMAND", "unknown") and denoised:
+        lower_out = denoised.lower()
+        if (
+            "the command exited with code " in lower_out and "exited with code 0" not in lower_out
+        ) or any(
+            err_sig in denoised
+            for err_sig in (
+                "Traceback (most recent call last):",
+                "AssertionError:",
+                "SyntaxError:",
+                "FAILED (failures=",
+                "FAILED (errors=",
+                "ELIFECYCLE",
+                "error TS",
+            )
+        ):
+            failure_detected = True
+            base_out = clamped_content if clamped_content is not None else denoised
+            if "[SELF-HEAL TRIGGER]" not in base_out:
+                clamped_content = (
+                    f"{base_out}\n\n"
+                    "⚡ [SELF-HEAL TRIGGER] Failure detected in tool execution. "
+                    "Do NOT stop or leave broken state: 1) Isolate root cause from the error above, "
+                    "2) Fix the source/test without workarounds, 3) Re-run verification before concluding."
+                )
+            try:
+                state_file = runtime_dir() / "turn_state.json"
+                state = json.loads(state_file.read_text(encoding="utf-8")) if state_file.is_file() else {}
+                state["errors_pending"] = True
+                state_file.write_text(json.dumps(state), encoding="utf-8")
+            except Exception:
+                pass
+
     result: Dict[str, Any] = {
         "is_flooding": is_flooding,
         "char_count": char_count,
@@ -127,6 +162,7 @@ def process_tool_payload(
         "tool_name": tool_name,
         "noise_lines_removed": noise["noise_lines"],
         "noise_chars_saved": noise["saved_chars"],
+        "self_heal_triggered": failure_detected,
     }
     if clamped_content is not None:
         result["clamped_content"] = clamped_content

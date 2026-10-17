@@ -156,15 +156,42 @@ def detect_contiguous_read(target_path: Path, start_line: Optional[int], end_lin
 
 
 def record_file_edit(target_file: str) -> None:
-    """Registra que um arquivo foi editado recentemente."""
+    """Registra que um arquivo foi editado recentemente e marca código como não-testado."""
     try:
         state_file = runtime_dir() / "edit_reread_state.json"
         now = time.time()
         path_str = str(Path(target_file).resolve())
         state = {"last_edited": path_str, "edit_ts": now, "tested": False}
         state_file.write_text(json.dumps(state), encoding="utf-8")
+
+        turn_state_file = runtime_dir() / "turn_state.json"
+        t_state = json.loads(turn_state_file.read_text(encoding="utf-8")) if turn_state_file.is_file() else {}
+        edited = set(t_state.get("edited_files", []))
+        edited.add(path_str)
+        t_state["edited_files"] = sorted(edited)
+        t_state["dirty_code_untested"] = True
+        t_state["updated_at"] = now
+        turn_state_file.write_text(json.dumps(t_state), encoding="utf-8")
     except Exception:
         pass
+
+
+def check_atdd_discipline(target_file: str) -> str:
+    """Informa lembrete de disciplina ATDD/BDD ao editar código de produção sem validação de testes."""
+    try:
+        p = Path(target_file)
+        if "test" in p.name.lower() or p.suffix in (".md", ".json", ".yaml", ".yml", ".txt"):
+            return ""
+        if any(part in p.parts for part in ("tests", ".agents", ".gemini", "specs", "memory")):
+            return ""
+        turn_state_file = runtime_dir() / "turn_state.json"
+        if turn_state_file.is_file():
+            t_state = json.loads(turn_state_file.read_text(encoding="utf-8"))
+            if t_state.get("dirty_code_untested", False):
+                return "💡 [ATDD Discipline] Código de produção editado. Certifique-se de manter os testes RED correspondentes ou validar via teste antes de concluir o turno."
+    except Exception:
+        pass
+    return ""
 
 
 def record_command_run(cmd: str) -> None:
@@ -178,6 +205,14 @@ def record_command_run(cmd: str) -> None:
                 state = {}
             state["tested"] = True
             state_file.write_text(json.dumps(state), encoding="utf-8")
+
+        if any(k in cmd.lower() for k in ("test", "pytest", "unittest", "vitest", "jest", "cargo", "go test", "lint", "check")):
+            turn_state_file = runtime_dir() / "turn_state.json"
+            if turn_state_file.is_file():
+                t_state = json.loads(turn_state_file.read_text(encoding="utf-8"))
+                t_state["dirty_code_untested"] = False
+                t_state["errors_pending"] = False
+                turn_state_file.write_text(json.dumps(t_state), encoding="utf-8")
     except Exception:
         pass
 
@@ -316,7 +351,7 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
         if diff > SECTION_READ_MAX_LINES:
             return (
                 "allow",
-                f"Intervalo de {diff} linhas reduzido para {SECTION_READ_MAX_LINES}.{hint}",
+                f"Intervalo de {diff} linhas reduzido para a janela de {SECTION_READ_MAX_LINES} linhas.{hint}",
                 {"StartLine": int_start, "EndLine": int_start + SECTION_READ_MAX_LINES},
             )
 
@@ -674,6 +709,7 @@ def optimize_tool_call(payload: Dict[str, Any]) -> Dict[str, Any]:
         target_f = args.get("TargetFile")
         if target_f:
             record_file_edit(target_f)
+            reason = check_atdd_discipline(target_f)
     elif tool_name == "list_dir":
         decision, reason, overwrite = optimize_list_dir(args)
     elif tool_name == "grep_search":
@@ -684,6 +720,8 @@ def optimize_tool_call(payload: Dict[str, Any]) -> Dict[str, Any]:
             target_f = args.get("TargetFile")
             if target_f:
                 record_file_edit(target_f)
+                if not reason:
+                    reason = check_atdd_discipline(target_f)
 
     result: Dict[str, Any] = {"decision": decision}
     if reason:

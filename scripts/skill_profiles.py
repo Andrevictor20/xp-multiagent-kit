@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
 scripts/skill_profiles.py
-Gerenciador de Perfis de Skills (A2 / D3) para o XP Multi-Agent Kit v2.
+Skill Profile Manager (A2 / D3) for XP Multi-Agent Kit.
 
-Permite alternar perfis (core, backend, frontend, all) reduzindo a quantidade de
-skills ativas injetadas no contexto do modelo em cada turno.
+Switches active skill profiles (core, backend, frontend, all) to reduce per-turn
+context overhead injected into the model.
 
-Uso:
+Usage:
     agy-skills-profile status
     agy-skills-profile list
     agy-skills-profile apply core [--global | --local] [--dry-run]
@@ -25,115 +25,184 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
-# Constantes e caminhos padrão
 HOME = Path.home()
 DEFAULT_GLOBAL_SKILLS_DIR = HOME / ".gemini" / "config" / "skills"
 
-# Definições canônicas dos perfis
+CORE_SKILLS: Set[str] = {
+    "acceptance-test-driven",
+    "atomic-commit-discipline",
+    "ci-auto-heal",
+    "code-deslop-review",
+    "conformance-tracker",
+    "diff-simplifier-review",
+    "lesson-learned",
+    "no-workarounds",
+    "project-memory",
+    "specification-by-example",
+    "systematic-debugging",
+    "task-routing",
+    "tdd-safety-net",
+    "test-evidence-walkthrough",
+    "token-budget-tracker",
+}
+
+BACKEND_SKILLS: Set[str] = CORE_SKILLS | {
+    "api-contracts",
+    "api-security",
+    "async-messaging-and-resilience",
+    "authentication-security",
+    "authorization-security",
+    "availability-security",
+    "backend-performance-testing",
+    "caching-architecture",
+    "cloud-security-and-zero-trust",
+    "container-security",
+    "database-architecture",
+    "infrastructure-as-code-governance",
+    "integration-testing",
+    "migration-safety",
+    "observability-and-slo-engineering",
+    "security-testing",
+    "software-evolution-and-roadmapping",
+    "zero-downtime-deployment",
+}
+
+FRONTEND_SKILLS: Set[str] = CORE_SKILLS | {
+    "browser-e2e-playwright",
+    "component-architecture",
+    "conversion-copywriting",
+    "copy-editing-sweeps",
+    "cro-landing-pages",
+    "design-tokens",
+    "frontend-performance",
+    "frontend-taste-engineering",
+    "image-to-code",
+    "marketing-psychology",
+    "minimalist-ui",
+    "responsive-architecture",
+    "visual-direction-studio",
+    "visual-regression",
+}
+
 PROFILES: Dict[str, Set[str]] = {
+    "core": set(CORE_SKILLS),
+    "backend": set(BACKEND_SKILLS),
+    "frontend": set(FRONTEND_SKILLS),
+    "all": set(),  # Represents all available skills
+}
+
+PROFILE_META: Dict[str, Dict[str, str]] = {
     "core": {
-        "acceptance-test-driven",
-        "atomic-commit-discipline",
-        "ci-auto-heal",
-        "code-deslop-review",
-        "conformance-tracker",
-        "diff-simplifier-review",
-        "lesson-learned",
-        "no-workarounds",
-        "project-memory",
-        "specification-by-example",
-        "systematic-debugging",
-        "task-routing",
-        "tdd-safety-net",
-        "test-evidence-walkthrough",
-        "token-budget-tracker",
+        "label": "Core XP & Governance",
+        "description": "Essential ATDD/TDD, debugging, memory, deslop, and token-budget skills.",
     },
     "backend": {
-        # Core
-        "acceptance-test-driven",
-        "atomic-commit-discipline",
-        "ci-auto-heal",
-        "code-deslop-review",
-        "conformance-tracker",
-        "diff-simplifier-review",
-        "lesson-learned",
-        "no-workarounds",
-        "project-memory",
-        "specification-by-example",
-        "systematic-debugging",
-        "task-routing",
-        "tdd-safety-net",
-        "test-evidence-walkthrough",
-        "token-budget-tracker",
-        # Backend extensions
-        "api-contracts",
-        "api-security",
-        "async-messaging-and-resilience",
-        "authentication-security",
-        "authorization-security",
-        "availability-security",
-        "backend-performance-testing",
-        "caching-architecture",
-        "cloud-security-and-zero-trust",
-        "container-security",
-        "database-architecture",
-        "infrastructure-as-code-governance",
-        "integration-testing",
-        "migration-safety",
-        "observability-and-slo-engineering",
-        "security-testing",
-        "software-evolution-and-roadmapping",
-        "zero-downtime-deployment",
+        "label": "Backend, Data & Cloud Security",
+        "description": "Core skills plus APIs, databases, caching, async messaging, IaC, and SLOs.",
     },
     "frontend": {
-        # Core
-        "acceptance-test-driven",
-        "atomic-commit-discipline",
-        "ci-auto-heal",
-        "code-deslop-review",
-        "conformance-tracker",
-        "diff-simplifier-review",
-        "lesson-learned",
-        "no-workarounds",
-        "project-memory",
-        "specification-by-example",
-        "systematic-debugging",
-        "task-routing",
-        "tdd-safety-net",
-        "test-evidence-walkthrough",
-        "token-budget-tracker",
-        # Frontend extensions
-        "browser-e2e-playwright",
-        "component-architecture",
-        "conversion-copywriting",
-        "copy-editing-sweeps",
-        "cro-landing-pages",
-        "design-tokens",
-        "frontend-performance",
-        "frontend-taste-engineering",
-        "image-to-code",
-        "marketing-psychology",
-        "minimalist-ui",
-        "responsive-architecture",
-        "visual-direction-studio",
-        "visual-regression",
+        "label": "Frontend, UI/UX & Conversion",
+        "description": "Core skills plus Anti-Slop design direction, tokens, components, CRO, and E2E.",
     },
-    "all": set(),  # Representa todas as skills disponíveis
+    "all": {
+        "label": "Full Kit Catalog",
+        "description": "All 77 skills enabled simultaneously.",
+    },
+}
+
+SKILL_DESCRIPTIONS: Dict[str, str] = {
+    'acceptance-test-driven': 'ATDD/BDD with human-AI contract separation and Specification Pyramid.',
+    'accessibility-engineering': 'Web accessibility: keyboard navigation, WCAG AA contrast, and semantic ARIA.',
+    'adr-architect-tracker': 'MADR 3.0 Architectural Decision Records and architectural drift detection.',
+    'api-contracts': 'OpenAPI contract design, versioning, DTO schemas, and error modeling.',
+    'api-security': 'API security hardening and OWASP API Security Top 10 controls.',
+    'async-messaging-and-resilience': 'Async messaging, EDA, Outbox Pattern, DLQ, idempotency, and Circuit Breaker.',
+    'atomic-commit-discipline': 'Atomic, categorized, CI-verified commits and token-efficient Git ops.',
+    'authentication-security': 'Authentication auditing: password hashing, JWT validation, sessions, MFA.',
+    'authorization-security': 'Access control, RBAC/ABAC permissions, tenant isolation, and BOLA/IDOR defense.',
+    'availability-security': 'DoS protection, rate limiting, timeouts, and resource exhaustion defense.',
+    'backend-performance-testing': 'Backend load, stress, spike, and soak testing, profiling, and SLO gates.',
+    'browser-e2e-playwright': 'Headless E2E browser testing with Playwright, auto-wait locators, and traces.',
+    'caching-architecture': 'Redis/Memcached caching, Cache-Aside, and stampede/avalanche/penetration defense.',
+    'ci-auto-heal': 'Autonomous CI/CD failure diagnosis and root-cause self-healing (max 3 iterations).',
+    'ci-security-gate': 'Mandatory CI pipeline gate with linting, dependency audit, SAST, and tests.',
+    'cloud-security-and-zero-trust': 'Zero Trust cloud security, federated OIDC CI/CD, Cosign signing, and mTLS.',
+    'code-deslop-review': 'Systematic AI code cleanup, dead-code removal, and <500-line No God Files rule.',
+    'codebase-cartography': 'AST dependency graph mapping and blast-radius analysis via code-review-graph.',
+    'component-architecture': 'Modular UI components, token anchoring, 6-state machine, and mobile ergonomics.',
+    'component-registry': 'Catalog and governance of reusable UI components to prevent duplication.',
+    'conformance-tracker': 'Traceability between Acceptance Criteria and tests via Conformance Report.',
+    'container-security': 'Dockerfile hardening, non-root execution, minimal base images, and SBOMs.',
+    'conversion-copywriting': 'High-conversion UI copywriting, benefit bridges, hero headlines, and CTAs.',
+    'copy-editing-sweeps': '7-sweep copy editing framework to eliminate AI cliches and weak prose.',
+    'cro-landing-pages': 'Conversion Rate Optimization (CRO), 5-second test, CTA hierarchy, and forms.',
+    'crypto-guardian': 'Cryptographic primitive auditing, key management, and ban on weak ciphers.',
+    'database-architecture': 'SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention.',
+    'dependency-governance': 'Third-party dependency risk evaluation, license audit, and bloat prevention.',
+    'deploy-pipeline-conductor': 'Continuous deployment (CD) pipelines, staging promotion, health checks, rollback.',
+    'design-system-architecture': 'Design System governance from semantic tokens and primitives to page templates.',
+    'design-tokens': 'Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock.',
+    'diff-simplifier-review': 'Minimalist git diff review, YAGNI enforcement, and over-engineering removal.',
+    'frontend-performance': 'Core Web Vitals (LCP, INP, CLS), 60fps GPU animations, and scroll optimization.',
+    'frontend-taste-engineering': 'Anti-Slop aesthetic direction, 3-dial calibration, and design system routing.',
+    'git-worktree-workspace': 'Subagent isolation in clean Git Worktrees via agy-worktree.',
+    'high-end-visual-design': '$150k+ Awwwards-tier visual design: Double-Bezel chassis and spring physics.',
+    'image-to-code': 'Image-first UI pipeline: reference generation, token extraction, and code.',
+    'industrial-brutalist-ui': 'Industrial brutalist UI engineering: 90-degree grids, Swiss print, CRT telemetry.',
+    'infrastructure-as-code-governance': 'IaC governance and security for Terraform, OpenTofu, Kubernetes, and Docker.',
+    'integration-testing': 'Boundary integration tests across real databases, queues, and external APIs.',
+    'lesson-learned': 'Capture and formalize procedural lessons learned ([L-NNN]) in project memory.',
+    'living-docs-keeper': 'Continuous maintenance of living project documentation and technical decisions.',
+    'marketing-psychology': "Behavioral economics (Loss Aversion, Price Anchoring, Hick's Law) in UI.",
+    'mcp-server-governance': 'Zero Trust security, payload sanitization, and governance for MCP servers.',
+    'migration-safety': 'Zero-downtime database migrations using the expand-and-contract pattern.',
+    'minimalist-ui': 'Utilitarian minimalist UI (Linear/Notion aesthetic), 1px borders, whitespace.',
+    'mutation-testing-sentinel': 'Test suite robustness auditing via mutation injection and >=80% mutation score.',
+    'no-workarounds': 'Root-cause fixes only: ban workarounds, type casts, linter suppression, sleeps.',
+    'observability-and-slo-engineering': 'Observability engineering: JSON logs, RED metrics, OpenTelemetry tracing, SLOs.',
+    'pair-navigator': 'Pair programming navigation, minimal viable proposals, anti-over-engineering.',
+    'privacy-review': 'Privacy review, GDPR/LGPD compliance, data minimization, and PII protection.',
+    'project-brief-architect': 'Zero-Moment technical interview and structured project brief for Genesis.',
+    'project-memory': '4-Tier continuous project memory, Fast Context Bootstrap, and auto-onboarding.',
+    'property-based-testing': 'Property-Based Testing (PBT), invariant verification, and structured fuzzing.',
+    'redesign-ui-audit': 'Surgical UI audit and modernization without breaking existing layouts.',
+    'refactor-watchdog': 'Continuous refactoring watchdog against duplication and God files (>500 lines).',
+    'responsive-architecture': 'Fluid responsive layout architecture, mobile hierarchy, and 48px touch targets.',
+    'secrets-guardian': 'Credential leak prevention across code, .env, Git history, and build artifacts.',
+    'security-observability': 'Real-time security monitoring, audit logging, and PII/secret log redaction.',
+    'security-sentinel-review': 'Proactive security architecture review across auth, PII, payments, and inputs.',
+    'security-testing': 'Proactive SAST/DAST and negative security test cases against auth bypass/injection.',
+    'seo-content-engine': 'Technical On-Page SEO, Schema.org JSON-LD, and AI Search optimization (GEO/AEO).',
+    'software-evolution-and-roadmapping': 'Technical roadmapping, Now/Next/Later horizons, Strangler Fig, and RFC 8594.',
+    'spec-driven-development': 'Formal Specification-Driven Development (SDD) as single source of truth.',
+    'specification-by-example': 'Convert ambiguous business rules into executable Specification by Example tables.',
+    'supply-chain-security': 'Software supply chain security (SCA), lockfile integrity, and anti-typosquatting.',
+    'systematic-debugging': '4-phase scientific debugging, backward tracing, and the 3-Fix Circuit Breaker.',
+    'task-routing': 'Risk-based task routing (L0-L3) and surface-to-skill capability mapping.',
+    'tdd-safety-net': 'Strict RED-GREEN-REFACTOR cycle, Anti-Test-Bypass, and surgical test execution.',
+    'test-evidence-walkthrough': 'Native test execution evidence recording and verification by risk level.',
+    'test-harness-bootstrap': 'Moment-Zero test harness setup: runner, directory layout, CI step, smoke test.',
+    'threat-modeling': 'STRIDE threat modeling, trust boundaries, and security test derivation for L3.',
+    'token-budget-tracker': '3-tier token telemetry, Pre-Flight budget gates, and Surgical Atomic Mode.',
+    'ui-quality-gate': 'Pre-release UI checklist: WCAG AA contrast, 100dvh viewport, and Anti-Slop gate.',
+    'visual-direction-studio': 'Deliberate $150k+ visual direction, Hero discipline, and Anti-Slop layout rules.',
+    'visual-regression': 'Visual regression testing across viewports, interactive states, and dark mode.',
+    'zero-downtime-deployment': 'Zero-downtime deployment (Blue/Green, Canary, Rolling) and automated rollback.',
 }
 
 
 def get_profile_skills(profile_name: str, all_available: Iterable[str]) -> Set[str]:
-    """Retorna o conjunto de skills para um determinado perfil."""
+    """Return the set of skills for the requested profile."""
     name = profile_name.lower().strip()
     if name in ("all", "full"):
         return set(all_available)
     if name in PROFILES:
         return set(PROFILES[name])
-    raise ValueError(f"Perfil desconhecido '{profile_name}'. Opções válidas: {list(PROFILES.keys())}")
+    raise ValueError(f"Unknown profile {profile_name!r}. Valid options: {list(PROFILES.keys())}")
 
 
 def detect_current_profile(active_skills: Set[str]) -> str:
-    """Infere o nome do perfil mais próximo com base nas skills ativas."""
+    """Infer the closest profile name based on currently active skills."""
     if not active_skills:
         return "none"
     for name in ("core", "backend", "frontend"):
@@ -146,7 +215,7 @@ def list_active_and_disabled(
     skills_dir: Path,
     disabled_dir: Optional[Path] = None,
 ) -> Dict[str, Any]:
-    """Lista as skills ativas e inativas em um diretório de skills."""
+    """List active and disabled skills in a skills directory."""
     active: List[str] = []
     if skills_dir.exists():
         for p in sorted(skills_dir.iterdir()):
@@ -173,12 +242,9 @@ def apply_profile_symlinks(
     target_dir: Path,
     dry_run: bool = False,
 ) -> Tuple[List[str], List[str]]:
-    """
-    Aplica um perfil gerenciando symlinks em target_dir apontando para master_dir.
-    Não altera os arquivos do repositório master_dir.
-    """
+    """Apply a skill profile by managing symlinks in target_dir pointing to master_dir."""
     if not master_dir.exists():
-        raise FileNotFoundError(f"Diretório mestre não encontrado: {master_dir}")
+        raise FileNotFoundError(f"Master skills directory not found: {master_dir}")
 
     target_dir.mkdir(parents=True, exist_ok=True)
     all_available = [p.name for p in master_dir.iterdir() if p.is_dir() and (p / "SKILL.md").exists()]
@@ -187,7 +253,6 @@ def apply_profile_symlinks(
     active_created: List[str] = []
     removed: List[str] = []
 
-    # 1. Remover symlinks existentes que não estão no perfil
     for item in list(target_dir.iterdir()):
         if item.name not in target_skills:
             removed.append(item.name)
@@ -197,7 +262,6 @@ def apply_profile_symlinks(
                 elif item.is_dir():
                     shutil.rmtree(item)
 
-    # 2. Criar ou manter symlinks para skills do perfil
     for skill_name in target_skills:
         src = master_dir / skill_name
         dest = target_dir / skill_name
@@ -215,14 +279,10 @@ def apply_profile_move(
     disabled_dir: Path,
     dry_run: bool = False,
 ) -> Tuple[List[str], List[str]]:
-    """
-    Aplica um perfil movendo fisicamente pastas entre skills_dir e disabled_dir.
-    Usado para ambientes isolados locais que não usam symlinks.
-    """
+    """Apply a profile by moving skill directories between skills_dir and disabled_dir."""
     skills_dir.mkdir(parents=True, exist_ok=True)
     disabled_dir.mkdir(parents=True, exist_ok=True)
 
-    # Coletar todas as skills em ambos os diretórios
     active_now = {p.name: p for p in skills_dir.iterdir() if p.is_dir()}
     disabled_now = {p.name: p for p in disabled_dir.iterdir() if p.is_dir()}
     all_available = sorted(set(active_now.keys()) | set(disabled_now.keys()))
@@ -232,7 +292,6 @@ def apply_profile_move(
     active_result: List[str] = []
     disabled_result: List[str] = []
 
-    # Mover de active -> disabled
     for name, path in active_now.items():
         if name not in target_skills:
             disabled_result.append(name)
@@ -244,7 +303,6 @@ def apply_profile_move(
         else:
             active_result.append(name)
 
-    # Mover de disabled -> active
     for name, path in disabled_now.items():
         if name in target_skills:
             active_result.append(name)
@@ -256,7 +314,6 @@ def apply_profile_move(
         else:
             disabled_result.append(name)
 
-    # Limpar pasta disabled se vazia
     if not dry_run and disabled_dir.exists():
         if not any(disabled_dir.iterdir()):
             disabled_dir.rmdir()
@@ -265,7 +322,7 @@ def apply_profile_move(
 
 
 def enable_skill(skill_name: str, skills_dir: Path, disabled_dir: Path) -> bool:
-    """Move uma skill específica de disabled_dir para skills_dir."""
+    """Move a single skill from disabled_dir to skills_dir."""
     src = disabled_dir / skill_name
     if not src.exists():
         return False
@@ -278,7 +335,7 @@ def enable_skill(skill_name: str, skills_dir: Path, disabled_dir: Path) -> bool:
 
 
 def disable_skill(skill_name: str, skills_dir: Path, disabled_dir: Path) -> bool:
-    """Move uma skill específica de skills_dir para disabled_dir."""
+    """Move a single skill from skills_dir to disabled_dir."""
     src = skills_dir / skill_name
     if not src.exists():
         return False
@@ -291,36 +348,31 @@ def disable_skill(skill_name: str, skills_dir: Path, disabled_dir: Path) -> bool
 
 
 def estimate_tokens(skill_count: int, avg_chars_per_skill: int = 190) -> int:
-    """Estima tokens de cabeçalho com base na quantidade de skills."""
+    """Estimate header tokens based on active skill count."""
     return int((skill_count * avg_chars_per_skill) / 3.8)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog="agy-skills-profile",
-        description="Gerenciador de Perfis de Skills do XP Kit (A2 / D3)",
+        description="XP Kit Skill Profile Manager (A2 / D3)",
     )
-    subparsers = parser.add_subparsers(dest="command", help="Comando a executar")
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
-    # list
-    subparsers.add_parser("list", help="Lista todos os perfis disponíveis")
+    subparsers.add_parser("list", help="List all available skill profiles")
+    subparsers.add_parser("status", help="Show active and disabled skills status")
 
-    # status
-    subparsers.add_parser("status", help="Mostra o status das skills ativas e inativas")
+    apply_parser = subparsers.add_parser("apply", help="Apply a skill profile")
+    apply_parser.add_argument("profile", choices=["core", "backend", "frontend", "all", "full"], help="Profile name")
+    apply_parser.add_argument("--global", dest="is_global", action="store_true", default=True, help="Apply in ~/.gemini/config/skills/ (default)")
+    apply_parser.add_argument("--local", dest="is_local", action="store_true", help="Apply in local repository (.agents/skills)")
+    apply_parser.add_argument("--dry-run", action="store_true", help="Simulate operation without changing files")
 
-    # apply
-    apply_parser = subparsers.add_parser("apply", help="Aplica um perfil de skills")
-    apply_parser.add_argument("profile", choices=["core", "backend", "frontend", "all", "full"], help="Nome do perfil")
-    apply_parser.add_argument("--global", dest="is_global", action="store_true", default=True, help="Aplica em ~/.gemini/config/skills/ (padrão)")
-    apply_parser.add_argument("--local", dest="is_local", action="store_true", help="Aplica no repositório local (.agents/skills)")
-    apply_parser.add_argument("--dry-run", action="store_true", help="Apenas simula a operação")
+    enable_parser = subparsers.add_parser("enable", help="Enable an individual skill")
+    enable_parser.add_argument("skill", help="Skill name")
 
-    # enable / disable
-    enable_parser = subparsers.add_parser("enable", help="Habilita uma skill individual")
-    enable_parser.add_argument("skill", help="Nome da skill")
-
-    disable_parser = subparsers.add_parser("disable", help="Desabilita uma skill individual")
-    disable_parser.add_argument("skill", help="Nome da skill")
+    disable_parser = subparsers.add_parser("disable", help="Disable an individual skill")
+    disable_parser.add_argument("skill", help="Skill name")
 
     args = parser.parse_args(argv)
 
@@ -330,30 +382,31 @@ def main(argv: Optional[List[str]] = None) -> int:
         local_disabled = kit_dir / ".agents" / "skills_disabled"
         global_skills = DEFAULT_GLOBAL_SKILLS_DIR
 
-        print("📊 Status de Perfis de Skills")
+        print("📊 Skill Profiles Status")
         print("────────────────────────────────────────────────────────")
         if global_skills.exists():
             g_active = [p.name for p in global_skills.iterdir() if p.is_dir() or p.is_symlink()]
             g_prof = detect_current_profile(set(g_active))
             tok = estimate_tokens(len(g_active))
-            print(f"Global (~/.gemini/config/skills/):")
-            print(f"  • Ativas: {len(g_active)} skills  |  Perfil: [{g_prof}]  |  Custo: ~{tok} tokens/turno")
+            print("Global (~/.gemini/config/skills/):")
+            print(f"  • Active: {len(g_active)} skills  |  Profile: [{g_prof}]  |  Cost: ~{tok} tokens/turn")
 
         if local_skills.exists():
             l_info = list_active_and_disabled(local_skills, local_disabled)
             l_prof = detect_current_profile(set(l_info["active"]))
-            print(f"Local (.agents/skills/):")
-            print(f"  • Ativas: {l_info['total_active']}  |  Inativas: {l_info['total_disabled']}  |  Perfil: [{l_prof}]")
+            print("Local (.agents/skills/):")
+            print(f"  • Active: {l_info['total_active']}  |  Disabled: {l_info['total_disabled']}  |  Profile: [{l_prof}]")
         print("────────────────────────────────────────────────────────")
         return 0
 
     if args.command == "list":
-        print("📋 Perfis de Skills Disponíveis")
+        print("📋 Available Skill Profiles")
         print("────────────────────────────────────────────────────────")
         for name, skills in PROFILES.items():
-            count_label = f"{len(skills)} skills" if skills else "todas as 74 skills"
-            tok = estimate_tokens(len(skills)) if skills else estimate_tokens(74)
-            print(f"  • {name.upper():<10} : {count_label:<20} (~{tok} tokens/turno)")
+            count_label = f"{len(skills)} skills" if skills else f"all {len(SKILL_DESCRIPTIONS)} skills"
+            tok = estimate_tokens(len(skills)) if skills else estimate_tokens(len(SKILL_DESCRIPTIONS))
+            desc = PROFILE_META.get(name, {}).get("description", "")
+            print(f"  • {name.upper():<10} : {count_label:<16} (~{tok} tokens/turn) — {desc}")
         print("────────────────────────────────────────────────────────")
         return 0
 
@@ -366,16 +419,16 @@ def main(argv: Optional[List[str]] = None) -> int:
             disabled_dir = kit_dir / ".agents" / "skills_disabled"
             active, disabled = apply_profile_move(args.profile, skills_dir, disabled_dir, dry_run=args.dry_run)
             prefix = "[Dry-run] " if args.dry_run else ""
-            print(f"✅ {prefix}Perfil local '{args.profile}' aplicado: {len(active)} ativas, {len(disabled)} inativas.")
+            print(f"✅ {prefix}Local profile {args.profile!r} applied: {len(active)} active, {len(disabled)} disabled.")
         else:
             target_skills = DEFAULT_GLOBAL_SKILLS_DIR
             active, removed = apply_profile_symlinks(args.profile, master_skills, target_skills, dry_run=args.dry_run)
             prefix = "[Dry-run] " if args.dry_run else ""
             tok = estimate_tokens(len(active))
-            print(f"✅ {prefix}Perfil global '{args.profile}' aplicado com sucesso!")
-            print(f"   • Skills ativas em {target_skills}: {len(active)} (~{tok} tokens/turno)")
+            print(f"✅ {prefix}Global profile {args.profile!r} applied successfully!")
+            print(f"   • Active skills in {target_skills}: {len(active)} (~{tok} tokens/turn)")
             if removed:
-                print(f"   • Skills desvinculadas: {len(removed)}")
+                print(f"   • Unlinked skills: {len(removed)}")
         return 0
 
     if args.command == "enable":
@@ -384,11 +437,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         disabled_dir = kit_dir / ".agents" / "skills_disabled"
         ok = enable_skill(args.skill, skills_dir, disabled_dir)
         if ok:
-            print(f"✅ Skill '{args.skill}' habilitada com sucesso.")
+            print(f"✅ Skill {args.skill!r} enabled.")
             return 0
-        else:
-            print(f"❌ Skill '{args.skill}' não encontrada em {disabled_dir}.", file=sys.stderr)
-            return 1
+        print(f"❌ Skill {args.skill!r} not found in {disabled_dir}.", file=sys.stderr)
+        return 1
 
     if args.command == "disable":
         kit_dir = Path(__file__).resolve().parent.parent
@@ -396,11 +448,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         disabled_dir = kit_dir / ".agents" / "skills_disabled"
         ok = disable_skill(args.skill, skills_dir, disabled_dir)
         if ok:
-            print(f"✅ Skill '{args.skill}' desabilitada com sucesso.")
+            print(f"✅ Skill {args.skill!r} disabled.")
             return 0
-        else:
-            print(f"❌ Skill '{args.skill}' não encontrada em {skills_dir}.", file=sys.stderr)
-            return 1
+        print(f"❌ Skill {args.skill!r} not found in {skills_dir}.", file=sys.stderr)
+        return 1
 
     return 0
 
