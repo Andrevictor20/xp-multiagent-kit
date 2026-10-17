@@ -85,12 +85,15 @@ The kit provides native adapters for all major agentic AI environments:
 
 ### 1. One-Liner Quick Install (Remote — Compatible with Bash, Zsh, Fish, and POSIX shells)
 
-```bash
-# Automatic global installation across all 5 hosts (works in Bash, Zsh, Fish, etc.):
-curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | bash
+```sh
+# Short URL (anti-line-wrap) — automatic global installation across all 5 hosts:
+curl -sL https://cdn.jsdelivr.net/gh/Andrevictor20/xp-multiagent-kit/i | sh
 
-# Or pass custom flags explicitly via pipe:
-curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | bash -s -- --global --target all --yes
+# Direct GitHub Raw alternative:
+curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | sh
+
+# Pass custom flags explicitly via pipe:
+curl -fsSL https://raw.githubusercontent.com/Andrevictor20/xp-multiagent-kit/main/install.sh | sh -s -- --global --target all --yes
 ```
 
 ### 2. Local Installation (Clone & Run)
