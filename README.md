@@ -224,10 +224,10 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
 Every response produced by an agent governed by the kit ends with the mandatory compact 4-line footer:
 
 ```text
-Contexto: [██░░░░░░░░░░░░░░░░░░] 11.2% (22.4k/200.0k)
-Limites:  5h: [██████████░░░░░░░░░░] 52.1% | Semanal: [███░░░░░░░░░░░░░░░░░] 18.4%
-Consumo:  Prompt: 1.2k | Saída: 450 | Turno: 1.6k | Total: 22.4k
-Modelo:   Claude Sonnet 3.7 (Host: Cursor) | Custo Estimado: $0.0082
+Contexto: [▰▰▱▱▱▱▱▱▱▱] 11.2% (22.4k / 200.0k)  
+Limites:  5h [▰▰▰▰▰▱▱▱] 52.1% usado • Semana [▰▰▱▱▱▱▱▱] **81.6% livre**  
+Consumo:  1.6k tok (In: 1.2k | Tool: 0 | Out: 450)  
+Modelo:   Claude 3.7 Sonnet (Host: Cursor) • Janela: 200.0k • Saída: 64.0k
 ```
 
 ---
