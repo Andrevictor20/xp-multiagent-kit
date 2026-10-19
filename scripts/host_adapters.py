@@ -360,7 +360,7 @@ class HostAdapters:
                 "# Global Agent Dispatcher — XP Multi-Agent Kit v3.0 (Agnostic Core)\n\n"
                 "Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder):\n"
                 "1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.\n"
-                "2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, compact 4-line token telemetry (`xp-tokens --turn`), Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.\n"
+                "2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.\n"
                 "3. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
@@ -389,7 +389,7 @@ class HostAdapters:
                         data = json.loads(cursor_user_settings.read_text(encoding="utf-8"))
                         data["cursor.general.customInstructions"] = (
                             "Follow XP Multi-Agent Kit governance (strict TDD, L0-L3 risk routing, "
-                            "4-line telemetry footer via xp-tokens --turn, PT-BR user responses)."
+                            "PT-BR user responses)."
                         )
                         cursor_user_settings.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
                         actions.append(f"Cursor customInstructions configured at {cursor_user_settings}")

@@ -32,8 +32,6 @@ DEFAULT_PLUGIN_DIR = (
 DEFAULT_MEMORY_FILE = PROJECT_ROOT / ".agents" / "memory" / "PROJECT_MEMORY.md"
 DEFAULT_BIN_DIR = Path.home() / ".local" / "bin"
 EXPECTED_TOOLS = [
-    "agy-tokens",
-    "xp-tokens",
     "agy-sanitize",
     "agy-compact",
     "agy-git-ops",
@@ -192,58 +190,15 @@ def check_symlinks_health(bin_dir: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def check_language_server_rpc() -> Dict[str, Any]:
-    """Testa a conectividade com o Language Server RPC."""
-    start_time = time.time()
-    try:
-        from scripts.token_tracker import fetch_live_antigravity_quota
-
-        quota_obj = fetch_live_antigravity_quota(force_refresh=True)
-        elapsed_ms = round((time.time() - start_time) * 1000, 1)
-
-        if quota_obj and quota_obj.is_live:
-            quotas_summary: Dict[str, Any] = {}
-            if quota_obj.gemini_5h:
-                quotas_summary["gemini_5h_used_pct"] = round(
-                    (1.0 - quota_obj.gemini_5h.remaining_fraction) * 100, 1
-                )
-            if quota_obj.gemini_weekly:
-                quotas_summary["gemini_weekly_used_pct"] = round(
-                    (1.0 - quota_obj.gemini_weekly.remaining_fraction) * 100, 1
-                )
-            if quota_obj.claude_5h:
-                quotas_summary["3p_5h_used_pct"] = round(
-                    (1.0 - quota_obj.claude_5h.remaining_fraction) * 100, 1
-                )
-            if quota_obj.claude_weekly:
-                quotas_summary["3p_weekly_used_pct"] = round(
-                    (1.0 - quota_obj.claude_weekly.remaining_fraction) * 100, 1
-                )
-
-            return {
-                "name": "Language Server RPC",
-                "ok": True,
-                "status": "OK",
-                "latency_ms": elapsed_ms,
-                "details": f"Conectado ao vivo ({elapsed_ms}ms)",
-                "quotas": quotas_summary,
-            }
-        else:
-            err = quota_obj.error if quota_obj else "Sem resposta"
-            return {
-                "name": "Language Server RPC",
-                "ok": True,
-                "status": "OFFLINE",
-                "details": f"Fallback ativo ({err})",
-                "quotas": {},
-            }
-    except Exception as e:
-        return {
-            "name": "Language Server RPC",
-            "ok": True,
-            "status": "OFFLINE",
-            "details": f"Sem resposta RPC ({e})",
-            "quotas": {},
-        }
+    """Informa o status do Language Server RPC (telemetria de cotas desativada)."""
+    return {
+        "name": "Language Server RPC",
+        "ok": True,
+        "status": "DISABLED",
+        "latency_ms": 0.0,
+        "details": "Telemetria de cota de modelos desativada",
+        "quotas": {},
+    }
 
 
 def run_system_health_check(

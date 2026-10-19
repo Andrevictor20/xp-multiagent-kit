@@ -43,7 +43,6 @@ CORE_SKILLS: Set[str] = {
     "task-routing",
     "tdd-safety-net",
     "test-evidence-walkthrough",
-    "token-budget-tracker",
 }
 
 BACKEND_SKILLS: Set[str] = CORE_SKILLS | {
@@ -183,7 +182,6 @@ SKILL_DESCRIPTIONS: Dict[str, str] = {
     'test-evidence-walkthrough': 'Native test execution evidence recording and verification by risk level.',
     'test-harness-bootstrap': 'Moment-Zero test harness setup: runner, directory layout, CI step, smoke test.',
     'threat-modeling': 'STRIDE threat modeling, trust boundaries, and security test derivation for L3.',
-    'token-budget-tracker': '3-tier token telemetry, Pre-Flight budget gates, and Surgical Atomic Mode.',
     'ui-quality-gate': 'Pre-release UI checklist: WCAG AA contrast, 100dvh viewport, and Anti-Slop gate.',
     'visual-direction-studio': 'Deliberate $150k+ visual direction, Hero discipline, and Anti-Slop layout rules.',
     'visual-regression': 'Visual regression testing across viewports, interactive states, and dark mode.',

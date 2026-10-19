@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -109,73 +110,27 @@ class TestSpec003Acceptance(unittest.TestCase):
         self.assertIn("# Skills Index", skills_index)
 
     # ------------------------------------------------------------------
-    # AC-4: Compact, Visually Clean & ANSI-Colored Token Telemetry
+    # AC-4: Telemetry Footer Disabled in Dynamic Effort Hook
     # ------------------------------------------------------------------
-    def test_ac4_dynamic_model_detection_and_compact_colored_telemetry(self):
-        """AC-4: Detects 'Gemini 4 Argon (High)' dynamically and renders compact telemetry + ANSI colors."""
-        from scripts.token_tracker import (
-            LiveQuotaBucket,
-            LiveServerQuota,
-            RollingWindowStats,
-            TokenStats,
-            TurnStats,
-            detect_model_name_from_steps,
-            format_message_footer,
-            format_terminal_telemetry,
-            get_model_display_name,
-        )
+    def test_ac4_telemetry_footer_disabled_in_dynamic_effort_hook(self):
+        """AC-4: dynamic_effort_hook outputs only effort and risk guidance without injecting live telemetry footer."""
+        from scripts.hooks.dynamic_effort_hook import handle_pre_invocation
 
-        steps = [
-            {
-                "type": "USER_INPUT",
-                "content": "<USER_SETTINGS_CHANGE>The user changed setting `Model Selection` from None to Gemini 4 Argon (High).</USER_SETTINGS_CHANGE>",
+        with tempfile.TemporaryDirectory() as tmp:
+            tfile = Path(tmp) / "transcript.jsonl"
+            tfile.write_text(json.dumps({"step_index": 1, "type": "USER_INPUT", "content": "olá mundo"}) + "\n", encoding="utf-8")
+            payload = {
+                "invocationNum": 1,
+                "transcriptPath": str(tfile),
+                "conversationId": f"conv-no-telemetry-{time.time()}",
             }
-        ]
-        detected = detect_model_name_from_steps(steps)
-        self.assertIsNotNone(detected)
-        display = get_model_display_name(detected)
-        self.assertIn("Gemini 4 Argon", display)
-
-        quota = LiveServerQuota(
-            is_live=True,
-            gemini_5h=LiveQuotaBucket(remaining_fraction=0.92, description="refresh in 4 hours, 10 minutes"),
-            gemini_weekly=LiveQuotaBucket(remaining_fraction=0.58, description="refresh in 5 days, 12 hours"),
-        )
-        stats = TokenStats(
-            conversation_id="test-conv",
-            model_name=detected or "gemini-4-argon",
-            context_window=1_048_576,
-            max_output=65_536,
-            system_prompt_tokens=10_000,
-            system_prompt_bytes=33_000,
-            user_input_tokens=200,
-            user_input_bytes=800,
-            tool_tokens=1_000,
-            tool_bytes=3_200,
-            model_output_tokens=300,
-            model_output_bytes=1_050,
-            total_tokens=29_700,
-            remaining_tokens=1_018_876,
-            percent_used=2.8,
-            effort="High",
-            rolling=RollingWindowStats(tokens_5h=12_000, tokens_7d=150_000),
-            live_quota=quota,
-        )
-        turn = TurnStats(user_input_tokens=185, tool_tokens=0, model_output_tokens=0, total_tokens=185)
-
-        footer = format_message_footer(stats, turn, compact=True)
-        # Compact footer must not include bloated RTK or Reenvio lines by default
-        self.assertNotIn("RTK:", footer)
-        self.assertNotIn("Reenvio:", footer)
-        self.assertLessEqual(len(footer.strip().splitlines()), 4)
-        self.assertIn("Gemini 4 Argon", footer)
-        self.assertIn("Contexto:", footer)
-        self.assertIn("Consumo:", footer)
-
-        # Colored terminal output must include ANSI escape codes when color=True
-        colored = format_terminal_telemetry(stats, turn, use_color=True)
-        self.assertIn("\033[", colored)
-        self.assertIn("Gemini 4 Argon", colored)
+            res = handle_pre_invocation(payload)
+            self.assertIn("injectSteps", res)
+            self.assertTrue(len(res["injectSteps"]) > 0)
+            msg = res["injectSteps"][0]["ephemeralMessage"]
+            self.assertNotIn("TELEMETRIA AO VIVO", msg)
+            self.assertNotIn("Contexto:", msg)
+            self.assertNotIn("Consumo:", msg)
 
     # ------------------------------------------------------------------
     # AC-5: Autonomous Self-Correction & Error Reflexion Engine
@@ -198,10 +153,10 @@ class TestSpec003Acceptance(unittest.TestCase):
         self.assertIn("SELF-HEAL", res["overwrite"]["output"])
 
     # ------------------------------------------------------------------
-    # AC-6: Token Reduction (PreInvocation dedup per prompt + <500 line token_tracker)
+    # AC-6: Token Reduction (PreInvocation dedup per prompt)
     # ------------------------------------------------------------------
     def test_ac6_pre_invocation_dedup_across_tool_steps_and_file_size(self):
-        """AC-6: dynamic_effort_hook does not re-inject on subsequent tool steps of same prompt, and token_tracker < 500 lines."""
+        """AC-6: dynamic_effort_hook does not re-inject on subsequent tool steps of same prompt."""
         from scripts.hooks.dynamic_effort_hook import should_skip_duplicate_injection
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -213,10 +168,6 @@ class TestSpec003Acceptance(unittest.TestCase):
             # Step 2 (after tool call, same user prompt_hash): MUST skip!
             skip_2 = should_skip_duplicate_injection(conv_id, prompt_hash, cache_dir=Path(tmp))
             self.assertTrue(skip_2)
-
-        # Check token_tracker.py line count < 500
-        tt_lines = len((KIT_ROOT / "scripts" / "token_tracker.py").read_text(encoding="utf-8").splitlines())
-        self.assertLess(tt_lines, 500, f"scripts/token_tracker.py has {tt_lines} lines (must be < 500)")
 
 
 if __name__ == "__main__":

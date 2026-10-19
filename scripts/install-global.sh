@@ -32,7 +32,7 @@ cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
 
 Master global rule for agent execution (Antigravity, OpenCode, Cursor, Qoder):
 1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
-2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, compact 4-line token telemetry (`xp-tokens --turn` / `agy-tokens --turn`), Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.
+2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.
 3. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
 EOF
 
@@ -148,8 +148,6 @@ echo "🔗 Instalando ferramentas globais de otimização de tokens em ~/.local/
 mkdir -p "$HOME/.local/bin"
 chmod +x "$KIT_DIR/scripts"/* "$KIT_DIR/scripts/hooks"/* "$KIT_DIR/scripts/global-token-optimizer"/* 2>/dev/null || true
 
-ln -sf "$KIT_DIR/scripts/token_tracker.py" "$HOME/.local/bin/xp-tokens"
-ln -sf "$KIT_DIR/scripts/token_tracker.py" "$HOME/.local/bin/agy-tokens"
 ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/agy-sanitize"
 # Enforcement portátil (C1) + telemetria local (D) + evidência/conformance (E1/E2)
 ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/agy-run"
@@ -204,7 +202,7 @@ ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/xp-effort"
 ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/agy-spec"
 ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/xp-spec"
 
-echo "   ✅ agy-tokens, xp-tokens, xp-spec, agy-spec, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
+echo "   ✅ xp-spec, agy-spec, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)

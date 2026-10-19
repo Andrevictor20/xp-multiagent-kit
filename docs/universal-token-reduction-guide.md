@@ -8,7 +8,7 @@ Este guia apresenta as **melhores práticas operacionais e ferramentas** para ma
 
 ### 1. A Regra dos 25 Turnos / 50k Tokens (Reset Preventivo)
 - **O Problema:** O Antigravity retransmite todo o histórico da conversa em cada novo turno. Em chats com mais de 25 turnos, uma pergunta simples de 2 linhas pode custar 80.000 tokens de histórico reenviado.
-- **A Solução:** Ao atingir 25 turnos ou quando `agy-tokens` indicar > 50k tokens na janela, gere o pacote de transição e abra um chat novo:
+- **A Solução:** Ao atingir 20 a 25 turnos ou em sessões extensas, gere o pacote de transição e abra um chat novo:
   ```bash
   agy-handoff --write-file
   ```
@@ -67,7 +67,6 @@ Este guia apresenta as **melhores práticas operacionais e ferramentas** para ma
 
 | Utilitário | Finalidade | Como Usar |
 | :--- | :--- | :--- |
-| `agy-tokens` / `xp-tokens` | Telemetria de tokens em 3 camadas (Janela, 5h, Semanal) | `agy-tokens --check` ou `agy-tokens --badge` |
 | `agy-fast` | Executa CLI com esforço reduzido (economia de thinking) | `agy-fast "sua instrução"` |
 | `agy-deep` | Executa CLI com esforço máximo para problemas críticos | `agy-deep "sua instrução complexa"` |
 | `agy-sanitize` | Trunca saídas de terminal e previne inundações de log | `agy-sanitize <comando>` ou `<cmd> \| agy-sanitize` |
@@ -76,9 +75,9 @@ Este guia apresenta as **melhores práticas operacionais e ferramentas** para ma
 
 ---
 
-## 🚨 Modo Cirúrgico Atômico (Quando a Cota Estiver < 20%)
+## 🚨 Modo Cirúrgico Atômico (Em Conversas Extensas ou Complexas)
 
-Se `agy-tokens --check` emitir o alerta crítico:
+Quando uma tarefa complexa exigir foco máximo:
 1. **Evite tarefas exploratórias amplas:** Peça apenas a modificação estritamente necessária.
 2. **Execute um único ciclo RED -> GREEN:** Não inicie novos épicos ou refatorações periféricas.
 3. **Gere o checkpoint imediatamente:** Salve o estado atual com `agy-handoff --write-file` para não deixar trabalho pela metade.

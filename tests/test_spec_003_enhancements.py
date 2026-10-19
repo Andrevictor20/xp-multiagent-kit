@@ -121,41 +121,16 @@ class TestSpec003Enhancements(unittest.TestCase):
         self.assertEqual(matches, [], f"Found hardcoded personal paths in tracked files: {matches}")
 
     # ------------------------------------------------------------------
-    # 5. Host-Adaptive Model Catalog & Telemetry
+    # 5. Model Telemetry Removal
     # ------------------------------------------------------------------
-    def test_host_model_catalog_and_adaptive_telemetry(self):
-        """Telemetry supports --host [antigravity|cursor|codex|qoder|opencode] with official models."""
-        from scripts.telemetry.models import get_models_for_host, HOST_MODEL_CATALOG
-        from scripts.telemetry.formatter import format_compact_footer
+    def test_model_telemetry_disabled_in_governance(self):
+        """Model consumption telemetry footer is removed from AGENTS.md and dynamic_effort_hook."""
+        agents_content = (KIT_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertNotIn("xp-tokens --turn", agents_content)
+        self.assertNotIn("Mandatory canonical 4-line footer", agents_content)
 
-        self.assertIn("cursor", HOST_MODEL_CATALOG)
-        self.assertIn("codex", HOST_MODEL_CATALOG)
-        self.assertIn("qoder", HOST_MODEL_CATALOG)
-        self.assertIn("antigravity", HOST_MODEL_CATALOG)
-        self.assertIn("opencode", HOST_MODEL_CATALOG)
-
-        cursor_models = get_models_for_host("cursor")
-        self.assertIn("claude-3-7-sonnet", cursor_models)
-
-        codex_models = get_models_for_host("codex")
-        self.assertIn("gpt-4o", codex_models)
-
-        # Test compact footer with host display
-        stats = {
-            "total_tokens": 10000,
-            "limits": {"context_window": 200000, "max_output": 8192},
-            "percent_used": 5.0,
-            "model_name": "claude-3-7-sonnet",
-            "host": "cursor",
-            "turn_tokens": {"user": 1000, "tool": 2000, "model": 500, "total": 3500},
-            "rate_limits": {
-                "rolling_5h": {"used": 5000, "limit": 100000, "percent": 5.0},
-                "rolling_weekly": {"used": 20000, "limit": 2000000, "percent": 1.0},
-            },
-        }
-        footer = format_compact_footer(stats)
-        self.assertIn("Cursor", footer)
-        self.assertIn("Claude 3.7 Sonnet", footer)
+        hook_code = (KIT_ROOT / "scripts" / "hooks" / "dynamic_effort_hook.py").read_text(encoding="utf-8")
+        self.assertNotIn("TELEMETRIA AO VIVO OFICIAL", hook_code)
 
     # ------------------------------------------------------------------
     # 6. Auto-Update Manager & Notifications (xp-kit update)

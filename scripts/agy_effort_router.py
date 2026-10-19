@@ -22,16 +22,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-try:
-    from scripts.token_tracker import fetch_live_antigravity_quota
-except ImportError:
-    try:
-        from token_tracker import fetch_live_antigravity_quota
-    except ImportError:
-        def fetch_live_antigravity_quota(force_refresh: bool = False):
-            class Dummy:
-                is_live = False
-            return Dummy()
+def fetch_live_antigravity_quota(force_refresh: bool = False):
+    class Dummy:
+        is_live = False
+    return Dummy()
 
 # Integração com telemetria local de reenvio (D5 — Pre-Flight portátil)
 try:
@@ -222,19 +216,8 @@ def detect_git_context(repo_path: Optional[Path] = None) -> Dict[str, Any]:
 
 
 def get_token_budget_status() -> Dict[str, float]:
-    """Consulta estimativas de cota de tokens via snapshot local (instantâneo) ou token_tracker."""
-    status = {"rolling_5h_percent": 0.0, "weekly_percent": 0.0}
-    try:
-        from scripts.token_tracker import load_quota_snapshot
-        snapshot = load_quota_snapshot()
-        if snapshot:
-            rolling = snapshot.get("rolling_windows", {})
-            status["rolling_5h_percent"] = float(rolling.get("window_5h", {}).get("percent_used", snapshot.get("gemini_5h_percent", 0.0)))
-            status["weekly_percent"] = float(rolling.get("window_weekly", {}).get("percent_used", snapshot.get("gemini_weekly_percent", 0.0)))
-            return status
-    except Exception:
-        pass
-    return status
+    """Retorna status padrão de orçamento (telemetria de modelos desativada)."""
+    return {"rolling_5h_percent": 0.0, "weekly_percent": 0.0}
 
 
 def classify_task_effort(

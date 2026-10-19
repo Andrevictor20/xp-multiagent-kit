@@ -1,13 +1,4 @@
 {
-  "token-badge": {
-    "PostInvocation": [
-      {
-        "type": "command",
-        "command": "python3 ${KIT_ROOT}/scripts/hooks/token-badge-hook.py",
-        "timeout": 10
-      }
-    ]
-  },
   "tool-size-guard": {
     "PostToolUse": [
       {

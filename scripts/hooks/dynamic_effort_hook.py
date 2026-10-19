@@ -253,34 +253,9 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         guidance = "LOW mode: direct, concise response, strictly Zero-Tool for conceptual queries."
     else:
         guidance = "MEDIUM mode: balanced token efficiency, surgical tests, and Pre-Response Self-Audit."
-
-    live_footer = ""
-    try:
-        from scripts.token_tracker import (
-            find_active_session, load_transcript, calculate_turn_stats,
-            detect_model_name, detect_effort, parse_transcript_data, format_message_footer
-        )
-        t_path = Path(transcript_path) if transcript_path and os.path.isfile(transcript_path) else None
-        if not t_path:
-            _, t_path, _ = find_active_session()
-        steps = load_transcript(t_path) if t_path else []
-        turn = calculate_turn_stats(steps)
-        model_name = detect_model_name(conv_id, steps)
-        user_effort = detect_effort(conv_id, steps=steps)
-        active_effort = user_effort if user_effort and user_effort.lower() != "medium" else decision.effort
-        stats = parse_transcript_data(conv_id, model_name, steps, fetch_live=True, effort=active_effort)
-        live_footer = format_message_footer(stats, turn, compact=True)
-    except Exception:
-        live_footer = ""
-
     ephemeral_msg = (
         f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level} | {guidance}"
     )
-    if live_footer:
-        ephemeral_msg += (
-            f"\n📋 TELEMETRIA AO VIVO OFICIAL DESTE TURNO (copie no rodapé final):\n"
-            f"{live_footer}"
-        )
 
     return {
         "injectSteps": [

@@ -49,15 +49,7 @@ Before emitting any final response for code tasks, execute the **3-Point Pre-Res
 - **Turn Budget:** L0 ≤ 3 · L1 ≤ 8 · L2 ≤ 20 · L3 checkpointed. **Mandatory Batching:** Turn 1 groups `PROJECT_MEMORY.md` + target file reads in parallel.
 - **Anti-Tool-Spam:** Never poll `manage_task(status)` (wait for reactive wakeup). Never re-read a file immediately after `replace_file_content`.
 - **File Reading:** Files ≤ 800 lines → read whole in 1 call; > 800 lines → locate symbol via grep/AST graph (`code-review-graph`) and read exact section.
-- **Commands:** Use `agy-run` / `xp-run` where native hooks are absent. Compact Git/CI only (`git status -s`, `git diff --stat`).
-- **Telemetry Footer:** **MANDATORY canonical 4-line footer at the end of EVERY response** (copy live injection or query `agy-tokens --turn` / `xp-tokens --turn`; never hallucinate custom fields like "Budget turns", "Economia:", or "Status:"):
-  ```text
-  Contexto: [{bar_ctx}] {pct_ctx}% ({tot_ctx} / {win_str})  
-  Limites:  5h [{bar_5h}] {pct_5h_used}% usado (↻ {renova_5h}) • Semana [{bar_7d}] **{pct_7d_rem}% livre** (↻ {renova_7d})  
-  Consumo:  {turn_tot} tok (In: {turn_in} | Tool: {turn_tools} | Out: {turn_out})  
-  Modelo:   {display_model} ({effort_level}) • Janela: {win_str} • Saída: {max_out_str}
-  ```
-  Pre-Flight Gate alerts at >70% context or >80% quota.
+- **Telemetry:** Model token consumption telemetry and response footers are disabled. Mechanical discipline relies strictly on turn limits, batching, and lean context.
 
 ## 5. Continuous Memory (4 Tiers) & Code Quality
 

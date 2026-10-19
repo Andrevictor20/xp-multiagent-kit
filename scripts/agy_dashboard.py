@@ -49,24 +49,8 @@ def collect_dashboard_data(workspace: Path) -> Dict[str, Any]:
     except Exception:
         health_data = {"all_ok": True, "checks": []}
 
-    # 2. Cotas e RPC
+    # 2. Cotas e RPC (telemetria desativada)
     quotas_data = {}
-    try:
-        from scripts.token_tracker import fetch_live_antigravity_quota
-        q = fetch_live_antigravity_quota(force_refresh=True)
-        if q and q.is_live:
-            if q.gemini_5h:
-                quotas_data["gemini_5h_used_pct"] = round((1.0 - q.gemini_5h.remaining_fraction) * 100, 1)
-                quotas_data["gemini_5h_reset"] = getattr(q.gemini_5h, "reset_time_str", "N/A")
-            if q.gemini_weekly:
-                quotas_data["gemini_weekly_used_pct"] = round((1.0 - q.gemini_weekly.remaining_fraction) * 100, 1)
-                quotas_data["gemini_weekly_reset"] = getattr(q.gemini_weekly, "reset_time_str", "N/A")
-            if q.claude_5h:
-                quotas_data["3p_5h_used_pct"] = round((1.0 - q.claude_5h.remaining_fraction) * 100, 1)
-            if q.claude_weekly:
-                quotas_data["3p_weekly_used_pct"] = round((1.0 - q.claude_weekly.remaining_fraction) * 100, 1)
-    except Exception:
-        pass
 
     # 3. Memória Contínua
     memory_data = {"live_kb": 0.0, "history_kb": 0.0, "fts_items": 0}
@@ -192,7 +176,7 @@ def render_dashboard(data: Dict[str, Any], width: int = 76) -> str:
 
     # Comandos Rápidos
     lines.append(row("⚡ COMANDOS RÁPIDOS:"))
-    lines.append(row("  agy-health | agy-tokens | agy-resume | agy-memory-search | agy-git-ops"))
+    lines.append(row("  agy-health | agy-resume | agy-memory-search | agy-git-ops"))
     lines.append(border_bot)
 
     return "\n".join(lines)

@@ -1,22 +1,21 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-16 (Local)  
+> **Última Atualização:** 2026-10-19 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v3.1.3 (Universal One-Liner Installer, Multi-Platform Deployment & 5-Host Parity)
+> **Versão / Marco Atual:** v3.2.0 (Remoção da Telemetria de Consumo de Modelos & Simplificação Multi-Host)
 
 ---
 
 ## 1. Quick Project Summary (Semantic)
 
-- **Propósito:** Kit modular e agnóstico de governança, agentes, skills, workflows e políticas para pair programming com IA em **Antigravity, OpenCode, Cursor, Codex e Qoder (IDE & CLI)**, orquestrando Task Routing L0-L3, Pirâmide ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Autocorreção Reflexiva, Otimização de Tokens e Memória Contínua em 4 Tiers.
+- **Propósito:** Kit modular e agnóstico de governança, agentes, skills, workflows e políticas para pair programming com IA em **Antigravity, OpenCode, Cursor, Codex e Qoder (IDE & CLI)**, orquestrando Task Routing L0-L3, Pirâmide ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Autocorreção Reflexiva, Otimização de Contexto e Memória Contínua em 4 Tiers.
 - **Tech Stack:** Multi-Host Agent Framework (`AGENTS.md`, `opencode.json`, `.cursor/rules/*.mdc`, `.codex/rules/`, `.qoder/rules/`), Python 3.8+, Bash, PowerShell 5.1+, Windows CMD, Git, GitHub Actions CLI (`gh`). Agnóstico de SO (Linux, macOS, Windows).
-- **Arquitetura Chave:** `.agents/` (11 agentes, 77 skills, 11 workflows, 12 policies, 2 templates em Token-Dense English com regra mandatória de saída em Português ao usuário; memória viva em 4 tiers). Suíte modular em `scripts/telemetry/`, `scripts/host_adapters.py`, `scripts/mcp_installers.py`, `scripts/spec_tool.py`, `scripts/update_manager.py`, `scripts/windows_support.py` e binários globais `xp-*` / `agy-*` em `~/.local/bin/` (Unix) ou `%USERPROFILE%\.local\bin\` (Windows `.cmd` shims).
+- **Arquitetura Chave:** `.agents/` (11 agentes, 76 skills `< 4KB` em Inglês, 11 workflows, 12 policies, 2 templates em Token-Dense English com regra mandatória de saída em Português ao usuário; memória viva em 4 tiers). Suíte modular em `scripts/host_adapters.py`, `scripts/mcp_installers.py`, `scripts/spec_tool.py`, `scripts/update_manager.py`, `scripts/windows_support.py` e binários globais `xp-*` / `agy-*` em `~/.local/bin/` (Unix) ou `%USERPROFILE%\.local\bin\` (Windows `.cmd` shims).
 - **Comandos Essenciais:** (Catálogo completo em [details/commands.md](details/commands.md))
   - Instalação Linux/macOS: `./install.sh [--global|--project <dir>|--both <dir>] [--target all|...] [--lang pt|en]`
   - Instalação Windows (PowerShell/CMD): `powershell -ExecutionPolicy Bypass -File .\install.ps1` ou `install.cmd`
   - Gestão e Auto-Update do Kit: `xp-kit [doctor|init <dir>|sync|update|version]` / `agy-kit`
   - Ferramenta ATDD de Specs: `xp-spec [new <slug>|validate <file>]` / `agy-spec`
-  - Telemetria Compacta (4 linhas + ANSI Colors): `xp-tokens --turn [--color] [--host <host>]` / `agy-tokens --turn`
   - Auditoria de Orçamento & Índice de Skills: `python3 scripts/skill_index.py [generate|audit]`
   - Conformidade ATDD & Débitos: `xp-conformance` / `agy-debt --scan`
 
@@ -24,15 +23,16 @@
 
 ## 2. Current Health & System Status
 
-- **Agent Suite Status:** OPERATIONAL (11 Agentes, 77 Skills `< 4KB` em Inglês, 11 Workflows, 12 Policies, 5 Hosts, Instaladores Nativos, Toolchain RTK/OD/CRG, Auto-Update e Telemetria).
-- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (348/348 testes unitários e de integração `PASS`, 0 caminhos pessoais, arquivos `< 500` linhas, `PROJECT_MEMORY.md` `< 8KB`).
-- **Última Execução / Evidência:** `EV-KIT-V3.1.3-ONE-LINER-20261016-01` (Validação e deploy do comando único de instalação remota, auto-healing de dependências e diagnóstico dos 5 hosts).
+- **Agent Suite Status:** OPERATIONAL (11 Agentes, 76 Skills `< 4KB` em Inglês, 11 Workflows, 12 Policies, 5 Hosts, Instaladores Nativos, Toolchain RTK/OD/CRG, Auto-Update; telemetria de consumo de modelos removida).
+- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (287/287 testes unitários e de integração `PASS`, 0 caminhos pessoais, arquivos `< 500` linhas, `PROJECT_MEMORY.md` `< 8KB`).
+- **Última Execução / Evidência:** `EV-KIT-V3.2.0-NO-MODEL-TELEMETRY-20261019-01` (Remoção completa da telemetria de consumo de modelos, rodapé de 4 linhas, hooks associados, skill token-budget-tracker e módulos legados de telemetria).
 - **Ambiente Ativo:** Local & Global / Linux, macOS e Windows nativo (PowerShell / CMD).
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5 Entregas)
 
+| 2026-10-19 | `FEAT` | Remoção Completa da Telemetria de Consumo de Modelos (AGENTS.md, Hooks, CLI & Módulos) — (1) Remoção da obrigatoriedade do rodapé canônico de 4 linhas nas mensagens dos agentes, (2) Exclusão do hook `token-badge` e injeção de rodapé no `dynamic_effort_hook`, (3) Remoção da skill `token-budget-tracker` e regras associadas (`token-telemetry-footer.md`), (4) Remoção de `xp-tokens`/`agy-tokens`, `scripts/token_tracker.py` e `scripts/telemetry/`, (5) Sincronização multi-host limpa (Antigravity, Cursor, Codex, Qoder, OpenCode) e 287/287 testes `PASS` | `AGENTS.md`, `.agents/`, `scripts/`, `tests/` | `PASS (287/287 tests)` |
 | 2026-10-18 | `FIX` | Auditoria & Blindagem Multi-Host da Telemetria (Antigravity, Cursor, Codex, Qoder, OpenCode) — (1) Sincronização do template canônico de 4 linhas em todas as regras globais dos 5 hosts (`~/.cursor/rules/00-xp-core.mdc`, `~/.qoder/rules/xp-governance.md`, `~/.codex/rules/xp-governance.md`, `~/.codex/instructions.md`, `~/.config/opencode/AGENTS.md`), (2) Correção do exemplo obsoleto no `README.md`, (3) Execução e aprovação de 100% da suíte de testes (350/350 tests `PASS`) | `AGENTS.md`, `README.md`, `scripts/host_adapters.py`, `~/.cursor/`, `~/.qoder/`, `~/.codex/`, `~/.config/opencode/` | `PASS (350/350 tests)` |
 | 2026-10-16 | `FIX` | Adaptação Multi-Shell (Fish, Zsh, Bash, Ksh, POSIX `sh`) & One-Liner Universal via Pipe — (1) `PathConfigurator` atualizado com sintaxe nativa do Fish (`set -gx PATH`), Zsh (`$ZDOTDIR/.zshrc`), Bash, Ksh e `.profile` + auto-criação do RC do `$SHELL` ativo, (2) `install-shell-aliases.sh` com auto-loader em `~/.config/fish/conf.d/xp-kit.fish` e `.zshrc`, (3) `install.sh` reescrito em POSIX `sh` puro (`dash`/`sh`/`bash`/`zsh`) adaptado para pipe direto (`curl -fsSL ... | sh`) | `install.sh`, `scripts/kit_installer.py`, `scripts/global-token-optimizer/install-shell-aliases.sh`, `tests/test_kit_installer.py`, `README.md` | `PASS (EV-KIT-V3.1.4-MULTI-SHELL-20261016-02)` |
 | 2026-10-16 | `FEAT` | Publicação & Validação do Instalador Universal One-Liner — (1) Comando único curl/bash testado e validado em ambiente limpo, (2) Auto-healing de dependências do sistema operacional (Python 3, Git), (3) Injeção não-interativa e feedback legível na saída do terminal, (4) Suporte universal a Linux, macOS e Windows (PowerShell/CMD), (5) Sincronização e deploy completo no branch main do GitHub | `install.sh`, `install.ps1`, `install.cmd`, `scripts/kit_installer.py`, `scripts/host_adapters.py`, `scripts/mcp_installers.py` | `PASS (EV-KIT-V3.1.3-ONE-LINER-20261016-01)` |

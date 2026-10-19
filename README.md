@@ -63,7 +63,6 @@ A high-performance, token-efficient multi-agent governance kit designed for AI p
 4. **Token Economy & Semantic Compression**:
    - PreToolUse optimization hooks (`smart_tool_optimizer.py`) with loop detection and output clamping.
    - Native integration with **RTK (Rust Token Killer)**: up to 90% semantic compression on command outputs.
-   - Ultra-compact 4-line ANSI color telemetry footer (`xp-tokens --turn`).
 
 ---
 
@@ -124,7 +123,7 @@ On Windows 10/11, run natively using PowerShell or Command Prompt (CMD):
 install.cmd --global --target all --yes
 ```
 
-> **Windows CLI Shims & User PATH**: The Windows installer automatically generates `.cmd` shims (`xp-tokens.cmd`, `xp-spec.cmd`, `xp-kit.cmd`, `xp-run.cmd`, etc.) in `%USERPROFILE%\.local\bin` and configures your User Environment `PATH` persistently in the Windows Registry.
+> **Windows CLI Shims & User PATH**: The Windows installer automatically generates `.cmd` shims (`xp-spec.cmd`, `xp-kit.cmd`, `xp-run.cmd`, `xp-conformance.cmd`, etc.) in `%USERPROFILE%\.local\bin` and configures your User Environment `PATH` persistently in the Windows Registry.
 
 ### 4. Non-Interactive Automation & Flags (Linux & macOS)
 
@@ -175,7 +174,7 @@ xp-kit sync
 ```
 
 - **24-Hour Non-Blocking Cache**: Remote updates are checked asynchronously in `~/.xp_kit_update_cache.json` without slowing down CLI turns.
-- **Discrete Notifications**: When a new version is published, `xp-tokens` and `xp-kit` print a discrete notification:
+- **Discrete Notifications**: When a new version is published, `xp-kit` prints a discrete notification:
   ```text
   ✨ An update is available: v3.1.0 -> v3.2.0 (Run 'xp-kit update' to upgrade)
   ```
@@ -198,15 +197,7 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
   ```
 - `xp-conformance` / `agy-conformance`: Generates the traceability matrix linking Acceptance Criteria to test executions.
 
-### Token Telemetry & Execution
-- `xp-tokens` / `agy-tokens`: Compact 4-line telemetry engine with color support and host-adaptive model catalog:
-  ```bash
-  # Print current turn footer with terminal colors:
-  xp-tokens --turn --color
-
-  # Target specific host model limit:
-  xp-tokens --turn --color --host cursor
-  ```
+### Execution & Conformance Tools
 - `xp-run` / `agy-run`: Executes commands with output sanitization, preserving exit codes via `pipefail`.
 - `xp-evidence` / `agy-evidence`: Records concrete test execution evidence for compliance audits.
 - `xp-handoff` / `agy-handoff`: Creates structured handoff packets between agents or sessions.
@@ -216,19 +207,6 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
 - `xp-graph` / `agy-graph` / `code-review-graph`: AST dependency analysis and blast-radius exploration.
 - `agy-smart` / `agy-effort`: Dynamic reasoning effort router (`low`, `medium`, `high`).
 - `agy-ci-heal`: Autonomous CI/CD pipeline diagnosis and auto-repair.
-
----
-
-## Telemetry Footer Specification
-
-Every response produced by an agent governed by the kit ends with the mandatory compact 4-line footer:
-
-```text
-Contexto: [▰▰▱▱▱▱▱▱▱▱] 11.2% (22.4k / 200.0k)  
-Limites:  5h [▰▰▰▰▰▱▱▱] 52.1% usado • Semana [▰▰▱▱▱▱▱▱] **81.6% livre**  
-Consumo:  1.6k tok (In: 1.2k | Tool: 0 | Out: 450)  
-Modelo:   Claude 3.7 Sonnet (Host: Cursor) • Janela: 200.0k • Saída: 64.0k
-```
 
 ---
 

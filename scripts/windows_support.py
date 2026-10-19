@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 SHIM_COMMANDS: Dict[str, str] = {
-    "xp-tokens": "scripts/token_tracker.py",
     "xp-spec": "scripts/spec_tool.py",
     "xp-kit": "scripts/kit_installer.py",
     "xp-run": "scripts/agy-run",
@@ -26,7 +25,6 @@ SHIM_COMMANDS: Dict[str, str] = {
     "xp-skill-index": "scripts/skill_index.py",
     "xp-health": "scripts/agy_health.py",
     "xp-effort": "scripts/agy_effort_router.py",
-    "agy-tokens": "scripts/token_tracker.py",
     "agy-spec": "scripts/spec_tool.py",
     "agy-kit": "scripts/kit_installer.py",
     "agy-run": "scripts/agy-run",

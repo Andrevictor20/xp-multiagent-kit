@@ -167,30 +167,8 @@ def prune_worktrees_task(workspace: Path, log_file: Optional[Path] = None) -> st
 
 
 def sync_live_quota_task(workspace: Path, log_file: Optional[Path] = None) -> str:
-    """Verifica e sincroniza cota ao vivo com o Language Server, persistindo snapshot oficial."""
-    try:
-        kit_root = Path(__file__).resolve().parent.parent
-        if str(kit_root) not in sys.path:
-            sys.path.insert(0, str(kit_root))
-        from scripts.token_tracker import (
-            fetch_live_antigravity_quota,
-            save_quota_snapshot,
-            calculate_rolling_windows,
-        )
-
-        rolling = calculate_rolling_windows()
-        quota = fetch_live_antigravity_quota(force_refresh=True, rolling=rolling)
-        if quota.is_live:
-            save_quota_snapshot(quota, rolling.tokens_5h, rolling.tokens_7d)
-            pct_5h = (quota.gemini_5h.remaining_fraction * 100.0) if quota.gemini_5h else 0.0
-            pct_7d = (quota.gemini_weekly.remaining_fraction * 100.0) if quota.gemini_weekly else 0.0
-            log_message(f"⚡ Cota oficial sincronizada com Language Server (5h: {pct_5h:.1f}% rem, Semanal: {pct_7d:.1f}% rem)", log_file)
-            return f"SYNCED (5h: {pct_5h:.1f}%, 7d: {pct_7d:.1f}%)"
-        elif quota.is_projected:
-            return "PROJECTED (snapshot mantido)"
-        return "OFFLINE (sem snapshot)"
-    except Exception as e:
-        return f"ERROR ({e})"
+    """Telemetria de cota ao vivo desativada."""
+    return "DISABLED"
 
 
 def run_maintenance_cycle(workspace: Path, log_file: Optional[Path] = None) -> Dict[str, Any]:

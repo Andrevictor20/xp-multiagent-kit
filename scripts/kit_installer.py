@@ -373,7 +373,7 @@ class KitDoctor:
             "bin": bin_dir.is_dir(),
         }
         essential_bins = [
-            "agy-tokens", "xp-tokens", "agy-run", "xp-run", "agy-spec", "xp-spec",
+            "agy-run", "xp-run", "agy-spec", "xp-spec",
             "agy-debt", "agy-health", "agy-kit", "xp-kit", "od", "agy-design",
             "code-review-graph", "agy-graph", "agy-crg",
         ]

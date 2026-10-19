@@ -42,10 +42,9 @@ class TestWindowsInstaller(unittest.TestCase):
         generated = generate_windows_shims(self.bin_dir, ROOT_DIR)
         self.assertTrue(len(generated) > 0)
 
-        # Check required agnostic and native commands
         required_cmds = [
-            "xp-tokens", "xp-spec", "xp-kit", "xp-run", "xp-conformance",
-            "agy-tokens", "agy-spec", "agy-kit", "agy-effort", "agy-smart",
+            "xp-spec", "xp-kit", "xp-run", "xp-conformance",
+            "agy-spec", "agy-kit", "agy-effort", "agy-smart",
         ]
         for cmd in required_cmds:
             cmd_file = self.bin_dir / f"{cmd}.cmd"
@@ -73,7 +72,7 @@ class TestWindowsInstaller(unittest.TestCase):
     def test_windows_shim_commands_list_integrity(self):
         """SHIM_COMMANDS covers all essential tools with valid script targets."""
         self.assertIsInstance(SHIM_COMMANDS, dict)
-        self.assertIn("xp-tokens", SHIM_COMMANDS)
+        self.assertIn("xp-conformance", SHIM_COMMANDS)
         self.assertIn("xp-spec", SHIM_COMMANDS)
         self.assertIn("xp-kit", SHIM_COMMANDS)
 

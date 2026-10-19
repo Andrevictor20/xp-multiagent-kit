@@ -32,7 +32,6 @@ class TestSkillProfilesDefinitions(unittest.TestCase):
         self.assertIn("conformance-tracker", core)
         self.assertIn("systematic-debugging", core)
         self.assertIn("no-workarounds", core)
-        self.assertIn("token-budget-tracker", core)
         self.assertIn("project-memory", core)
         self.assertGreaterEqual(len(core), 12)
         self.assertLessEqual(len(core), 20)

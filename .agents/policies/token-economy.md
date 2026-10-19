@@ -1,6 +1,6 @@
 # Token Economy & Mechanical Enforcement Policy
 
-> Loaded on-demand. Numeric constants live in kit runtime scripts and CLI (`xp-tokens` / `agy-tokens`).
+> Loaded on-demand. Numeric constants live in kit runtime scripts and constants.
 
 ## 1. Cost Model
 `total_cost ≈ Σ_turns (base_context + history) + Σ tool_outputs`
@@ -16,15 +16,6 @@
 | L1 | 8 | Surgical module tests only |
 | L2 | 20 | Spec + tests + implementation |
 | L3 | Checkpointed | Atomic checkpoints mandatory |
-
-## 3. Compact Telemetry Footer (Mandatory)
-Every response MUST end with the compact 4-line telemetry block (injected by `dynamic-effort-router` or queried via `agy-tokens --turn` / `xp-tokens --turn`):
-```text
-Contexto: [▰▱▱▱▱▱▱▱▱▱] 2.8% (29.7k / 1.05M)  
-Limites:  5h [▰▱▱▱▱▱▱▱] 8.2% usado (↻ 4h, 12m) • Semana [▰▰▰▰▱▱▱▱] **59.0% livre** (↻ 5d, 18h)  
-Consumo:  185 tok (In: 185 | Tool: 0 | Out: 0)  
-Modelo:   Gemini 4 Argon (High) • Janela: 1.05M • Saída: 65.5k
-```
 
 ## 4. 7-Step Simplification Ladder & Debt Tracking
 1. YAGNI → 2. Internal Reuse → 3. Standard Library → 4. Platform-Native (`.agents/policies/platform-native.md`) → 5. Installed Dependency → 6. Idiomatic One-Liner → 7. Minimal Code.
