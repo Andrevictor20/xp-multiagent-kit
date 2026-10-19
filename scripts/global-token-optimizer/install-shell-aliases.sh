@@ -46,6 +46,8 @@ alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
 alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+alias agy-pack="$HOME/.local/bin/agy-pack"
+alias xp-pack="$HOME/.local/bin/xp-pack"
 EOF
   echo "   ✅ PATH e Aliases configurados no Fish ($FISH_CONFIG & conf.d/xp-kit.fish)!"
 fi
@@ -91,6 +93,8 @@ alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
 alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+alias agy-pack="$HOME/.local/bin/agy-pack"
+alias xp-pack="$HOME/.local/bin/xp-pack"
 # ---------------------------------------------
 EOF
     echo "   ✅ Aliases configurados no Bash!"
@@ -128,6 +132,8 @@ alias agy-audit="$HOME/.local/bin/agy-audit-config"
 alias agy-ci="$HOME/.local/bin/agy-ci-heal"
 alias agy-ci-heal="$HOME/.local/bin/agy-ci-heal"
 alias xp-ci-heal="$HOME/.local/bin/xp-ci-heal"
+alias agy-pack="$HOME/.local/bin/agy-pack"
+alias xp-pack="$HOME/.local/bin/xp-pack"
 # ---------------------------------------------
 EOF
     echo "   ✅ PATH e Aliases configurados no Zsh ($ZSH_CONFIG)!"

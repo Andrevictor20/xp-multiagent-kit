@@ -1,6 +1,12 @@
 ---
 name: conformance-tracker
+version: 1.0.0
 description: Traceability between Acceptance Criteria and tests via Conformance Report.
+author: André Victor
+license: MIT
+tags: [conformance, traceability, acceptance-criteria, testing, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Conformance Tracker

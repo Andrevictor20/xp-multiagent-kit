@@ -1,6 +1,12 @@
 ---
 name: acceptance-test-driven
+version: 1.0.0
 description: ATDD/BDD with human-AI contract separation and Specification Pyramid.
+author: André Victor
+license: MIT
+tags: [atdd, bdd, gherkin, specifications, clean-code, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Acceptance Test-Driven Development (ATDD)

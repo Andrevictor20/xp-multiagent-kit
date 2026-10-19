@@ -1,6 +1,12 @@
 ---
 name: systematic-debugging
+version: 1.0.0
 description: 4-phase scientific debugging, backward tracing, and the 3-Fix Circuit Breaker.
+author: André Victor
+license: MIT
+tags: [debugging, root-cause, troubleshooting, investigation, clean-code, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Systematic Debugging: 4-Phase Root-Cause Investigation

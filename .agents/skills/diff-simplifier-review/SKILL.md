@@ -1,6 +1,12 @@
 ---
 name: diff-simplifier-review
+version: 1.0.0
 description: Minimalist git diff review, YAGNI enforcement, and over-engineering removal.
+author: André Victor
+license: MIT
+tags: [git-diff, code-review, minimalism, yagni, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Diff Simplifier Review

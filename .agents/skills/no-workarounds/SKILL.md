@@ -1,6 +1,12 @@
 ---
 name: no-workarounds
+version: 1.0.0
 description: Root-cause fixes only: ban workarounds, type casts, linter suppression, sleeps.
+author: André Victor
+license: MIT
+tags: [clean-code, debugging, code-quality, zero-workarounds, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # No Workarounds: Fix the Source, Never Silence the Signal

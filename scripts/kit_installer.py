@@ -375,7 +375,7 @@ class KitDoctor:
         essential_bins = [
             "agy-run", "xp-run", "agy-spec", "xp-spec",
             "agy-debt", "agy-health", "agy-kit", "xp-kit", "od", "agy-design",
-            "code-review-graph", "agy-graph", "agy-crg",
+            "code-review-graph", "agy-graph", "agy-crg", "agy-pack", "xp-pack",
         ]
         hosts_status = {
             "antigravity": (self.home_dir / ".gemini" / "config" / "AGENTS.md").is_file(),

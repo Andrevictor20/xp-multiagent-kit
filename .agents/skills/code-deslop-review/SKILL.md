@@ -1,6 +1,12 @@
 ---
 name: code-deslop-review
+version: 1.0.0
 description: Systematic AI code cleanup, dead-code removal, and <500-line No God Files rule.
+author: André Victor
+license: MIT
+tags: [code-review, anti-slop, clean-code, refactoring, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Code Deslop Review
