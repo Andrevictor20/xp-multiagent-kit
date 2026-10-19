@@ -208,6 +208,20 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
 - `agy-smart` / `agy-effort`: Dynamic reasoning effort router (`low`, `medium`, `high`).
 - `agy-ci-heal`: Autonomous CI/CD pipeline diagnosis and auto-repair.
 
+### Marketplace & Skill Packaging Tools
+- `xp-pack` / `agy-pack`: Agensi.io skill validator and commercial pack bundler:
+  ```bash
+  # List all certified commercial packs:
+  xp-pack --list
+
+  # Validate a skill against Agensi certification standards:
+  xp-pack --validate .agents/skills/tdd-safety-net
+
+  # Bundle production-ready zip archive with marketplace documentation:
+  xp-pack --bundle clean-code-tdd --out dist
+  ```
+  See [docs/AGENSI_PUBLISHING_GUIDE.md](docs/AGENSI_PUBLISHING_GUIDE.md) for full monetization and publishing walkthrough.
+
 ---
 
 ## Directory Layout
@@ -229,8 +243,8 @@ scripts/
 ├── host_adapters.py        # Multi-host project configuration generator
 ├── kit_installer.py        # Interactive & automated CLI installer
 ├── mcp_installers.py       # RTK, OpenDesign, and CodeReviewGraph automated toolchain installers
+├── skill_packer.py         # xp-pack / agy-pack commercial packager for Agensi.io
 ├── spec_tool.py            # xp-spec CLI tool for ATDD spec scaffolding and validation
-├── telemetry/              # Multi-host token tracking, model catalogs, and color formatting
 └── update_manager.py       # Autonomous remote update checker and updater
 ```
 

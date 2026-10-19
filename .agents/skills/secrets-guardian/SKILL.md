@@ -1,6 +1,12 @@
 ---
 name: secrets-guardian
+version: 1.0.0
 description: Credential leak prevention across code, .env, Git history, and build artifacts.
+author: André Victor
+license: MIT
+tags: [secrets, security, credentials, devsecops, scanner, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Secrets Guardian

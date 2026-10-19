@@ -1,6 +1,12 @@
 ---
 name: design-tokens
+version: 1.0.0
 description: Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock.
+author: André Victor
+license: MIT
+tags: [tokens, design-tokens, css, color-lock, shape-lock, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Design Tokens

@@ -1,6 +1,12 @@
 ---
 name: frontend-taste-engineering
+version: 1.0.0
 description: Anti-Slop aesthetic direction, 3-dial calibration, and design system routing.
+author: André Victor
+license: MIT
+tags: [ui-ux, anti-slop, design-system, frontend-taste, awwwards, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Frontend Taste Engineering (Anti-Slop Framework)

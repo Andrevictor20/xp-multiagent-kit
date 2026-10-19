@@ -1,6 +1,12 @@
 ---
 name: component-architecture
+version: 1.0.0
 description: Modular UI components, token anchoring, 6-state machine, and mobile ergonomics.
+author: André Victor
+license: MIT
+tags: [components, ui-architecture, 6-state-machine, mobile-ergonomics, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Component Architecture

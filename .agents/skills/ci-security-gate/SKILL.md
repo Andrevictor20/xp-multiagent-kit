@@ -1,6 +1,12 @@
 ---
 name: ci-security-gate
+version: 1.0.0
 description: Mandatory CI pipeline gate with linting, dependency audit, SAST, and tests.
+author: André Victor
+license: MIT
+tags: [ci-cd, security-gate, sast, devsecops, quality, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # CI & Security Gate

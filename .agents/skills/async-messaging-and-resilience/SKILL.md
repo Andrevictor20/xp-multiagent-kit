@@ -1,6 +1,12 @@
 ---
 name: async-messaging-and-resilience
+version: 1.0.0
 description: Async messaging, EDA, Outbox Pattern, DLQ, idempotency, and Circuit Breaker.
+author: André Victor
+license: MIT
+tags: [eda, kafka, rabbitmq, outbox-pattern, circuit-breaker, resilience, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Async Messaging & System Resilience

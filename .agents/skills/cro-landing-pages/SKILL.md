@@ -1,6 +1,12 @@
 ---
 name: cro-landing-pages
+version: 1.0.0
 description: Conversion Rate Optimization (CRO), 5-second test, CTA hierarchy, and forms.
+author: André Victor
+license: MIT
+tags: [cro, conversion, landing-page, copywriting, marketing, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # CRO Landing Pages: Conversion Optimization & Friction Reduction

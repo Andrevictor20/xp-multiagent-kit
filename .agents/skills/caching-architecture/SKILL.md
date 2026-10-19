@@ -1,6 +1,12 @@
 ---
 name: caching-architecture
+version: 1.0.0
 description: Redis/Memcached caching, Cache-Aside, and stampede/avalanche/penetration defense.
+author: André Victor
+license: MIT
+tags: [caching, redis, memcached, cache-aside, performance, high-scale, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Caching Architecture & Invalidation Strategies

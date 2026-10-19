@@ -1,6 +1,12 @@
 ---
 name: zero-downtime-deployment
+version: 1.0.0
 description: Zero-downtime deployment (Blue/Green, Canary, Rolling) and automated rollback.
+author: André Victor
+license: MIT
+tags: [deployment, canary, blue-green, zero-downtime, devops, rollback, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Zero-Downtime Deployment & Automated Rollback

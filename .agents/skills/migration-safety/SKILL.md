@@ -1,6 +1,12 @@
 ---
 name: migration-safety
+version: 1.0.0
 description: Zero-downtime database migrations using the expand-and-contract pattern.
+author: André Victor
+license: MIT
+tags: [database-migrations, zero-downtime, expand-contract, postgresql, schema-safety, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Migration Safety

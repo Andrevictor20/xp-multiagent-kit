@@ -1,6 +1,12 @@
 ---
 name: accessibility-engineering
+version: 1.0.0
 description: Web accessibility: keyboard navigation, WCAG AA contrast, and semantic ARIA.
+author: André Victor
+license: MIT
+tags: [a11y, accessibility, wcag-aa, aria, keyboard-nav, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Accessibility Engineering

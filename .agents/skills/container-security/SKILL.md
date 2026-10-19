@@ -1,6 +1,12 @@
 ---
 name: container-security
+version: 1.0.0
 description: Dockerfile hardening, non-root execution, minimal base images, and SBOMs.
+author: André Victor
+license: MIT
+tags: [docker, containers, security, devsecops, hardening, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Container Security

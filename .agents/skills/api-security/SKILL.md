@@ -1,6 +1,12 @@
 ---
 name: api-security
+version: 1.0.0
 description: API security hardening and OWASP API Security Top 10 controls.
+author: André Victor
+license: MIT
+tags: [owasp, api-security, devsecops, injection-defense, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # API Security

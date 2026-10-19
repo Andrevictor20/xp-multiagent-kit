@@ -1,6 +1,12 @@
 ---
 name: threat-modeling
+version: 1.0.0
 description: STRIDE threat modeling, trust boundaries, and security test derivation for L3.
+author: André Victor
+license: MIT
+tags: [stride, threat-modeling, security, architecture, devsecops, cursor, claude-code]
+compatibility: [cursor, claude-code, codex, gemini-cli, opencode]
+entrypoint: SKILL.md
 ---
 
 # Threat Modeling (STRIDE)
