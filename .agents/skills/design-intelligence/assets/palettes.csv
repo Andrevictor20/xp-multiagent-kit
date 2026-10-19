@@ -1,0 +1,51 @@
+name,mood,bg,text,surface,accent
+cold-luxury,premium calm tech,#F5F6F8,#0B0D10,#FFFFFF,#4B68FF
+forest,organic wellness sustainable,#F8F9F5,#0E1711,#EDF0E8,#A0642A
+black-and-tan,dark luxury editorial,#0A0A0A,#EDEDED,#161616,#C8A265
+slate-night,dark dev tooling,#0F172A,#E2E8F0,#1E293B,#38BDF8
+ink-paper,editorial publishing,#FAF7F2,#1A1714,#F0EBE3,#8F4A32
+clinic-mist,healthcare trust,#F4F8F9,#0C1A1F,#FFFFFF,#2F7F92
+ledger-green,fintech trust,#F6F8F7,#0B1512,#FFFFFF,#2F7D62
+signal-amber,industrial telemetry,#101010,#F2F2F2,#1B1B1B,#E0A030
+rose-quartz,beauty lifestyle soft,#FBF6F6,#2A1517,#F4E9E9,#A8456F
+harbor,travel hospitality warm,#F7F5F0,#14202B,#FFFFFF,#2F7A72
+graphite-lime,creative bold studio,#121212,#F4F4F0,#1E1E1E,#A3E635
+terracotta,food craft warm,#FAF5EF,#26160E,#F1E6DA,#B5532C
+midnight-indigo,dark fintech crypto premium night,#0E1020,#E8EAF6,#181B30,#8C9EFF
+aurora-teal,dark analytics data calm,#0B1416,#E0F2F1,#13232A,#4DB6AC
+obsidian-ember,dark gaming media bold,#14100F,#F5EDE8,#211A18,#E07A5F
+nord-frost,dark developer docs cool,#1B2230,#E5E9F0,#252E3F,#88C0D0
+moss-night,dark nature wellness night,#0F1712,#E3EEE5,#18241C,#7FB685
+plum-noir,dark luxury fashion nightlife,#17101A,#F1E8F3,#231A27,#C58FD0
+sandstone,light warm real estate architecture,#F6F1EA,#1F1A15,#EDE5D8,#8A6A3F
+sage-linen,light calm wellness meditation,#F3F5F0,#1B221D,#E6EBE2,#5F7F63
+ocean-glass,light marine travel cool,#F2F7F9,#0F1E26,#FFFFFF,#2B7A9B
+sunrise-coral,light friendly consumer social,#FFF7F3,#2B1812,#FCE9E0,#C8553D
+lavender-mist,light calm education productivity,#F7F5FB,#1E1A2B,#EEEAF6,#6D5BA6
+mint-ledger,light fintech modern payments,#F3F9F6,#0D1A14,#FFFFFF,#2A8C6A
+paper-ink-blue,light legal consulting b2b,#F8F8F6,#13151A,#FFFFFF,#2F4F8F
+citrus-grove,light playful food juice kids,#FFFBF0,#2A2410,#FBF1D2,#8F7A1E
+brick-studio,light architecture craft portfolio,#F7F2EE,#251713,#EDE2DA,#A24B35
+glacier,light cleantech energy sustainable,#F2F8F8,#0E1C1D,#FFFFFF,#2C7F86
+copper-slate,dark industrial manufacturing premium,#12161A,#EAEDEF,#1C2228,#C08457
+neon-restrained,dark gaming esports tech,#0C0F12,#EEF1F3,#161B20,#5FD1B0
+wine-cellar,dark hospitality wine restaurant,#160F11,#F3E9EA,#22181A,#B5646E
+desert-dusk,light travel adventure outdoor,#FAF4EC,#2A1D14,#F0E4D4,#B0623A
+steel-blue-corp,light enterprise corporate,#F5F7FA,#10151C,#FFFFFF,#2D5C9E
+olive-grove,light organic farm grocery,#F6F6EE,#1E2113,#EAEBDC,#6B7A2F
+cherry-blossom,light beauty gentle,#FDF6F8,#2B1820,#F7E8ED,#B24C73
+carbon-mono,dark minimal monochrome studio,#111214,#F0F0EE,#1B1C1F,#B8B8B2
+bone-mono,light minimal monochrome studio,#F5F4F0,#1A1A18,#EAE8E2,#5E5E58
+solar-yellow-dark,dark construction logistics bold,#131211,#F4F1EA,#201E1B,#D4A72C
+teal-health-dark,dark medical imaging pro,#0C1517,#E3F1F2,#142126,#5BB7C2
+berry-fintech,light neobank youthful,#FAF5F9,#220F1D,#F1E4EE,#9B3E86
+cobalt-news,light news media dense,#F7F8FA,#101216,#FFFFFF,#2B55B0
+rust-industrial,light industrial b2b hardware,#F4F1ED,#1C1612,#E8E1D9,#A5502A
+spruce,light legal finance heritage,#F4F7F5,#0F1A16,#FFFFFF,#2D6A55
+dune-gold,light luxury jewelry minimal,#F8F4EC,#1D1810,#EFE7D6,#8C7430
+ice-violet-dark,dark ai product,#101223,#E9EBF8,#1A1D33,#9AA5E8
+graphite-orange,dark creative tools,#151413,#F3F1EE,#211F1D,#E08A4F
+pine-night,dark outdoor sports,#0E1511,#E6EFE8,#16211A,#6FAE82
+coral-reef,light marine lifestyle kids,#F3FAF9,#10211F,#E3F2F0,#C4604A
+pearl-navy,light banking private wealth,#F6F7F9,#0D1526,#FFFFFF,#274A7D
+mocha,light coffee bakery cozy,#F8F2EC,#2A1B12,#EEE2D6,#8B5A3C

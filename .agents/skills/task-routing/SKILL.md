@@ -21,7 +21,7 @@ Route tasks using the deterministic pipeline `TASK -> RISK (L0-L3) -> SURFACE ->
 ```yaml
 frontend:
   agents: [designer, builder]
-  skills: [frontend-taste-engineering, visual-direction-studio, conversion-copywriting, cro-landing-pages, seo-content-engine, marketing-psychology, copy-editing-sweeps, minimalist-ui, industrial-brutalist-ui, high-end-visual-design, redesign-ui-audit, image-to-code, accessibility-engineering, responsive-architecture, visual-regression, frontend-performance, ui-quality-gate]
+  skills: [frontend-taste-engineering, design-intelligence, mobile-app-design, visual-direction-studio, conversion-copywriting, cro-landing-pages, seo-content-engine, marketing-psychology, copy-editing-sweeps, minimalist-ui, industrial-brutalist-ui, high-end-visual-design, redesign-ui-audit, image-to-code, accessibility-engineering, responsive-architecture, visual-regression, frontend-performance, ui-quality-gate]
 
 design-system:
   agents: [designer]

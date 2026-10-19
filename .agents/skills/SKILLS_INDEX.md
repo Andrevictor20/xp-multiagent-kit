@@ -1,7 +1,7 @@
 # Skills Index (On-Demand Loading)
 
 > Compact catalog. Skill bodies are loaded on demand only when activated.
-> 76 skills • max body per skill: 5 KB
+> 78 skills • max body per skill: 5 KB
 
 | Skill | Trigger |
 |-------|---------|
@@ -34,6 +34,7 @@
 | `database-architecture` | SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention. |
 | `dependency-governance` | Third-party dependency risk evaluation, license audit, and bloat prevention. |
 | `deploy-pipeline-conductor` | Continuous deployment (CD) pipelines, staging promotion, health checks, rollback. |
+| `design-intelligence` | Offline design catalog search (product archetypes, palettes, fonts, UX rules, charts) generating a persistent… |
 | `design-system-architecture` | Design System governance from semantic tokens and primitives to page templates. |
 | `design-tokens` | Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock. |
 | `diff-simplifier-review` | Minimalist git diff review, YAGNI enforcement, and over-engineering removal. |
@@ -51,6 +52,7 @@
 | `mcp-server-governance` | Zero Trust security, payload sanitization, and governance for MCP servers. |
 | `migration-safety` | Zero-downtime database migrations using the expand-and-contract pattern. |
 | `minimalist-ui` | Utilitarian minimalist UI (Linear/Notion aesthetic), 1px borders, whitespace. |
+| `mobile-app-design` | Native and cross-platform mobile app UI/UX: platform units, safe areas, thumb zone, navigation, accessibility… |
 | `mutation-testing-sentinel` | Test suite robustness auditing via mutation injection and >=80% mutation score. |
 | `no-workarounds` | Root-cause fixes only: ban workarounds, type casts, linter suppression, sleeps. |
 | `observability-and-slo-engineering` | Observability engineering: JSON logs, RED metrics, OpenTelemetry tracing, SLOs. |

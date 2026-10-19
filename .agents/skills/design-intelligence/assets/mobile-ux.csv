@@ -1,0 +1,23 @@
+id,category,platform,keywords,severity,do,dont
+M01,touch,both,touch target tap button icon,high,Make tap targets at least 44x44pt on iOS and 48x48dp on Android with 8dp spacing,Ship smaller visual hit areas without padding
+M02,safe-area,both,safe area notch inset home indicator gesture bar,high,Respect the safe area insets and keep bottom bars clear of the home indicator and gesture bar,Let content or buttons sit under the notch or system bar
+M03,thumb,both,thumb zone reach one-handed bottom primary action,high,Anchor primary actions and navigation in the lower thumb zone,Place frequent actions in the top corners
+M04,navigation,ios,navigation tab bar back swipe,high,Use a bottom tab bar with 3 to 5 items and support swipe-back,Hide primary destinations behind a hamburger menu
+M05,navigation,android,navigation bar rail back predictive,high,Use a Navigation Bar (3-5 destinations) or rail on large screens and support predictive back,Override system back with custom behavior
+M06,typography,ios,dynamic type text size accessibility,high,Support Dynamic Type with text styles and test at the largest accessibility size,Hard-code font sizes that never scale
+M07,typography,android,font scale sp text accessibility,high,Use sp units and test at 200% font scale,Use dp for text or clip text at large scales
+M08,gestures,both,gesture swipe discoverable alternative,medium,Provide a visible alternative for every custom gesture,Hide critical actions behind undiscoverable gestures
+M09,feedback,both,haptics loading skeleton feedback tap,medium,Give instant press feedback and skeletons within 100ms; use haptics sparingly for confirmations,Spam haptics or freeze the UI during network calls
+M10,forms,both,keyboard input form field avoid next,high,Avoid the keyboard with scrollable forms; set keyboard type; autofill and Next/Done actions,Cover the focused field with the keyboard
+M11,permissions,both,permission notification camera location prompt,high,Explain value first then request the permission in context,Ask for all permissions on first launch
+M12,offline,both,offline network error retry cache sync,high,Cache the last good state and show an offline banner with retry,Show blank screens or lose user input on connection loss
+M13,sheets,both,bottom sheet modal dialog confirm,medium,Use bottom sheets for contextual actions with a drag handle and a close affordance,Stack several full-screen modals
+M14,dark-mode,both,dark mode theme appearance contrast,medium,Support system dark mode with semantic colors and verified contrast,Invert colors or use pure black text on pure white
+M15,accessibility,both,voiceover talkback screen reader label role,high,Label every control and set roles and traits for VoiceOver and TalkBack,Use icon-only buttons without accessible labels
+M16,motion,both,reduce motion animation transition,medium,Honor Reduce Motion and keep transitions under 300ms,Use parallax or large motion when reduced motion is on
+M17,performance,both,scroll list 60fps virtualized image,high,Virtualize long lists and size images to display; target 60fps with no jank,Render huge lists eagerly or decode oversized images
+M18,onboarding,both,onboarding first run signup login,medium,Let users reach value before sign-up and keep onboarding to 3 screens or fewer,Force account creation before showing the product
+M19,deeplink,both,deep link universal link share state restore,medium,Support deep links and restore state after process death,Lose navigation state when the app is backgrounded
+M20,pull-refresh,both,pull refresh list update,low,Offer pull-to-refresh on feeds with a clear loading indicator,Auto-refresh and reset scroll position unexpectedly
+M21,destructive,both,delete destructive undo confirm,high,Offer undo via snackbar or a confirmation naming the item,Delete irreversibly on a single tap
+M22,widgets,both,tablet landscape foldable adaptive layout,medium,Adapt layouts to width classes (compact medium expanded) and orientation,Stretch phone layouts across tablets

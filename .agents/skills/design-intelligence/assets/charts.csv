@@ -1,0 +1,10 @@
+question,chart,keywords,a11y,avoid
+Trend over time,Line chart,trend time series growth history,Direct labels plus distinct dash patterns not color only,3D lines and dual axes
+Compare categories,Horizontal bar chart,compare categories ranking comparison,Sort bars and label values directly,Pie charts with many slices
+Part of a whole,Stacked bar or donut (max 5 slices),share proportion composition part whole,Provide a data table fallback,Exploded or 3D pie
+Distribution,Histogram or box plot,distribution spread variance outliers,Describe median and range in text,Averages alone
+Correlation,Scatter plot,correlation relationship scatter,Use shape and size encodings plus tooltips on focus,Connecting unrelated points with lines
+Single KPI,Big number with sparkline,kpi metric number summary,Use tabular-nums and text delta not color alone,Gauge dials
+Funnel conversion,Funnel or step bars,funnel conversion steps drop-off,Show counts and percentages as text,Unlabeled shrinking shapes
+Geographic,Choropleth or symbol map,map geographic region location,Offer a ranked table alternative,Rainbow color scales
+Status over many items,Heat grid,status heatmap grid matrix,Label cells and use a colorblind-safe ramp,Red-green only encodings

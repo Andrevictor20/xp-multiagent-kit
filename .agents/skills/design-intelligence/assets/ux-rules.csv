@@ -1,0 +1,17 @@
+id,category,keywords,severity,do,dont
+UX01,touch,touch target mobile tap button,high,Use at least 48x48px touch targets with 8px spacing,Place small adjacent tap targets
+UX02,feedback,loading state async button spinner skeleton,high,Show skeleton or inline loading within 100ms of action,Leave the UI frozen without feedback
+UX03,feedback,error form validation message input,high,Show inline error next to the field with fix instructions,Show only a generic toast or color change
+UX04,forms,form label input placeholder field,high,Use persistent visible labels above inputs,Use placeholder as the only label
+UX05,navigation,navigation menu nav back breadcrumb,medium,Keep primary nav consistent and show current location,Change nav structure between pages
+UX06,motion,animation motion transition reduced,high,Respect prefers-reduced-motion and animate transform/opacity only,Animate width/height/top/left or ignore reduced motion
+UX07,contrast,contrast text color accessibility wcag,high,Keep text contrast at 4.5:1 or higher (3:1 large text),Use light gray text on white for body copy
+UX08,keyboard,keyboard focus tab accessibility,high,Show a visible focus ring and keep logical tab order,Remove outline without replacement
+UX09,empty,empty state zero data onboarding,medium,Explain what is missing and give a primary next action,Show a blank panel
+UX10,destructive,delete destructive confirm undo,high,Offer undo or a confirm step naming the object being removed,Delete irreversibly on a single click
+UX11,layout,viewport mobile height scroll 100dvh,medium,Use 100dvh and safe-area insets on mobile,Use 100vh that hides content behind browser bars
+UX12,hierarchy,cta button primary action hierarchy,medium,Provide one primary CTA per view with clear secondary styles,Give several equally weighted CTAs
+UX13,typography,font size readable body line length,medium,Use 16px minimum body and 60-75ch line length,Use body text below 14px or full-width paragraphs
+UX14,icons,icon emoji svg label,low,Use one consistent SVG icon set with accessible labels,Use emojis as structural icons
+UX15,performance,image lazy cls layout shift,medium,Reserve image dimensions and lazy-load below the fold,Let images shift layout on load
+UX16,data,table dense data sort filter,medium,Provide sort filter and sticky header for dense tables,Dump unsortable long tables
