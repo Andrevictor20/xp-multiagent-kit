@@ -1,6 +1,6 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-19 (Local)  
+> **Última Atualização:** 2026-10-22 (Local)  
 > **Status Geral do Projeto:** STABLE  
 > **Versão / Marco Atual:** v3.2.0 (Remoção da Telemetria de Consumo de Modelos & Simplificação Multi-Host)
 
@@ -72,3 +72,5 @@
 
 - **Nenhum bloqueio ativo.** Orçamento de contexto base (`AGENTS.md`, `PROJECT_MEMORY.md`, 77 `SKILL.md` e `SKILLS_INDEX.md`) 100% dentro dos tetos de `kit_constants.py`.
 
+
+- 2026-10-22 `FEAT` (L1): Ponytail v5 parcial — Impact Map no `builder`; tags `risk/perf/test/gap` e audit repo-wide em `diff-simplifier-review`/`refactor-warden`. Band/Board descartados.

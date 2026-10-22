@@ -36,10 +36,22 @@ Report simplification findings in 1 line per item:
 - `yagni:` single-use abstraction or unrequested configuration layer.
 - `shrink:` equivalent logic in fewer lines.
 
+### Context Tags (production-bug review)
+Read the code around the diff (callers, tests, configs) before tagging. These tags only flag; `sentinel` / `release-gatekeeper` decide.
+- `risk:` security hole, unvalidated trust boundary, data-loss or unhandled-error path.
+- `perf:` slow path or load concern (N+1, unbounded loop, missing timeout).
+- `test:` risky logic or edge case without a covering test.
+- `gap:` change incomplete: caller, config or doc left out of sync.
+
 ### Final Review Balance
 End every review with net reduction: `net: -<N> lines, -<M> deps possible.` or `Lean already. Ship.`
 
-## 4. Refactor-Warden Execution
+## 4. Repo-Wide Audit
+1. Map the repo first (`code-review-graph` or `agy-repo-map`).
+2. List findings with the same 1-line grammar, ranked by severity (`risk:` > `test:` > `gap:` > `perf:` > simplification tags).
+3. End with the top fixes in priority order.
+
+## 5. Refactor-Warden Execution
 ```bash
 git diff --stat
 git diff
