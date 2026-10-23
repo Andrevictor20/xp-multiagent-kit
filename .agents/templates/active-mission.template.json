@@ -1,0 +1,51 @@
+{
+  "mission_id": "feat-nome-da-feature-01",
+  "feature_name": "Nome Descritivo da Feature",
+  "orchestrator": {
+    "model": "gemini-4-argon",
+    "effort": "high",
+    "max_retries_per_task": 2
+  },
+  "global_verification_cmd": "python3 -m unittest discover tests",
+  "tasks": [
+    {
+      "task_id": "contracts-and-dtos",
+      "subagent": "builder",
+      "model": "gemini-3.8-flash",
+      "effort": "low",
+      "execution_group": 1,
+      "allowed_paths": [
+        "src/dtos/",
+        "src/interfaces/"
+      ],
+      "objective": "Criar contratos, tipos e DTOs base compartilhados entre os módulos.",
+      "verification_cmd": "python3 -m unittest tests/test_dtos.py"
+    },
+    {
+      "task_id": "domain-service-tdd",
+      "subagent": "builder",
+      "model": "gemini-3.8-flash",
+      "effort": "medium",
+      "execution_group": 2,
+      "allowed_paths": [
+        "src/services/",
+        "tests/services/"
+      ],
+      "objective": "Implementar regras de negócio e testes TDD para o serviço principal.",
+      "verification_cmd": "python3 -m unittest tests/services/test_service.py"
+    },
+    {
+      "task_id": "api-controller-tdd",
+      "subagent": "builder",
+      "model": "gemini-3.8-flash",
+      "effort": "medium",
+      "execution_group": 2,
+      "allowed_paths": [
+        "src/controllers/",
+        "tests/controllers/"
+      ],
+      "objective": "Implementar controller HTTP/API e validações de payload.",
+      "verification_cmd": "python3 -m unittest tests/controllers/test_controller.py"
+    }
+  ]
+}

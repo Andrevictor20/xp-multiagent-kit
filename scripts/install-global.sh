@@ -203,8 +203,10 @@ ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/agy-spec"
 ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/xp-spec"
 ln -sf "$KIT_DIR/scripts/skill_packer.py" "$HOME/.local/bin/agy-pack"
 ln -sf "$KIT_DIR/scripts/skill_packer.py" "$HOME/.local/bin/xp-pack"
+ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/agy-orchestrate"
+ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/xp-orchestrate"
 
-echo "   ✅ xp-spec, agy-spec, agy-pack, xp-pack, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
+echo "   ✅ xp-orchestrate, agy-orchestrate, xp-spec, agy-spec, agy-pack, xp-pack, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)

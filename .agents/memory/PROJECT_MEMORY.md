@@ -1,14 +1,14 @@
 # 🧠 Project Memory & Context Snapshot
 
-> **Última Atualização:** 2026-10-22 (Local)  
+> **Última Atualização:** 2026-10-23 (Local)  
 > **Status Geral do Projeto:** STABLE  
-> **Versão / Marco Atual:** v3.2.0 (Remoção da Telemetria de Consumo de Modelos & Simplificação Multi-Host)
+> **Versão / Marco Atual:** v3.3.0 (Motor Multiagente Dinâmico Nativo Antigravity & Orquestrador Heterogêneo)
 
 ---
 
 ## 1. Quick Project Summary (Semantic)
 
-- **Propósito:** Kit modular e agnóstico de governança, agentes, skills, workflows e políticas para pair programming com IA em **Antigravity, OpenCode, Cursor, Codex e Qoder (IDE & CLI)**, orquestrando Task Routing L0-L3, Pirâmide ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Autocorreção Reflexiva, Otimização de Contexto e Memória Contínua em 4 Tiers.
+- **Propósito:** Kit modular e agnóstico de governança, agentes, skills, workflows e políticas para pair programming com IA em **Antigravity, OpenCode, Cursor, Codex e Qoder (IDE & CLI)**, orquestrando Task Routing L0-L3, Pirâmide ATDD/BDD, TDD estrito, Anti-Test-Bypass, SSDLC, Motor Multiagente Dinâmico (Boss-Worker), Autocorreção Reflexiva, Otimização de Contexto e Memória Contínua em 4 Tiers.
 - **Tech Stack:** Multi-Host Agent Framework (`AGENTS.md`, `opencode.json`, `.cursor/rules/*.mdc`, `.codex/rules/`, `.qoder/rules/`), Python 3.8+, Bash, PowerShell 5.1+, Windows CMD, Git, GitHub Actions CLI (`gh`). Agnóstico de SO (Linux, macOS, Windows).
 - **Arquitetura Chave:** `.agents/` (11 agentes, 78 skills `< 4KB` em Inglês, 11 workflows, 12 policies, 2 templates em Token-Dense English com regra mandatória de saída em Português ao usuário; memória viva em 4 tiers). Suíte modular em `scripts/host_adapters.py`, `scripts/mcp_installers.py`, `scripts/spec_tool.py`, `scripts/update_manager.py`, `scripts/windows_support.py` e binários globais `xp-*` / `agy-*` em `~/.local/bin/` (Unix) ou `%USERPROFILE%\.local\bin\` (Windows `.cmd` shims).
 - **Comandos Essenciais:** (Catálogo completo em [details/commands.md](details/commands.md))
@@ -23,14 +23,16 @@
 
 ## 2. Current Health & System Status
 
-- **Agent Suite Status:** OPERATIONAL (11 Agentes, 78 Skills `< 4KB` em Inglês, 11 Workflows, 12 Policies, 5 Hosts, Instaladores Nativos, Toolchain RTK/OD/CRG, Auto-Update; telemetria de consumo de modelos removida).
-- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (287/287 testes unitários e de integração `PASS`, 0 caminhos pessoais, arquivos `< 500` linhas, `PROJECT_MEMORY.md` `< 8KB`).
-- **Última Execução / Evidência:** `EV-KIT-V3.2.0-NO-MODEL-TELEMETRY-20261019-01` (Remoção completa da telemetria de consumo de modelos, rodapé de 4 linhas, hooks associados, skill token-budget-tracker e módulos legados de telemetria).
+- **Agent Suite Status:** OPERATIONAL (11 Agentes, 78 Skills `< 4KB` em Inglês, 11 Workflows, 12 Policies, 5 Hosts, Motor Multiagente Dinâmico Nativo, Toolchain RTK/OD/CRG, Auto-Update).
+- **Quality Gate / Rules:** 100% compliant com `AGENTS.md` (325/325 testes unitários e de integração `PASS`, 0 caminhos pessoais, arquivos `< 500` linhas, `PROJECT_MEMORY.md` `< 8KB`).
+- **Última Execução / Evidência:** `EV-KIT-V3.3.0-DYNAMIC-MULTIAGENT-20261023-01` (Implementação do Motor Multiagente Dinâmico Nativo Antigravity, Boss-Worker heterogêneo Argon High + Flash Low/Med, dashboard visual ASCII, paralelismo por execution_group, templates de missão e binários agy-orchestrate/xp-orchestrate).
 - **Ambiente Ativo:** Local & Global / Linux, macOS e Windows nativo (PowerShell / CMD).
 
 ---
 
 ## 3. Recent Changes & Activity Log (Episodic - Sliding Window: 5 Entregas)
+
+| 2026-10-23 | `FEAT` | Motor Multiagente Dinâmico Nativo Antigravity (SPEC-004) — Padrão Boss-Worker heterogêneo (Orquestrador em Argon High + Workers paralelos em Flash Low/Med via `invoke_subagent` com `Workspace="branch"`), manifesto estruturado (`.agents/active-mission.json`), memória efêmera (`.agents/MEMORY.md`), dashboard visual ASCII, auto-healing com escalada em 2 fases, relatório final em `mission-report.md`, CLI `agy-orchestrate` e `xp-orchestrate` | `scripts/antigravity_multiagent.py`, `tests/test_antigravity_multiagent.py`, `.agents/templates/`, `.agents/agents/orchestrator/agent.md`, `scripts/windows_support.py`, `scripts/install-global.sh` | `PASS (325/325 tests)` |
 
 | 2026-10-19 | `FEAT` | Skills `design-intelligence` (catálogos: 34 produtos, 50 paletas, 9 fontes, 16 UX, 9 gráficos, 33 design systems web/mobile + `scripts/design_search.py`) e `mobile-app-design` (`--mobile`: 14 arquétipos de app, 22 regras iOS/Android, pt/dp, safe area, thumb zone); integradas ao `designer`, task-routing e perfil frontend | `.agents/skills/{design-intelligence,mobile-app-design}/`, `scripts/design_search.py`, `tests/test_design_search.py` | `PASS (26 tests); fontes verificadas (npm/GitHub) 2026-10-19` |
 
@@ -73,4 +75,5 @@
 - **Nenhum bloqueio ativo.** Orçamento de contexto base (`AGENTS.md`, `PROJECT_MEMORY.md`, 77 `SKILL.md` e `SKILLS_INDEX.md`) 100% dentro dos tetos de `kit_constants.py`.
 
 
+- 2026-10-23 `DOC/ANALYSIS` (L0): Adicionado `Especificacao Tecnica...` ao `.gitignore` e conduzida análise arquitetural de viabilidade do motor multiagente dinâmico heterogêneo (Boss-Worker) para o kit.
 - 2026-10-22 `FEAT` (L1): Ponytail v5 parcial — Impact Map no `builder`; tags `risk/perf/test/gap` e audit repo-wide em `diff-simplifier-review`/`refactor-warden`. Band/Board descartados.
