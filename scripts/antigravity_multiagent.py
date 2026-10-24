@@ -38,14 +38,8 @@ def validate_mission_manifest(data: Dict[str, Any]) -> Dict[str, Any]:
         raise MissionManifestError("O campo 'tasks' deve conter uma lista não vazia de tarefas.")
 
     required_task_keys = (
-        "task_id",
-        "subagent",
-        "model",
-        "effort",
-        "execution_group",
-        "allowed_paths",
-        "objective",
-        "verification_cmd",
+        "task_id", "subagent", "model", "effort", "execution_group",
+        "allowed_paths", "objective", "verification_cmd"
     )
 
     for idx, task in enumerate(data["tasks"]):
@@ -55,57 +49,18 @@ def validate_mission_manifest(data: Dict[str, Any]) -> Dict[str, Any]:
             if key not in task:
                 raise MissionManifestError(f"Tarefa '{task.get('task_id', idx)}' ausenta campo obrigatório: '{key}'")
         if not isinstance(task["execution_group"], int) or task["execution_group"] < 1:
-            raise MissionManifestError(
-                f"Tarefa '{task['task_id']}': 'execution_group' deve ser um inteiro >= 1."
-            )
+            raise MissionManifestError(f"Tarefa '{task['task_id']}': 'execution_group' deve ser um inteiro >= 1.")
 
     return data
 
 
 def prepare_subagent_payload(
-    task: Dict[str, Any], shared_memory: str = ""
+    task: Dict[str, Any], shared_memory: str = "", host: str = "antigravity"
 ) -> Dict[str, Any]:
-    """Formats the exact payload required for Antigravity's native invoke_subagent tool."""
-    subagent_type = str(task.get("subagent", "builder")).strip().lower()
-
-    # Map model name to Antigravity's invoke_subagent Model enum: 'flash', 'pro', 'flash_lite', 'inherit'
-    raw_model = str(task.get("model", "gemini-3.8-flash")).lower()
-    if "flash" in raw_model:
-        model_arg = "flash"
-        model_display = "Flash"
-    elif "pro" in raw_model or "argon" in raw_model:
-        model_arg = "pro"
-        model_display = "Argon"
-    else:
-        model_arg = "inherit"
-        model_display = "Inherit"
-
-    effort = str(task.get("effort", "medium")).lower()
-    # Emite modelo e nível de esforço explícitos no Role para visibilidade direta na UI/CLI em tempo real
-    role_desc = f"[{model_display.upper()} {effort.upper()}] {task.get('task_id', '')}"
-
-    paths_str = ", ".join(task.get("allowed_paths", ["src/"]))
-    prompt_sections = [
-        f"Missão: {task.get('objective', '')}",
-        f"Modelo Alocado: {model_display} | Esforço de Raciocínio: {effort.upper()}",
-        f"Escopo Permitido de Arquivos (allowed_paths): {paths_str}",
-        f"Comando de Verificação Obrigatório (TDD/Gate): {task.get('verification_cmd', '')}",
-        "Diretrizes Estritas de Engenharia:",
-        "- Respeite estritamente o isolamento de pastas. Nunca altere arquivos fora do seu escopo.",
-        "- Siga o ciclo estrito de TDD (RED -> GREEN -> REFACTOR).",
-        "- Valide seu código rodando o comando de verificação antes de finalizar.",
-    ]
-
-    if shared_memory:
-        prompt_sections.append(f"\n--- CONTRATOS COMPARTILHADOS (.agents/MEMORY.md) ---\n{shared_memory}")
-
-    return {
-        "TypeName": subagent_type,
-        "Role": role_desc,
-        "Model": model_arg,
-        "Workspace": "branch",
-        "Prompt": "\n".join(prompt_sections),
-    }
+    """Formats the payload required for the target host's subagent driver."""
+    from scripts.multiagent_drivers import get_worker_driver
+    driver = get_worker_driver(host)
+    return driver.build_worker_payload(task, shared_memory=shared_memory)
 
 
 def render_mission_dashboard(
@@ -149,6 +104,53 @@ def render_mission_dashboard(
         lines.append(f" {grp:<7} | {tid:<18} | {ag:<12} | {model_info:<18} | {st_display:<10}")
 
     lines.append("═══════════════════════════════════════════════════════════════════════════════")
+    return "\n".join(lines)
+
+
+def format_agents_roster(tasks: List[Dict[str, Any]]) -> str:
+    """Formats a concise markdown roster of scheduled subagents."""
+    unique_agents = sorted(list({str(t.get("subagent", "builder")).strip() for t in tasks}))
+    total_count = len(unique_agents)
+    lines: List[str] = [
+        f"👥 **Alocação Multiagente ({total_count} agentes escalados):**",
+        f"- **Total de Agentes Especialistas:** {total_count}",
+        f"- **Agentes Escalados:** {', '.join(f'`{ag}`' for ag in unique_agents)}",
+        "",
+        "| Agente | Tarefa / ID | Modelo | Esforço | Escopo Permitido |",
+        "| :--- | :--- | :--- | :--- | :--- |",
+    ]
+    for t in tasks:
+        ag = t.get("subagent", "builder")
+        tid = t.get("task_id", "")
+        mod = t.get("model", "flash")
+        eff = str(t.get("effort", "medium")).upper()
+        paths = ", ".join(t.get("allowed_paths", ["src/"]))
+        lines.append(f"| `{ag}` | `{tid}` | {mod} | {eff} | `{paths}` |")
+    return "\n".join(lines)
+
+
+def format_agents_summary(task_results: List[Dict[str, Any]]) -> str:
+    """Formats a final execution summary of participating agents and outcomes."""
+    unique_agents = sorted(list({str(t.get("subagent", "builder")).strip() for t in task_results}))
+    total_count = len(unique_agents)
+    passed_count = sum(1 for t in task_results if t.get("status") == "PASS")
+    total_tasks = len(task_results)
+    lines: List[str] = [
+        f"### 👥 Relatório de Execução Multiagente ({total_count} agentes utilizados)",
+        f"- **Total de Agentes Envolvidos:** {total_count}",
+        f"- **Agentes Participantes:** {', '.join(f'`{ag}`' for ag in unique_agents)}",
+        f"- **Taxa de Sucesso:** {passed_count}/{total_tasks} tarefas GREEN",
+        "",
+        "| Agente | Task ID | Modelo / Esforço | Status | Retries |",
+        "| :--- | :--- | :--- | :--- | :--- |",
+    ]
+    for t in task_results:
+        ag = t.get("subagent", "builder")
+        tid = t.get("task_id", "")
+        mod = f"{t.get('model', '')} ({t.get('effort', '')})"
+        st = t.get("status", "UNKNOWN")
+        retries = t.get("retries", 0)
+        lines.append(f"| `{ag}` | `{tid}` | {mod} | **{st}** | {retries} |")
     return "\n".join(lines)
 
 
@@ -323,6 +325,7 @@ class AntigravityMissionEngine:
         """Writes the consolidated markdown report to .agents/mission-report.md."""
         self.agents_dir.mkdir(parents=True, exist_ok=True)
         status_label = "✅ SUCESSO (CONFORMIDADE TOTAL)" if success else "❌ FALHA NA MISSÃO"
+        unique_agents = sorted(list({str(t.get("subagent", "builder")).strip() for t in task_results}))
 
         lines = [
             f"# Relatório de Missão Multiagente: {feature_name}",
@@ -330,6 +333,8 @@ class AntigravityMissionEngine:
             f"- **Missão ID:** `{mission_id}`",
             f"- **Resultado Final:** {status_label}",
             f"- **Verificação Global:** `{global_status}`",
+            f"- **Total de Agentes Utilizados:** {len(unique_agents)}",
+            f"- **Agentes Participantes:** {', '.join(f'`{ag}`' for ag in unique_agents)}",
             "",
             "## Tabela de Tarefas Executadas",
             "",
@@ -386,6 +391,7 @@ def main() -> int:
     # Command: run
     run_parser = subparsers.add_parser("run", help="Executa o manifesto de missão")
     run_parser.add_argument("manifest", nargs="?", default=".agents/active-mission.json")
+    run_parser.add_argument("--host", choices=["antigravity", "opencode", "claude", "codex", "cursor", "qoder"], default=None, help="Host para execução dos workers")
 
     # Command: validate
     val_parser = subparsers.add_parser("validate", help="Valida o manifesto de missão")
@@ -424,6 +430,8 @@ def main() -> int:
             return 0
 
         if args.subcommand == "run":
+            if getattr(args, "host", None):
+                validated["host"] = args.host
             print(render_mission_dashboard(validated["mission_id"], validated["feature_name"], validated["tasks"]))
             print("\n⏳ Iniciando pipeline de orquestração multiagente...")
             res = engine.run_mission(validated)

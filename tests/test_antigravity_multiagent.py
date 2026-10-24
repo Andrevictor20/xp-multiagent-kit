@@ -16,6 +16,8 @@ from unittest.mock import MagicMock, patch
 from scripts.antigravity_multiagent import (
     AntigravityMissionEngine,
     MissionManifestError,
+    format_agents_roster,
+    format_agents_summary,
     prepare_subagent_payload,
     render_mission_dashboard,
     validate_mission_manifest,
@@ -247,6 +249,33 @@ class TestAntigravityMissionEngineExecution(unittest.TestCase):
         task_res = next(t for t in report["tasks"] if t["task_id"] == "g1-task")
         self.assertEqual(task_res["retries"], 1)
         self.assertEqual(task_res["status"], "PASS")
+
+
+    def test_format_agents_roster_outputs_count_and_names(self):
+        tasks = [
+            {"subagent": "navigator", "task_id": "t-1", "model": "flash", "effort": "medium", "allowed_paths": ["specs/"]},
+            {"subagent": "test-guardian", "task_id": "t-2", "model": "flash", "effort": "medium", "allowed_paths": ["tests/"]},
+            {"subagent": "builder", "task_id": "t-3", "model": "flash", "effort": "medium", "allowed_paths": ["src/"]},
+            {"subagent": "builder", "task_id": "t-4", "model": "flash", "effort": "low", "allowed_paths": ["src/"]},
+        ]
+        roster = format_agents_roster(tasks)
+        self.assertIn("3 agentes escalados", roster)
+        self.assertIn("`builder`", roster)
+        self.assertIn("`navigator`", roster)
+        self.assertIn("`test-guardian`", roster)
+
+    def test_format_agents_summary_outputs_count_and_names(self):
+        task_results = [
+            {"subagent": "navigator", "task_id": "t-1", "model": "flash", "effort": "medium", "status": "PASS", "retries": 0},
+            {"subagent": "test-guardian", "task_id": "t-2", "model": "flash", "effort": "medium", "status": "PASS", "retries": 0},
+            {"subagent": "builder", "task_id": "t-3", "model": "flash", "effort": "medium", "status": "PASS", "retries": 0},
+        ]
+        summary = format_agents_summary(task_results)
+        self.assertIn("3 agentes utilizados", summary)
+        self.assertIn("`builder`", summary)
+        self.assertIn("`navigator`", summary)
+        self.assertIn("`test-guardian`", summary)
+        self.assertIn("3/3 tarefas GREEN", summary)
 
 
 if __name__ == "__main__":

@@ -55,3 +55,8 @@ memory-and-docs:
   agents: [archivist]
   skills: [project-memory, living-docs-keeper, lesson-learned, adr-architect-tracker]
 ```
+
+## 3. Multi-Agent Fast Dispatch & Roster Reporting
+When the user explicitly requests multi-agent execution in the prompt:
+1. **Turn-1 Dispatch:** The orchestrator dispatches subagents in Turn 1 via `invoke_subagent` without stalling for secondary confirmation.
+2. **Roster Reporting:** Always report agent count and names at dispatch (`👥 Agentes Escalados: N`) and execution summary at completion (`👥 Relatório de Execução Multiagente`).

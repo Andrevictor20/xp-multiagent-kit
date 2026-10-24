@@ -14,15 +14,15 @@ import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-SUPPORTED_TARGETS = ("antigravity", "opencode", "cursor", "qoder", "codex")
+SUPPORTED_TARGETS = ("antigravity", "opencode", "cursor", "qoder", "codex", "claude")
 
 I18N_MESSAGES: Dict[str, Dict[str, str]] = {
     "pt": {
         "wizard_title": "🚀 INSTALADOR UNIFICADO (Instalação Multi-IDE & CLI) — XP MULTI-AGENT KIT v3.0",
         "dry_run_banner": "⚠️  [MODO SIMULAÇÃO / DRY-RUN ATIVO]",
         "choose_scope": "Como deseja instalar o kit?",
-        "opt_global": "[1] Global (Recomendado) -> Instala ferramentas em ~/.local/bin e sincroniza IDEs/CLIs globais",
-        "opt_project": "[2] Projeto Específico (Local) -> Injeta governança, regras e agentes em um repositório",
+        "opt_global": "[1] Global -> Instala em ~/.local/bin e sincroniza IDEs/CLIs globais",
+        "opt_project": "[2] Projeto (Local) -> Injeta governança em um repositório",
         "opt_both": "[3] Ambos -> Instalação global + injeção no projeto especificado",
         "prompt_scope": "Escolha uma opção [1/2/3] (padrão: 1): ",
         "choose_targets": "Em quais ambientes (IDE / CLI) deseja instalar?",
@@ -44,9 +44,7 @@ I18N_MESSAGES: Dict[str, Dict[str, str]] = {
         "project_fail": "❌ Falha ao injetar no projeto:",
         "invalid_option": "❌ Opção inválida. Operação abortada.",
         "doctor_title": "🏥 XP MULTI-AGENT KIT — DIAGNÓSTICO DO AMBIENTE",
-        "global_bins": "📦 Binários Globais:",
-        "installed": "✅ Instalado",
-        "missing": "❌ Ausente",
+        "global_bins": "📦 Binários Globais:", "installed": "✅ Instalado", "missing": "❌ Ausente",
     },
     "en": {
         "wizard_title": "🚀 UNIFIED INSTALLER (Multi-IDE & CLI Installer) — XP MULTI-AGENT KIT v3.0",
@@ -75,9 +73,7 @@ I18N_MESSAGES: Dict[str, Dict[str, str]] = {
         "project_fail": "❌ Failed to inject into project:",
         "invalid_option": "❌ Invalid option. Operation aborted.",
         "doctor_title": "🏥 XP MULTI-AGENT KIT — ENVIRONMENT DIAGNOSTICS",
-        "global_bins": "📦 Global Binaries:",
-        "installed": "✅ Installed",
-        "missing": "❌ Missing",
+        "global_bins": "📦 Global Binaries:", "installed": "✅ Installed", "missing": "❌ Missing",
     },
 }
 
@@ -173,7 +169,7 @@ class HostAdapters:
             agent_dst.mkdir(parents=True, exist_ok=True)
             cmd_dst.mkdir(parents=True, exist_ok=True)
 
-            # 1. opencode.json
+            # 1. opencode.json base structure
             oc_data: Dict[str, Any] = {"$schema": "https://opencode.ai/config.json"}
             if oc_json_path.is_file():
                 try:
@@ -185,6 +181,10 @@ class HostAdapters:
                 ".agents/memory/PROJECT_MEMORY.md",
                 ".agents/policies/*.md",
             ]
+            oc_data["default_agent"] = "orchestrator"
+            oc_data["subagent_depth"] = 2
+            oc_data.setdefault("agents", {})
+
             mcp_servers = build_mcp_servers_dict(self.home_dir)
             oc_data.setdefault("mcp", {})
             for s_name, s_cfg in mcp_servers.items():
@@ -195,19 +195,40 @@ class HostAdapters:
                 }
                 if "env" in s_cfg:
                     oc_data["mcp"][s_name]["environment"] = s_cfg["env"]
-            oc_json_path.write_text(json.dumps(oc_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-            # 2. Export agents to .opencode/agent/<name>.md
+            # 2. Export agents to .opencode/agent/<name>.md and register subagents in opencode.json
             agents_src = self.kit_dir / ".agents" / "agents"
             if agents_src.is_dir():
                 for ag_folder in sorted(agents_src.iterdir()):
                     ag_file = ag_folder / "agent.md"
                     if ag_folder.is_dir() and ag_file.is_file():
-                        (agent_dst / f"{ag_folder.name}.md").write_text(
-                            ag_file.read_text(encoding="utf-8"), encoding="utf-8"
-                        )
+                        ag_content = ag_file.read_text(encoding="utf-8")
+                        (agent_dst / f"{ag_folder.name}.md").write_text(ag_content, encoding="utf-8")
+
+                        # Extract description from YAML frontmatter
+                        desc = f"XP {ag_folder.name.capitalize()} Agent"
+                        for line in ag_content.splitlines()[:15]:
+                            if line.strip().startswith("description:"):
+                                parsed_desc = line.split("description:", 1)[1].strip().strip('"').strip("'")
+                                if parsed_desc:
+                                    desc = parsed_desc
+                                break
+
+                        mode = "all" if ag_folder.name == "orchestrator" else "subagent"
+                        oc_data["agents"][ag_folder.name] = {
+                            "description": desc,
+                            "mode": mode,
+                            "prompt": f"{{file:.opencode/agent/{ag_folder.name}.md}}",
+                        }
             else:
                 (agent_dst / "orchestrator.md").write_text("# Orchestrator Agent\n", encoding="utf-8")
+                oc_data["agents"]["orchestrator"] = {
+                    "description": "Orchestrator Agent",
+                    "mode": "all",
+                    "prompt": "{file:.opencode/agent/orchestrator.md}",
+                }
+
+            oc_json_path.write_text(json.dumps(oc_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
             # 3. Export workflows to .opencode/command/<name>.md
             wf_src = self.kit_dir / ".agents" / "workflows"
@@ -331,12 +352,79 @@ class HostAdapters:
             mcp_data = {"mcpServers": build_mcp_servers_dict(self.home_dir)}
             mcp_path.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
+            # 3. rules/default.rules (Starlark execution policy for tests)
+            rules_file = rules_dir / "default.rules"
+            if not rules_file.exists():
+                rules_file.write_text(
+                    'prefix_rule(pattern=["pytest"], decision="allow")\n'
+                    'prefix_rule(pattern=["python3", "-m", "unittest"], decision="allow")\n'
+                    'prefix_rule(pattern=["npm", "test"], decision="allow")\n'
+                    'prefix_rule(pattern=["git", "status"], decision="allow")\n'
+                    'prefix_rule(pattern=["git", "diff"], decision="allow")\n'
+                    'prefix_rule(pattern=["rm", "-rf", "/"], decision="forbid")\n',
+                    encoding="utf-8",
+                )
+
+            # 4. config.toml
+            cfg_file = codex_dir / "config.toml"
+            if not cfg_file.exists():
+                crg_cmd = mcp_data["mcpServers"]["code-review-graph"]["command"]
+                cfg_file.write_text(
+                    'model = "gpt-5.6-luna"\nmodel_reasoning_effort = "low"\n\n'
+                    '[mcp_servers.code_review_graph]\n'
+                    f'command = "{crg_cmd}"\nargs = ["serve"]\n\n'
+                    '[mcp_servers.open_design]\n'
+                    'command = "od"\nargs = ["mcp", "--daemon-url", "http://127.0.0.1:7456"]\n',
+                    encoding="utf-8",
+                )
+
             if not project_dir.name.startswith("."):
                 ignore_path = project_dir / ".codexignore"
                 if not ignore_path.exists():
                     ignore_path.write_text(self._read_ignore_template(), encoding="utf-8")
 
-        actions.append("Codex configured (.codex/rules/xp-governance.md, .codex/instructions.md, .codex/mcp.json)")
+        actions.append("Codex configured (.codex/rules/default.rules, config.toml, instructions.md)")
+        return actions
+
+    def install_claude_project(self, project_dir: Path, dry_run: bool = False) -> List[str]:
+        """Provisions Claude Code / Desktop (CLAUDE.md, .mcp.json, and .claude/agents/*.md)."""
+        actions: List[str] = []
+        claude_dir = project_dir if project_dir.name == ".claude" else (project_dir / ".claude")
+        agents_dst = claude_dir / "agents"
+
+        if not dry_run:
+            agents_dst.mkdir(parents=True, exist_ok=True)
+
+            # 1. CLAUDE.md
+            claude_md_path = project_dir / "CLAUDE.md"
+            if not claude_md_path.is_file():
+                claude_content = (
+                    "# CLAUDE.md — XP Multi-Agent Kit v3.0\n\n"
+                    "Directives for Claude Code:\n"
+                    "1. Follow `AGENTS.md` and `.agents/memory/PROJECT_MEMORY.md`.\n"
+                    "2. Strict TDD: Write failing tests (RED) before implementation (GREEN), then REFACTOR.\n"
+                    "3. Zero workarounds: Root-cause fixes only (no type bypasses, no arbitrary sleeps).\n"
+                    "4. Mandatory Language: ALL user-facing responses MUST be in Português (PT-BR).\n"
+                )
+                claude_md_path.write_text(claude_content, encoding="utf-8")
+
+            # 2. .mcp.json
+            mcp_path = project_dir / ".mcp.json"
+            mcp_data = {"mcpServers": build_mcp_servers_dict(self.home_dir)}
+            mcp_path.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+            # 3. Export agents to .claude/agents/<name>.md
+            agents_src = self.kit_dir / ".agents" / "agents"
+            if agents_src.is_dir():
+                for ag_folder in sorted(agents_src.iterdir()):
+                    ag_file = ag_folder / "agent.md"
+                    if ag_folder.is_dir() and ag_file.is_file():
+                        raw_content = ag_file.read_text(encoding="utf-8")
+                        (agents_dst / f"{ag_folder.name}.md").write_text(
+                            raw_content, encoding="utf-8"
+                        )
+
+        actions.append("Claude configured (CLAUDE.md, .mcp.json, .claude/agents/*.md)")
         return actions
 
     def install_global_hosts(self, targets: List[str], dry_run: bool = False) -> List[str]:
@@ -359,9 +447,10 @@ class HostAdapters:
             dispatcher_content = (
                 "# Global Agent Dispatcher — XP Multi-Agent Kit v3.0 (Agnostic Core)\n\n"
                 "Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder):\n"
-                "1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.\n"
-                "2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.\n"
-                "3. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.\n"
+                "1. If workspace contains `AGENTS.md`, follow its directives as single source of truth.\n"
+                "2. If no `AGENTS.md`, apply canonical discipline: TDD, L0-L3 routing, and `.agents/memory/PROJECT_MEMORY.md`.\n"
+                "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
+                "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
             for sub in ("skills", "agents", "workflows", "policies", "rules", "templates"):
@@ -378,11 +467,9 @@ class HostAdapters:
             cur_global = self.home_dir / ".cursor"
             cur_global.mkdir(parents=True, exist_ok=True)
             self.install_cursor_project(cur_global, dry_run=False)
-            candidate_settings = [
-                self.home_dir / ".config" / "Cursor" / "User" / "settings.json",
-                self.home_dir / "Library" / "Application Support" / "Cursor" / "User" / "settings.json",
-                self.home_dir / "AppData" / "Roaming" / "Cursor" / "User" / "settings.json",
-            ]
+            candidate_settings = [self.home_dir / Path(p) / "User" / "settings.json" for p in (
+                ".config/Cursor", "Library/Application Support/Cursor", "AppData/Roaming/Cursor"
+            )]
             for cursor_user_settings in candidate_settings:
                 if cursor_user_settings.is_file():
                     try:
@@ -397,16 +484,15 @@ class HostAdapters:
                         pass
             actions.append(f"Cursor global config and rules synced at {cur_global}")
 
-        if "qoder" in targets:
-            qod_global = self.home_dir / ".qoder"
-            qod_global.mkdir(parents=True, exist_ok=True)
-            self.install_qoder_project(qod_global, dry_run=False)
-            actions.append(f"Qoder global config and rules synced at {qod_global}")
-
-        if "codex" in targets:
-            cod_global = self.home_dir / ".codex"
-            cod_global.mkdir(parents=True, exist_ok=True)
-            self.install_codex_project(cod_global, dry_run=False)
-            actions.append(f"Codex global config and rules synced at {cod_global}")
+        for target, rel_path, installer in (
+            ("qoder", ".qoder", self.install_qoder_project),
+            ("codex", ".codex", self.install_codex_project),
+            ("claude", ".claude", self.install_claude_project),
+        ):
+            if target in targets:
+                target_global = self.home_dir / rel_path
+                target_global.mkdir(parents=True, exist_ok=True)
+                installer(target_global, dry_run=False)
+                actions.append(f"{target.capitalize()} global config and rules synced at {target_global}")
 
         return actions

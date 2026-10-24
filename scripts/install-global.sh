@@ -33,7 +33,8 @@ cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
 Master global rule for agent execution (Antigravity, OpenCode, Cursor, Qoder):
 1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
 2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.
-3. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
+3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.
+4. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
 EOF
 
 # 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
