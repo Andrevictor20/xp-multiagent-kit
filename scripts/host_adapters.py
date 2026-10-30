@@ -251,47 +251,28 @@ class HostAdapters:
 
         if not dry_run:
             rules_dir.mkdir(parents=True, exist_ok=True)
-            agents_md_content = ""
-            if (self.kit_dir / "AGENTS.md").is_file():
-                agents_md_content = (self.kit_dir / "AGENTS.md").read_text(encoding="utf-8")
+            agents_md = (self.kit_dir / "AGENTS.md").read_text(encoding="utf-8") if (self.kit_dir / "AGENTS.md").is_file() else "# XP Rules\n"
+            (rules_dir / "00-xp-core.mdc").write_text(f"---\ndescription: XP Core Governance\nglobs:\nalwaysApply: true\n---\n\n{agents_md}", encoding="utf-8")
 
-            core_mdc = (
-                "---\n"
-                "description: XP Multi-Agent Kit v3 Core Governance (Risk Routing, ATDD/TDD, Token Economy, Self-Healing)\n"
-                "globs:\n"
-                "alwaysApply: true\n"
-                "---\n\n"
-                + (agents_md_content or "# XP Multi-Agent Kit Core Rules\n")
-            )
-            (rules_dir / "00-xp-core.mdc").write_text(core_mdc, encoding="utf-8")
-
-            fe_policy = ""
             fe_file = self.kit_dir / ".agents" / "policies" / "frontend.md"
-            if fe_file.is_file():
-                fe_policy = fe_file.read_text(encoding="utf-8")
-            fe_mdc = (
-                "---\n"
-                "description: Frontend Anti-Slop, 6-State Machine, WCAG AA, and Design System Tokens\n"
-                'globs: ["*.tsx", "*.ts", "*.jsx", "*.css", "*.vue", "*.svelte", "*.html"]\n'
-                "alwaysApply: false\n"
-                "---\n\n"
-                + (fe_policy or "# Frontend & Design Policy\n")
-            )
-            (rules_dir / "10-frontend-design.mdc").write_text(fe_mdc, encoding="utf-8")
+            fe_policy = fe_file.read_text(encoding="utf-8") if fe_file.is_file() else "# Frontend Policy\n"
+            (rules_dir / "10-frontend-design.mdc").write_text(f'---\ndescription: Frontend Design\nglobs: ["*.tsx", "*.ts", "*.jsx", "*.css"]\nalwaysApply: false\n---\n\n{fe_policy}', encoding="utf-8")
 
-            tdd_policy = ""
             tdd_file = self.kit_dir / ".agents" / "policies" / "tdd.md"
-            if tdd_file.is_file():
-                tdd_policy = tdd_file.read_text(encoding="utf-8")
-            tdd_mdc = (
+            tdd_policy = tdd_file.read_text(encoding="utf-8") if tdd_file.is_file() else "# TDD Policy\n"
+            (rules_dir / "20-tdd-testing.mdc").write_text(f'---\ndescription: Strict TDD\nglobs: ["*test*", "*spec*"]\nalwaysApply: false\n---\n\n{tdd_policy}', encoding="utf-8")
+
+            boss_worker_rule = (
                 "---\n"
-                "description: Strict TDD (RED-GREEN-REFACTOR) and Anti-Test-Bypass Enforcement\n"
-                'globs: ["*test*", "*spec*"]\n'
+                "description: Multi-Agent Boss-Worker Orchestration\n"
+                "globs: \n"
                 "alwaysApply: false\n"
                 "---\n\n"
-                + (tdd_policy or "# TDD Policy\n")
+                "# Multi-Agent Boss-Worker Orchestration (Cursor)\n"
+                "Decompose into allowed_paths and enforce strict TDD (RED -> GREEN -> REFACTOR).\n"
+                "All user responses must be in Portuguese (Português).\n"
             )
-            (rules_dir / "20-tdd-testing.mdc").write_text(tdd_mdc, encoding="utf-8")
+            (rules_dir / "30-multiagent-boss-worker.mdc").write_text(boss_worker_rule, encoding="utf-8")
 
             mcp_path = cursor_dir / "mcp.json"
             mcp_data = {"mcpServers": build_mcp_servers_dict(self.home_dir)}
@@ -306,21 +287,25 @@ class HostAdapters:
         return actions
 
     def install_qoder_project(self, project_dir: Path, dry_run: bool = False) -> List[str]:
-        """Provisions Qoder (IDE & CLI) .qoder/rules/xp-governance.md, .qoder/mcp.json, and .qoderignore."""
+        """Provisions Qoder (IDE & CLI) rules, agents, mcp.json, and .qoderignore."""
         actions: List[str] = []
         qoder_dir = project_dir if project_dir.name == ".qoder" else (project_dir / ".qoder")
         rules_dir = qoder_dir / "rules"
+        agents_dir = qoder_dir / "agents"
 
         if not dry_run:
             rules_dir.mkdir(parents=True, exist_ok=True)
-            agents_md_content = ""
-            if (self.kit_dir / "AGENTS.md").is_file():
-                agents_md_content = (self.kit_dir / "AGENTS.md").read_text(encoding="utf-8")
+            agents_dir.mkdir(parents=True, exist_ok=True)
+            agents_md = (self.kit_dir / "AGENTS.md").read_text(encoding="utf-8") if (self.kit_dir / "AGENTS.md").is_file() else "# XP Rules\n"
+            (rules_dir / "xp-governance.md").write_text(f"# Qoder Governance (AGENTS.md)\n\n{agents_md}", encoding="utf-8")
 
-            (rules_dir / "xp-governance.md").write_text(
-                agents_md_content or "# XP Multi-Agent Kit Governance\n",
-                encoding="utf-8",
-            )
+            src_agents = self.kit_dir / ".agents" / "agents"
+            if src_agents.is_dir():
+                for d in src_agents.iterdir():
+                    af = d / "agent.md"
+                    if d.is_dir() and af.is_file():
+                        (agents_dir / f"{d.name}.md").write_text(af.read_text(encoding="utf-8"), encoding="utf-8")
+
             mcp_path = qoder_dir / "mcp.json"
             mcp_data = {"mcpServers": build_mcp_servers_dict(self.home_dir)}
             mcp_path.write_text(json.dumps(mcp_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -330,7 +315,7 @@ class HostAdapters:
                 if not ignore_path.exists():
                     ignore_path.write_text(self._read_ignore_template(), encoding="utf-8")
 
-        actions.append("Qoder configured (.qoder/rules/xp-governance.md, .qoder/mcp.json, .qoderignore)")
+        actions.append("Qoder configured (.qoder/rules/xp-governance.md, .qoder/agents/*.md, .qoder/mcp.json, .qoderignore)")
         return actions
 
     def install_codex_project(self, project_dir: Path, dry_run: bool = False) -> List[str]:
@@ -451,6 +436,7 @@ class HostAdapters:
                 "2. If no `AGENTS.md`, apply canonical discipline: TDD, L0-L3 routing, and `.agents/memory/PROJECT_MEMORY.md`.\n"
                 "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
                 "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
+                "5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks.\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
             for sub in ("skills", "agents", "workflows", "policies", "rules", "templates"):
@@ -467,17 +453,12 @@ class HostAdapters:
             cur_global = self.home_dir / ".cursor"
             cur_global.mkdir(parents=True, exist_ok=True)
             self.install_cursor_project(cur_global, dry_run=False)
-            candidate_settings = [self.home_dir / Path(p) / "User" / "settings.json" for p in (
-                ".config/Cursor", "Library/Application Support/Cursor", "AppData/Roaming/Cursor"
-            )]
+            candidate_settings = [self.home_dir / Path(p) / "User" / "settings.json" for p in (".config/Cursor", "Library/Application Support/Cursor", "AppData/Roaming/Cursor")]
             for cursor_user_settings in candidate_settings:
                 if cursor_user_settings.is_file():
                     try:
                         data = json.loads(cursor_user_settings.read_text(encoding="utf-8"))
-                        data["cursor.general.customInstructions"] = (
-                            "Follow XP Multi-Agent Kit governance (strict TDD, L0-L3 risk routing, "
-                            "PT-BR user responses)."
-                        )
+                        data["cursor.general.customInstructions"] = "Follow XP Multi-Agent Kit governance (strict TDD, L0-L3 risk routing, PT-BR user responses)."
                         cursor_user_settings.write_text(json.dumps(data, indent=4, ensure_ascii=False) + "\n", encoding="utf-8")
                         actions.append(f"Cursor customInstructions configured at {cursor_user_settings}")
                     except Exception:

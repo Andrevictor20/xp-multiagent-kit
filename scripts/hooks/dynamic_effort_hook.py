@@ -207,6 +207,41 @@ def should_skip_duplicate_injection(
     return False
 
 
+def sync_dynamic_skill_profile(risk_level: str, prompt_text: str) -> Optional[str]:
+    """Sincroniza dinamicamente o perfil de skills conforme risco e escopo da tarefa."""
+    try:
+        from scripts import skill_profiles as sp
+        p_lower = prompt_text.lower()
+        risk_lower = risk_level.lower()
+
+        # Determina perfil alvo
+        if any(w in p_lower for w in ["subagente", "multiagente", "equipe", "paralelo"]) or "l3" in risk_lower:
+            target_profile = "all"
+        elif "l2" in risk_lower:
+            if any(w in p_lower for w in ["css", "tela", "interface", "frontend", "ui", "component", "html", "react", "design"]):
+                target_profile = "frontend"
+            else:
+                target_profile = "backend"
+        else:
+            target_profile = "core"
+
+        # Verifica perfil ativo atual para evitar reescritas redundantes
+        global_skills = sp.DEFAULT_GLOBAL_SKILLS_DIR
+        if global_skills.exists():
+            active_skills = {p.name for p in global_skills.iterdir() if p.is_dir() or p.is_symlink()}
+            current_profile = sp.detect_current_profile(active_skills)
+            if current_profile == target_profile:
+                return target_profile
+
+        master_skills = PROJECT_ROOT / ".agents" / "skills"
+        if master_skills.exists() and global_skills.exists():
+            sp.apply_profile_symlinks(target_profile, master_skills, global_skills)
+            return target_profile
+    except Exception:
+        pass
+    return None
+
+
 def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Processa o evento PreInvocation do Antigravity CLI."""
     transcript_path = payload.get("transcriptPath", "")
@@ -229,6 +264,13 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         pass
 
+    # Sincroniza dinamicamente o perfil de skills (Core -> Frontend/Backend -> All)
+    applied_profile = None
+    try:
+        applied_profile = sync_dynamic_skill_profile(decision.risk_level, prompt_text)
+    except Exception:
+        pass
+
     conv_id = payload.get("conversationId", "default")
     tpath = payload.get("transcriptPath", "")
     tpath_hash = hashlib.md5(tpath.encode("utf-8")).hexdigest()[:8] if tpath else "notrans"
@@ -248,13 +290,14 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     effort_upper = decision.effort.upper()
     if decision.effort == "high":
-        guidance = "HIGH mode: deep root-cause analysis, strict TDD, zero workarounds, and Pre-Response Self-Audit."
+        guidance = "HIGH mode: deep root-cause analysis, AST code-review-graph impact mapping, strict TDD, zero workarounds."
     elif decision.effort == "low":
         guidance = "LOW mode: direct, concise response, strictly Zero-Tool for conceptual queries."
     else:
-        guidance = "MEDIUM mode: balanced token efficiency, surgical tests, and Pre-Response Self-Audit."
+        guidance = "MEDIUM mode: balanced token efficiency, AST code-review-graph callers lookup, surgical tests, and Self-Audit."
+    profile_tag = f" | Profile: {applied_profile.upper()}" if applied_profile else ""
     ephemeral_msg = (
-        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level} | {guidance}"
+        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level}{profile_tag} | {guidance}"
     )
 
     return {

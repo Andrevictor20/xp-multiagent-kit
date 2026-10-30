@@ -16,8 +16,13 @@ fi
 if [ -n "$GRAPH_BIN" ]; then
   # Procura .code-review-graph no diretório corrente ou raízes Git
   REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-  if [ -f "$REPO_ROOT/.code-review-graph/graph.db" ]; then
-    # Executa desacoplado em background para não bloquear o fluxo
-    (nohup "$GRAPH_BIN" update --skip-flows --repo "$REPO_ROOT" >/dev/null 2>&1 &) &
+  if [ -d "$REPO_ROOT/.git" ]; then
+    if [ -f "$REPO_ROOT/.code-review-graph/graph.db" ]; then
+      # Executa desacoplado em background para não bloquear o fluxo
+      (nohup "$GRAPH_BIN" update --skip-flows --repo "$REPO_ROOT" >/dev/null 2>&1 &) &
+    else
+      # Auto-bootstrap: inicializa o grafo na primeira alteração
+      (nohup "$GRAPH_BIN" build --repo "$REPO_ROOT" >/dev/null 2>&1 &) &
+    fi
   fi
 fi

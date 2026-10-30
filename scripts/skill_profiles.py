@@ -33,6 +33,7 @@ CORE_SKILLS: Set[str] = {
     "atomic-commit-discipline",
     "ci-auto-heal",
     "code-deslop-review",
+    "codebase-cartography",
     "conformance-tracker",
     "diff-simplifier-review",
     "lesson-learned",

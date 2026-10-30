@@ -195,6 +195,7 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
   # Validate spec structure (ACs, SbE table, Gherkin scenarios):
   xp-spec validate .agents/specs/SPEC-004-user-authentication.md
   ```
+- `goldfish_review.py`: EGM (Elephant-Goldfish Model) spec validator enforcing Heilmeier Catechism and anti-glazing policies.
 - `xp-conformance` / `agy-conformance`: Generates the traceability matrix linking Acceptance Criteria to test executions.
 
 ### Execution & Conformance Tools
@@ -235,7 +236,7 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
 │   └── archive/HISTORY.md  # Rotated deliverable history
 ├── policies/               # Non-negotiable policies (ATDD/TDD, Anti-Test-Bypass, Memory, Security)
 ├── rules/                  # Active runtime rule enforcement
-├── skills/                 # 77 granular skills (token-dense English instruction sets)
+├── skills/                 # 79 granular skills (token-dense English instruction sets)
 ├── templates/              # Reusable templates (SPEC-NNN-ATDD.md, PROJECT_MEMORY_TEMPLATE.md)
 └── workflows/              # Structured workflow routes by risk level (L0 to L3, bugfix, migration)
 

@@ -84,6 +84,16 @@ class TestSpec003Enhancements(unittest.TestCase):
             self.assertTrue(hasattr(installer, "install"))
             self.assertTrue(hasattr(installer, "get_download_url"))
 
+    def test_alethe_installer_interface(self):
+        """AletheInstaller installs and exposes alethe/xp-alethe commands."""
+        from scripts.mcp_installers import AletheInstaller
+
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            installer = AletheInstaller(home_dir=home)
+            self.assertTrue(hasattr(installer, "install"))
+            self.assertTrue(hasattr(installer, "_run_clone_or_copy"))
+
     # ------------------------------------------------------------------
     # 3. Reinforced ATDD & BDD CLI (xp-spec)
     # ------------------------------------------------------------------

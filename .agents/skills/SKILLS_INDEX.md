@@ -1,7 +1,7 @@
 # Skills Index (On-Demand Loading)
 
 > Compact catalog. Skill bodies are loaded on demand only when activated.
-> 78 skills • max body per skill: 5 KB
+> 79 skills • max body per skill: 5 KB
 
 | Skill | Trigger |
 |-------|---------|
@@ -41,6 +41,7 @@
 | `frontend-performance` | Core Web Vitals (LCP, INP, CLS), 60fps GPU animations, and scroll optimization. |
 | `frontend-taste-engineering` | Anti-Slop aesthetic direction, 3-dial calibration, and design system routing. |
 | `git-worktree-workspace` | Subagent isolation in clean Git Worktrees via agy-worktree. |
+| `goldfish-spec-review` | >- |
 | `high-end-visual-design` | $150k+ Awwwards-tier visual design: Double-Bezel chassis and spring physics. |
 | `image-to-code` | Image-first UI pipeline: reference generation, token extraction, and code. |
 | `industrial-brutalist-ui` | Industrial brutalist UI engineering: 90-degree grids, Swiss print, CRT telemetry. |

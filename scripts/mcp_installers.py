@@ -8,6 +8,7 @@ for XP Multi-Agent Kit v3.0.
 from __future__ import annotations
 
 import json
+import os
 import platform
 import shutil
 import subprocess
@@ -259,4 +260,93 @@ class RtkInstaller:
             "fallback": True,
             "message": "RTK binary optional: Python smart-tool-optimizer fallback active."
         }
+
+
+class AletheInstaller:
+    """Installs and links Alethe Orchestrator into ~/.local/share/alethe-orchestrate and ~/.local/bin."""
+
+    REPO_URL = "https://github.com/Kc1t/alethe-orchestrate-skill.git"
+
+    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
+        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
+        self.home_dir = home_dir or Path.home()
+        self.alethe_dir = self.home_dir / ".local" / "share" / "alethe-orchestrate"
+        self.bin_dir = self.home_dir / ".local" / "bin"
+
+    def _run_clone_or_copy(self, source_dir: Optional[Path] = None) -> bool:
+        self.alethe_dir.parent.mkdir(parents=True, exist_ok=True)
+        if source_dir and source_dir.exists():
+            src_skill = source_dir / "skills" / "alethe" if (source_dir / "skills" / "alethe").exists() else source_dir
+            if (src_skill / "scripts" / "orchestrate.py").exists():
+                if self.alethe_dir.exists():
+                    shutil.rmtree(self.alethe_dir)
+                shutil.copytree(src_skill, self.alethe_dir)
+                return True
+        staging = self.kit_dir / "alethe-orchestrate-skill-main" / "skills" / "alethe"
+        if staging.exists():
+            if self.alethe_dir.exists():
+                shutil.rmtree(self.alethe_dir)
+            shutil.copytree(staging, self.alethe_dir)
+            return True
+        git_cmd = shutil.which("git")
+        if git_cmd:
+            env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
+            temp_target = self.alethe_dir.with_name("alethe-temp")
+            if temp_target.exists():
+                shutil.rmtree(temp_target)
+            res = subprocess.run(
+                [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(temp_target)],
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+            if res.returncode == 0 and (temp_target / "skills" / "alethe").exists():
+                if self.alethe_dir.exists():
+                    shutil.rmtree(self.alethe_dir)
+                shutil.copytree(temp_target / "skills" / "alethe", self.alethe_dir)
+                shutil.rmtree(temp_target)
+                return True
+        return False
+
+    def install(self, source_dir: Optional[Path] = None) -> Dict[str, Any]:
+        self.bin_dir.mkdir(parents=True, exist_ok=True)
+        orchestrate_script = self.alethe_dir / "scripts" / "orchestrate.py"
+        if not orchestrate_script.exists():
+            self._run_clone_or_copy(source_dir)
+
+        if orchestrate_script.exists():
+            try:
+                orchestrate_script.chmod(orchestrate_script.stat().st_mode | 0o111)
+            except Exception:
+                pass
+
+            launcher_content = f'#!/usr/bin/env bash\nexec python3 "{orchestrate_script}" "$@"\n'
+            target_bin = self.bin_dir / "alethe"
+            created_links = []
+            for bin_name in ("alethe", "xp-alethe", "agy-alethe"):
+                b_path = self.bin_dir / bin_name
+                try:
+                    b_path.write_text(launcher_content, encoding="utf-8")
+                    b_path.chmod(b_path.stat().st_mode | 0o111)
+                    created_links.append(bin_name)
+                except Exception:
+                    pass
+
+            gemini_skills = self.home_dir / ".gemini" / "config" / "skills"
+            if gemini_skills.exists():
+                skill_link = gemini_skills / "alethe"
+                if not skill_link.exists() and not skill_link.is_symlink():
+                    try:
+                        skill_link.symlink_to(self.alethe_dir)
+                    except Exception:
+                        pass
+
+            return {
+                "ok": True,
+                "path": str(target_bin),
+                "aliases": created_links,
+                "message": f"Alethe Orchestrator instalado em {target_bin}",
+            }
+        return {"ok": False, "path": None, "message": "Falha ao instalar Alethe: orchestrate.py não encontrado."}
+
 

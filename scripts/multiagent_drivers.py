@@ -306,6 +306,139 @@ class CodexWorkerDriver(BaseWorkerDriver):
         }
 
 
+class CursorWorkerDriver(BaseWorkerDriver):
+    """Worker driver for Cursor Composer / Background Agent execution in git worktrees."""
+
+    def _resolve_model(self, raw_model: str) -> str:
+        low = raw_model.strip().lower()
+        if "argon" in low or "pro" in low or "sonnet" in low or "o1" in low or "o3" in low:
+            return "claude-3-5-sonnet"
+        if "flash" in low or "haiku" in low:
+            return "claude-3-5-haiku"
+        return "claude-3-5-haiku"
+
+    def _build_prompt(self, task: Dict[str, Any], shared_memory: str = "") -> str:
+        paths_str = ", ".join(task.get("allowed_paths", ["src/"]))
+        prompt_sections = [
+            f"Missão: {task.get('objective', '')}",
+            f"Subagente Designado: {task.get('subagent', 'builder')}",
+            f"Escopo Permitido de Arquivos (allowed_paths): {paths_str}",
+            f"Comando de Verificação Obrigatório (TDD/Gate): {task.get('verification_cmd', '')}",
+            "Diretrizes Estritas de Engenharia:",
+            "- Siga a regra .cursor/rules/30-multiagent-boss-worker.mdc e AGENTS.md.",
+            "- Respeite estritamente o isolamento de pastas. Nunca altere arquivos fora do seu escopo.",
+            "- Siga o ciclo estrito de TDD (RED -> GREEN -> REFACTOR).",
+            "- Valide seu código rodando o comando de verificação antes de finalizar.",
+            "- Responda exclusivamente em Português (PT-BR).",
+        ]
+        if shared_memory:
+            prompt_sections.append(
+                f"\n--- CONTRATOS COMPARTILHADOS (.agents/MEMORY.md) ---\n{shared_memory}"
+            )
+        return "\n".join(prompt_sections)
+
+    def build_worker_command(
+        self, task: Dict[str, Any], shared_memory: str = ""
+    ) -> List[str]:
+        prompt = self._build_prompt(task, shared_memory)
+        model = self._resolve_model(str(task.get("model", "flash")))
+        task_id = str(task.get("task_id", "default")).strip()
+        worktree = f"worker-{task_id}"
+
+        return [
+            "cursor",
+            "agent",
+            prompt,
+            "--model",
+            model,
+            "--worktree",
+            worktree,
+            "--output-format",
+            "json",
+        ]
+
+    def build_worker_payload(
+        self, task: Dict[str, Any], shared_memory: str = ""
+    ) -> Dict[str, Any]:
+        subagent = str(task.get("subagent", "builder")).strip().lower()
+        model = self._resolve_model(str(task.get("model", "flash")))
+        cmd = self.build_worker_command(task, shared_memory)
+        return {
+            "host": "cursor",
+            "agent": subagent,
+            "model": model,
+            "command": cmd,
+            "prompt": cmd[2],
+        }
+
+
+class QoderWorkerDriver(BaseWorkerDriver):
+    """Worker driver for Qoder CLI headless execution (qoder -p ... -m ... --yolo -o json -w ...)."""
+
+    def _resolve_model(self, raw_model: str) -> str:
+        low = raw_model.strip().lower()
+        if "argon" in low or "pro" in low or "sonnet" in low or "o1" in low or "o3" in low:
+            return "gemini-2.5-pro"
+        if "flash" in low or "haiku" in low:
+            return "gemini-2.5-flash"
+        return "gemini-2.5-flash"
+
+    def _build_prompt(self, task: Dict[str, Any], shared_memory: str = "") -> str:
+        paths_str = ", ".join(task.get("allowed_paths", ["src/"]))
+        prompt_sections = [
+            f"Missão: {task.get('objective', '')}",
+            f"Subagente Designado: {task.get('subagent', 'builder')}",
+            f"Escopo Permitido de Arquivos (allowed_paths): {paths_str}",
+            f"Comando de Verificação Obrigatório (TDD/Gate): {task.get('verification_cmd', '')}",
+            "Diretrizes Estritas de Engenharia:",
+            "- Consulte as definições de persona em .qoder/agents/ e diretrizes de governança.",
+            "- Respeite estritamente o isolamento de pastas. Nunca altere arquivos fora do seu escopo.",
+            "- Siga o ciclo estrito de TDD (RED -> GREEN -> REFACTOR).",
+            "- Valide seu código rodando o comando de verificação antes de finalizar.",
+            "- Responda exclusivamente em Português (PT-BR).",
+        ]
+        if shared_memory:
+            prompt_sections.append(
+                f"\n--- CONTRATOS COMPARTILHADOS (.agents/MEMORY.md) ---\n{shared_memory}"
+            )
+        return "\n".join(prompt_sections)
+
+    def build_worker_command(
+        self, task: Dict[str, Any], shared_memory: str = ""
+    ) -> List[str]:
+        prompt = self._build_prompt(task, shared_memory)
+        model = self._resolve_model(str(task.get("model", "flash")))
+        task_id = str(task.get("task_id", "default")).strip()
+        worktree = f"worker-{task_id}"
+
+        return [
+            "qoder",
+            "-p",
+            prompt,
+            "-m",
+            model,
+            "--yolo",
+            "-o",
+            "json",
+            "-w",
+            worktree,
+        ]
+
+    def build_worker_payload(
+        self, task: Dict[str, Any], shared_memory: str = ""
+    ) -> Dict[str, Any]:
+        subagent = str(task.get("subagent", "builder")).strip().lower()
+        model = self._resolve_model(str(task.get("model", "flash")))
+        cmd = self.build_worker_command(task, shared_memory)
+        return {
+            "host": "qoder",
+            "agent": subagent,
+            "model": model,
+            "command": cmd,
+            "prompt": cmd[2],
+        }
+
+
 def get_worker_driver(host: Optional[str] = None) -> BaseWorkerDriver:
     """Factory function returning the specialized worker driver for a target host."""
     resolved = str(host or "antigravity").strip().lower()
@@ -315,4 +448,8 @@ def get_worker_driver(host: Optional[str] = None) -> BaseWorkerDriver:
         return ClaudeWorkerDriver()
     if resolved == "codex":
         return CodexWorkerDriver()
+    if resolved == "cursor":
+        return CursorWorkerDriver()
+    if resolved == "qoder":
+        return QoderWorkerDriver()
     return AntigravityWorkerDriver()

@@ -246,33 +246,41 @@ def classify_task_effort(
     budget = token_budget or {}
 
     # 2. Diretriz explícita em linguagem natural no prompt
-    for pat in DIRECTIVE_HIGH_PATTERNS:
-        if re.search(pat, p_lower):
-            return EffortDecision(
-                effort=EFFORT_HIGH,
-                risk_level=conv_ctx.get("active_risk") or LEVEL_L3_CRITICAL,
-                reason="Diretriz explícita detectada no prompt para modo HIGH",
-                override=True,
-            )
+    # Evita falsos positivos em relatos de bugs ou perguntas (ex: "por que muda pro medium?", "abre em low e ja muda pro medium")
+    is_report_or_question = (
+        "?" in p_lower
+        or any(p_lower.startswith(w) for w in ["por que", "pq", "porque", "ele ", "continua ", "abre ", "quando ", "como ", "ta ", "tá ", "não ", "nao "])
+        or any(w in p_lower for w in ["continua", "abre em", "ja muda", "já muda", "ta mudando", "tá mudando", "do que", "o que"])
+    )
 
-    for pat in DIRECTIVE_LOW_PATTERNS:
-        if re.search(pat, p_lower):
-            return EffortDecision(
-                effort=EFFORT_LOW,
-                risk_level=LEVEL_L0_TRIVIAL,
-                reason="Diretriz explícita detectada no prompt para modo LOW",
-                override=True,
-                estimated_token_savings=5000,
-            )
+    if not is_report_or_question:
+        for pat in DIRECTIVE_HIGH_PATTERNS:
+            if re.search(pat, p_lower):
+                return EffortDecision(
+                    effort=EFFORT_HIGH,
+                    risk_level=conv_ctx.get("active_risk") or LEVEL_L3_CRITICAL,
+                    reason="Diretriz explícita detectada no prompt para modo HIGH",
+                    override=True,
+                )
 
-    for pat in DIRECTIVE_MEDIUM_PATTERNS:
-        if re.search(pat, p_lower):
-            return EffortDecision(
-                effort=EFFORT_MEDIUM,
-                risk_level=LEVEL_L1_SMALL,
-                reason="Diretriz explícita detectada no prompt para modo MEDIUM",
-                override=True,
-            )
+        for pat in DIRECTIVE_LOW_PATTERNS:
+            if re.search(pat, p_lower):
+                return EffortDecision(
+                    effort=EFFORT_LOW,
+                    risk_level=LEVEL_L0_TRIVIAL,
+                    reason="Diretriz explícita detectada no prompt para modo LOW",
+                    override=True,
+                    estimated_token_savings=5000,
+                )
+
+        for pat in DIRECTIVE_MEDIUM_PATTERNS:
+            if re.search(pat, p_lower):
+                return EffortDecision(
+                    effort=EFFORT_MEDIUM,
+                    risk_level=LEVEL_L1_SMALL,
+                    reason="Diretriz explícita detectada no prompt para modo MEDIUM",
+                    override=True,
+                )
 
     # 3. Continuação de tarefa ativa (Stop Gate / confirmação de plano / avanço)
     is_cont = conv_ctx.get("is_continuation", False) or any(re.search(pat, p_lower) for pat in CONTINUATION_PATTERNS)
@@ -301,9 +309,9 @@ def classify_task_effort(
                 reason=f"Continuação com contexto acumulado L2 (Feature): {', '.join(matched_l2_cum[:2])}",
             )
 
-    raw_effort = EFFORT_MEDIUM
-    risk_level = LEVEL_L1_SMALL
-    reason = "Tarefa padrão de complexidade moderada"
+    raw_effort = EFFORT_LOW
+    risk_level = LEVEL_L0_TRIVIAL
+    reason = "Tarefa padrão de complexidade básica (baseline low)"
     savings = 0
 
     # 4. Avaliação de L3 (Crítico / Segurança / DB / Auth / Pagamentos)
@@ -383,9 +391,10 @@ def classify_task_effort(
                 risk_level = LEVEL_L2_FEATURE
                 reason = "Preservada configuração ativa em settings.json (modo HIGH)"
             else:
-                raw_effort = EFFORT_MEDIUM
-                risk_level = LEVEL_L1_SMALL
-                reason = "Sessão interativa sem prompt inicial (baseline medium)"
+                raw_effort = EFFORT_LOW
+                risk_level = LEVEL_L0_TRIVIAL
+                reason = "Sessão interativa sem prompt inicial (baseline low)"
+                savings = 5000
 
     # 9. Pre-Flight Token Budget Throttle (Salvaguarda de Cota Crítica >80%)
     throttled = False
@@ -519,18 +528,15 @@ def update_settings_effort(settings_path: Path, target_effort: str) -> Tuple[boo
         return False, "", ""
 
 
-def sync_global_settings(target_effort: str, force_ide: bool = False) -> List[str]:
-    """Sincroniza os arquivos de settings da CLI e, se solicitado explicitamente, da IDE."""
+def sync_global_settings(target_effort: str, force_ide: bool = True) -> List[str]:
+    """Sincroniza os arquivos de settings da CLI, IDE e configurações globais."""
     updated = []
     settings_paths = [
         Path.home() / ".gemini" / "antigravity-cli" / "settings.json",
+        Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
+        Path.home() / ".gemini" / "settings.json",
+        Path.home() / ".gemini" / "config" / "settings.json",
     ]
-    if force_ide:
-        settings_paths.extend([
-            Path.home() / ".gemini" / "antigravity-ide" / "settings.json",
-            Path.home() / ".gemini" / "settings.json",
-            Path.home() / ".gemini" / "config" / "settings.json",
-        ])
 
     for p in settings_paths:
         if p.is_file():
@@ -804,7 +810,13 @@ def run_cli_session(argv: List[str]) -> int:
     if not explicit_model and resolved_model:
         extra_flags.extend(["--model", resolved_model])
 
-    final_args = [real_bin] + extra_flags + ["--effort", decision.effort] + pass_through_args
+    effort_flags: List[str] = []
+    # No Antigravity CLI 1.4+, modelos com variante (-low, -medium, -high) não aceitam --effort
+    target_mod = explicit_model or resolved_model or ""
+    if not any(target_mod.lower().endswith(sfx) for sfx in ("-low", "-medium", "-high")):
+        effort_flags = ["--effort", decision.effort]
+
+    final_args = [real_bin] + extra_flags + effort_flags + pass_through_args
     os.execvp(real_bin, final_args)
     return 0
 
