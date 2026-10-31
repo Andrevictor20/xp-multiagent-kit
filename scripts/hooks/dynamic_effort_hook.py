@@ -303,8 +303,25 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
             "use AST code-review-graph callers lookup, surgical tests, and EGM completeness check."
         )
     profile_tag = f" | Profile: {applied_profile.upper()}" if applied_profile else ""
+    
+    # Recupera contexto JIT automaticamente se for tarefa L1, L2 ou L3
+    jit_summary = ""
+    if decision.risk_level != "L0 (Trivial)" and prompt_text:
+        try:
+            from scripts.context_retriever import get_jit_context, format_jit_prompt
+            jit_items = get_jit_context(
+                workspace=PROJECT_ROOT,
+                query=prompt_text,
+                max_items=2,
+                token_budget=120,
+            )
+            if jit_items:
+                jit_summary = "\n" + format_jit_prompt(jit_items)
+        except Exception:
+            pass
+
     ephemeral_msg = (
-        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level}{profile_tag} | {guidance}"
+        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level}{profile_tag} | {guidance}{jit_summary}"
     )
 
     return {

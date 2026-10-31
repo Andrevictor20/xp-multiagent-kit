@@ -43,6 +43,7 @@ EXPECTED_TOOLS = [
     "agy-fast",
     "agy-deep",
     "agy-memory-search",
+    "agy-context",
     "agy-resume",
     "agy-daemon",
     "agy-dashboard",

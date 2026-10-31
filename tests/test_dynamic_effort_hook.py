@@ -170,6 +170,26 @@ class TestDynamicEffortHook(unittest.TestCase):
         second_call = handle_pre_invocation(payload_step_2)
         self.assertEqual(second_call.get("injectSteps"), [])
 
+    def test_handle_pre_invocation_automatically_injects_jit_context(self):
+        # Prompt relacionado a autenticação e tokens
+        auth_transcript = self.temp_path / "transcript_auth.jsonl"
+        steps = [
+            {"step_index": 1, "type": "USER_INPUT", "content": "<USER_REQUEST>\nCriar serviço de autenticação com tokens JWT\n</USER_REQUEST>"},
+        ]
+        with open(auth_transcript, "w", encoding="utf-8") as f:
+            for s in steps:
+                f.write(json.dumps(s) + "\n")
+
+        payload = {
+            "invocationNum": 1,
+            "transcriptPath": str(auth_transcript),
+            "conversationId": "test-jit-auto",
+        }
+        res = handle_pre_invocation(payload)
+        self.assertIn("injectSteps", res)
+        msg = res["injectSteps"][0]["ephemeralMessage"]
+        self.assertIn("JIT Memory", msg)
+
 
 if __name__ == "__main__":
     unittest.main()

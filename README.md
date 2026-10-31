@@ -56,9 +56,10 @@ A high-performance, token-efficient multi-agent governance kit designed for AI p
    - Zero Empty Assertions: every test must assert business invariants and concrete values.
    - Zero Unauthorized Skips: `.skip`, `xit`, or `@pytest.mark.skip` are strictly forbidden to hide failures.
    - Failures must be resolved at the root cause; failing tests may never be commented out or deleted.
-3. **Continuous 4-Tier Memory & AST Cartography**:
+3. **Continuous 4-Tier Memory & JIT Contextual Retrieval**:
    - Fast Context Bootstrap (< 2,000 tokens) via `.agents/memory/PROJECT_MEMORY.md`.
-   - Hierarchical tiers: Working (active turn), Episodic (`archive/HISTORY.md`), Semantic (ADRs and architecture), Procedural (`[L-NNN]` lessons learned).
+   - Hierarchical tiers: Working (active turn), Episodic (`archive/HISTORY.md`), Semantic (ADRs and architecture), Procedural (`[L-NNN]` lessons learned & policies).
+   - **Universal JIT Context Engine (`xp-context` / `agy-context`)**: Local SQLite FTS5 index with BM25 weighted ranking and parent breadcrumbs across all markdown knowledge (`details/`, `policies/`, `specs/`, ADRs, and lessons). Automatically injected via `PreInvocation` hooks with strict token bounding (< 300 tokens) and touched-file relevance boost.
    - AST dependency mapping via `code-review-graph` (`xp-graph`) to prevent blind file exploration.
 4. **Token Economy & Semantic Compression**:
    - PreToolUse optimization hooks (`smart_tool_optimizer.py`) with loop detection and output clamping.
@@ -199,9 +200,12 @@ All CLI tools are available under both `xp-*` (agnostic) and `agy-*` (Antigravit
 - `xp-conformance` / `agy-conformance`: Generates the traceability matrix linking Acceptance Criteria to test executions.
 
 ### Execution & Conformance Tools
+- `xp-context` / `agy-context`: Just-In-Time (JIT) memory retrieval (< 300 tokens) with touched-files relevance boost and prompt formatting.
 - `xp-run` / `agy-run`: Executes commands with output sanitization, preserving exit codes via `pipefail`.
 - `xp-evidence` / `agy-evidence`: Records concrete test execution evidence for compliance audits.
 - `xp-handoff` / `agy-handoff`: Creates structured handoff packets between agents or sessions.
+- `agy-memory-search`: Full-text SQLite FTS5 lexical & BM25 weighted search over all policies, ADRs, and lessons learned.
+- `agy-memory-archive`: Automatic episodic memory sliding-window rotator.
 
 ### Design & Architecture Tools
 - `xp-design` / `agy-design` / `od`: OpenDesign visual canvas and UI token management.
