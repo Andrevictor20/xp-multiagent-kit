@@ -178,10 +178,10 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertEqual(get_canonical_model_for_task(LEVEL_L2_FEATURE, is_planning=False), ("Gemini 3.8 Flash", EFFORT_HIGH))
         self.assertEqual(get_canonical_model_for_task(LEVEL_L3_CRITICAL, is_planning=False), ("Gemini 3.8 Flash", EFFORT_HIGH))
 
-        # Planning tasks for complex features/critical use Gemini Pro
+        # Planning tasks for complex features/critical use Gemini Pro with HIGH effort
         self.assertEqual(get_canonical_model_for_task(LEVEL_L0_TRIVIAL, is_planning=True), ("Gemini 3.8 Flash", EFFORT_LOW))
         self.assertEqual(get_canonical_model_for_task(LEVEL_L3_CRITICAL, is_planning=True), ("Gemini Pro", EFFORT_HIGH))
-        self.assertEqual(get_canonical_model_for_task(LEVEL_L2_FEATURE, is_planning=True), ("Gemini Pro", EFFORT_MEDIUM))
+        self.assertEqual(get_canonical_model_for_task(LEVEL_L2_FEATURE, is_planning=True), ("Gemini Pro", EFFORT_HIGH))
 
 
     def test_update_settings_effort(self):

@@ -1,37 +1,32 @@
-# 📋 Relatório de Missão Multiagente: Expansão Multi-Host (Cursor & Qoder)
+# Relatório de Missão Multiagente: Motor de Completude Exaustiva & Revisão Multi-Pass EGM (SPEC-005)
 
-> **Data:** 2026-10-30  
-> **Missão ID:** `mission-multiagent-expansion-v3.7.0`  
-> **Status:** `PASS / 100% GREEN`  
-> **Resultado da Suíte:** 369/369 testes aprovados (0 falhas, 0 regressões)
+- **Missão ID:** `spec-005-egm-completeness-engine`
+- **Resultado Final:** ✅ SUCESSO (CONFORMIDADE TOTAL)
+- **Verificação Global:** `PASS (379/379 tests)`
+- **Rodadas de Revisão Cega EGM (Goldfish):** `3 passadas (Spec + Code + Drift) — 100% COMPLIANT`
+- **Total de Agentes Utilizados:** 5
+- **Agentes Participantes:** `orchestrator`, `navigator`, `Goldfish Design Critic (Pass 1)`, `Goldfish Implementation Readiness (Pass 1)`, `Goldfish Codebase Details (Pass 2)`
 
----
+## Tabela de Tarefas & Revisões EGM Executadas
 
-## 👥 Agentes Participantes
+| Grupo | Task ID | Agente / Persona | Modelo / Esforço | Retries | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| G-1 | `spec-005-authoring` | `navigator` | Gemini 4 Argon (HIGH) | 0 | **PASS** |
+| G-1 | `egm-pass1-design-critic` | `Goldfish Design Critic` (`7bd3d89e`) | Gemini 4 Argon (HIGH) | 0 | **PASS** |
+| G-1 | `egm-pass1-readiness` | `Goldfish Implementation Readiness` (`f7072824`) | Gemini 4 Argon (HIGH) | 0 | **PASS** |
+| G-2 | `tdd-red-green-impl` | `orchestrator` / `builder` | Gemini 4 Argon (HIGH) | 0 | **PASS** |
+| G-3 | `egm-pass2-codebase-details` | `Goldfish Codebase Details` (`32d4a00f`) | Gemini 4 Argon (HIGH) | 0 | **PASS** |
+| G-3 | `egm-pass3-drift-audit` | `xp-goldfish --multipass` | CLI Determinístico | 0 | **PASS** |
 
-| Agente | Papel | Modelo | Tarefa | Status |
-|---|---|---|---|---|
-| `test-guardian` | Quality & Test Architect | Gemini 3.8 Flash | Especificação TDD RED (`tests/test_cursor_multiagent.py` e `tests/test_qoder_multiagent.py`) | ✅ CONCLUÍDO (RED) |
-| `builder` | Production Code Engineer | Gemini 3.8 Flash | Implementação dos drivers `CursorWorkerDriver` e `QoderWorkerDriver`, provisionamento de regras e agentes em `host_adapters.py` | ✅ CONCLUÍDO (GREEN) |
+## Detalhes das Revisões Multi-Pass EGM & Remediações
 
----
-
-## 🎯 Entregas Técnicas
-
-1. **Etapa 4: Cursor Multi-Agent Engine (`CursorWorkerDriver`)**
-   - Implementado `CursorWorkerDriver` em `scripts/multiagent_drivers.py`.
-   - Adicionada regra `.cursor/rules/30-multiagent-boss-worker.mdc` via `install_cursor_project()`.
-   - Suporte a comandos headless via worktrees: `cursor agent <prompt> --model <model> --worktree worker-<id> --output-format json`.
-   - 8 novos testes unitários TDD cobrindo adapters, drivers, factory e validação de manifesto.
-
-2. **Etapa 5: Qoder Multi-Agent Engine (`QoderWorkerDriver`)**
-   - Implementado `QoderWorkerDriver` em `scripts/multiagent_drivers.py`.
-   - Exportação automática dos 11 agentes especialistas para `.qoder/agents/<name>.md`.
-   - Suporte a execução CLI headless: `qoder -p <prompt> -m <model> --yolo -o json -w worker-<id>`.
-   - 9 novos testes unitários TDD cobrindo adapters, governança, mcp, personas e factory.
-
-3. **Governança e Integridade Arquitetural**
-   - Regra No-God-Files rigorosamente mantida:
-     - `scripts/multiagent_drivers.py`: 455 linhas (< 500)
-     - `scripts/host_adapters.py`: 479 linhas (< 500)
-   - Sincronização global concluída em `~/.cursor/` e `~/.qoder/`.
+1. **EGM Pass 1 (Hostile Design Critique & Zero-Decision Implementation Readiness):**
+   - Detectou a necessidade de atualizar `tests/test_agy_effort_router.py:184` para refletir `EFFORT_HIGH` em planejamento L2.
+   - Identificou risco de falso positivo autorreferencial em `check_placeholders` e `audit_code_completeness`, resolvido via `_strip_inline_quotes`.
+   - Garantiu retrocompatibilidade de `validate_mission_manifest` (`data.setdefault("egm_review_passes", 2)`) com as 6 suítes multiagente existentes.
+2. **EGM Pass 2 (Codebase Details & No-God-Files Enforcement):**
+   - Detectou `scripts/antigravity_multiagent.py` (504 linhas) e `scripts/agy_effort_router.py` (924 linhas) acima do teto de 500 linhas; ambos foram enxugados para `< 500` linhas e `audit_code_completeness` passou a validar `len(lines) <= 500`.
+   - Separou o modo isolado `--check-readiness` (Pass 1) e adicionou `--check-code` (Pass 2) no CLI `xp-goldfish`.
+   - Sincronizou o dispatcher global em `scripts/install-global.sh` com a versão v3.9.
+3. **EGM Pass 3 (Spec-vs-Code Drift & Conformance):**
+   - 6/6 critérios de aceitação (`AC-1` a `AC-6`) cobertos e validados em `tests/test_egm_completeness_engine.py`, totalizando 379/379 testes `PASS`.

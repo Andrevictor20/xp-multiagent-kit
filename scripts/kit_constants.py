@@ -65,14 +65,27 @@ SANITIZE_HEAD_LINES = 10
 SANITIZE_TAIL_LINES = 20
 
 # ---------------------------------------------------------------------------
-# Orçamento de turnos por nível de risco (B2)
+# Diretrizes de Completude Exaustiva & Revisão Multi-Pass EGM (SPEC-005)
+# ---------------------------------------------------------------------------
+
+COMPLETENESS_OVER_SPEED = True
+"""Prioriza 100% de completude no planejamento e implementação acima de velocidade/turnos."""
+
+EGM_MIN_REVIEW_PASSES = 2
+"""Mínimo obrigatório de rodadas de revisão cega EGM (Planejamento + Implementação)."""
+
+ZERO_DECISION_PLANNING_REQUIRED = True
+"""Planos L2/L3 não podem deixar decisões arquiteturais ou de contrato para adivinhação."""
+
+# ---------------------------------------------------------------------------
+# Orçamento de turnos por nível de risco (B2 — Orientativo, nunca trunca entrega)
 # ---------------------------------------------------------------------------
 
 TURN_BUDGET = {
-    "L0": 3,
-    "L1": 8,
-    "L2": 20,
-    "L3": None,  # sem teto, mas exige checkpoint atômico
+    "L0": 5,
+    "L1": 25,
+    "L2": 100,
+    "L3": None,  # sem teto, exige checkpoints atômicos e revisões EGM
 }
 
 BATCHING_REQUIRED = True

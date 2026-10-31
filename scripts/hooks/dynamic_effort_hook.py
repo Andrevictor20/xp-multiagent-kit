@@ -290,11 +290,18 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
 
     effort_upper = decision.effort.upper()
     if decision.effort == "high":
-        guidance = "HIGH mode: deep root-cause analysis, AST code-review-graph impact mapping, strict TDD, zero workarounds."
+        guidance = (
+            "HIGH mode (COMPLETENESS OVER SPEED): Deliver 100% exhaustive planning (Heilmeier + Zero-Decision Rule) "
+            "and complete feature implementation regardless of time/turns. Execute mandatory Multi-Pass EGM Goldfish "
+            "reviews (Spec + Code + Drift), AST code-review-graph impact mapping, and strict TDD."
+        )
     elif decision.effort == "low":
         guidance = "LOW mode: direct, concise response, strictly Zero-Tool for conceptual queries."
     else:
-        guidance = "MEDIUM mode: balanced token efficiency, AST code-review-graph callers lookup, surgical tests, and Self-Audit."
+        guidance = (
+            "MEDIUM mode (COMPLETENESS FIRST): Complete all planned steps thoroughly without shortcuts, "
+            "use AST code-review-graph callers lookup, surgical tests, and EGM completeness check."
+        )
     profile_tag = f" | Profile: {applied_profile.upper()}" if applied_profile else ""
     ephemeral_msg = (
         f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level}{profile_tag} | {guidance}"

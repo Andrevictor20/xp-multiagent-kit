@@ -430,10 +430,10 @@ class HostAdapters:
             agy_global = self.home_dir / ".gemini" / "config"
             agy_global.mkdir(parents=True, exist_ok=True)
             dispatcher_content = (
-                "# Global Agent Dispatcher — XP Multi-Agent Kit v3.0 (Agnostic Core)\n\n"
+                "# Global Agent Dispatcher — XP Multi-Agent Kit v3.9 (Agnostic Core)\n\n"
                 "Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder):\n"
                 "1. If workspace contains `AGENTS.md`, follow its directives as single source of truth.\n"
-                "2. If no `AGENTS.md`, apply canonical discipline: TDD, L0-L3 routing, and `.agents/memory/PROJECT_MEMORY.md`.\n"
+                "2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.\n"
                 "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
                 "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
                 "5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks.\n"

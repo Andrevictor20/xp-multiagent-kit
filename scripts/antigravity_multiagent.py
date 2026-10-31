@@ -51,6 +51,12 @@ def validate_mission_manifest(data: Dict[str, Any]) -> Dict[str, Any]:
         if not isinstance(task["execution_group"], int) or task["execution_group"] < 1:
             raise MissionManifestError(f"Tarefa '{task['task_id']}': 'execution_group' deve ser um inteiro >= 1.")
 
+    if "egm_review_passes" in data:
+        if not isinstance(data["egm_review_passes"], int) or data["egm_review_passes"] < 2:
+            raise MissionManifestError("O campo 'egm_review_passes' deve ser um inteiro >= 2.")
+    else:
+        data["egm_review_passes"] = 2
+
     return data
 
 
@@ -245,6 +251,9 @@ class AntigravityMissionEngine:
         mission_id = validated["mission_id"]
         feature_name = validated["feature_name"]
         max_retries = validated.get("orchestrator", {}).get("max_retries_per_task", 2)
+        egm_passes = int(validated.get("egm_review_passes", 2))
+        if egm_passes < 2:
+            egm_passes = 2
         global_cmd = validated.get("global_verification_cmd", "")
 
         groups = self.get_execution_groups(validated)
@@ -303,6 +312,7 @@ class AntigravityMissionEngine:
             task_results=task_results,
             global_status=global_status,
             success=overall_success,
+            egm_passes=egm_passes,
         )
 
         return {
@@ -312,6 +322,7 @@ class AntigravityMissionEngine:
             "failed_tasks": failed_count,
             "tasks": task_results,
             "global_verification": global_status,
+            "egm_review_passes": egm_passes,
         }
 
     def _write_mission_report(
@@ -321,6 +332,7 @@ class AntigravityMissionEngine:
         task_results: List[Dict[str, Any]],
         global_status: str,
         success: bool,
+        egm_passes: int = 2,
     ) -> Path:
         """Writes the consolidated markdown report to .agents/mission-report.md."""
         self.agents_dir.mkdir(parents=True, exist_ok=True)
@@ -333,6 +345,7 @@ class AntigravityMissionEngine:
             f"- **Missão ID:** `{mission_id}`",
             f"- **Resultado Final:** {status_label}",
             f"- **Verificação Global:** `{global_status}`",
+            f"- **Rodadas de Revisão Cega EGM (Goldfish):** `{egm_passes} passadas (Spec + Code + Drift)`",
             f"- **Total de Agentes Utilizados:** {len(unique_agents)}",
             f"- **Agentes Participantes:** {', '.join(f'`{ag}`' for ag in unique_agents)}",
             "",
@@ -449,32 +462,19 @@ def main() -> int:
         sample = {
             "mission_id": "feat-exemplo-01",
             "feature_name": args.feature_name,
-            "orchestrator": {
-                "model": "gemini-4-argon",
-                "effort": "high",
-                "max_retries_per_task": 2,
-            },
+            "egm_review_passes": 3,
+            "orchestrator": {"model": "gemini-4-argon", "effort": "high", "max_retries_per_task": 2},
             "global_verification_cmd": "python3 -m unittest discover tests",
             "tasks": [
                 {
-                    "task_id": "task-dto",
-                    "subagent": "builder",
-                    "model": "gemini-3.8-flash",
-                    "effort": "low",
-                    "execution_group": 1,
-                    "allowed_paths": ["src/dto/"],
-                    "objective": "Criar DTOs e tipagens básicas",
-                    "verification_cmd": "pytest tests/test_dto.py",
+                    "task_id": "task-dto", "subagent": "builder", "model": "gemini-3.8-flash",
+                    "effort": "low", "execution_group": 1, "allowed_paths": ["src/dto/"],
+                    "objective": "Criar DTOs e tipagens básicas", "verification_cmd": "pytest tests/test_dto.py",
                 },
                 {
-                    "task_id": "task-service",
-                    "subagent": "builder",
-                    "model": "gemini-3.8-flash",
-                    "effort": "medium",
-                    "execution_group": 2,
-                    "allowed_paths": ["src/services/"],
-                    "objective": "Implementar regras de negócio e testes TDD",
-                    "verification_cmd": "pytest tests/test_service.py",
+                    "task_id": "task-service", "subagent": "builder", "model": "gemini-3.8-flash",
+                    "effort": "medium", "execution_group": 2, "allowed_paths": ["src/services/"],
+                    "objective": "Implementar regras de negócio e testes TDD", "verification_cmd": "pytest tests/test_service.py",
                 },
             ],
         }

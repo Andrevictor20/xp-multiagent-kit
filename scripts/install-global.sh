@@ -28,13 +28,14 @@ mkdir -p "$GLOBAL_SKILLS_DIR"
 # 3. Configurar AGENTS.md como Global Dispatcher Minimalista (elimina duplicação de 5k tokens por turno)
 echo "🔗 Gerando AGENTS.md mestre global como dispatcher minimalista..."
 cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
-# Global Agent Dispatcher — XP Multi-Agent Kit v3.0 (Agnostic Core)
+# Global Agent Dispatcher — XP Multi-Agent Kit v3.9 (Agnostic Core)
 
-Master global rule for agent execution (Antigravity, OpenCode, Cursor, Qoder):
+Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder, Claude):
 1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
-2. If the workspace does not contain `AGENTS.md`, apply the kit's canonical discipline: strict TDD (RED->GREEN->REFACTOR), L0-L3 risk routing, Autonomous Self-Healing on tool errors, No Workarounds, and persistence in `.agents/memory/PROJECT_MEMORY.md`.
+2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.
 3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.
 4. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
+5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks.
 EOF
 
 # 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
@@ -206,6 +207,8 @@ ln -sf "$KIT_DIR/scripts/skill_packer.py" "$HOME/.local/bin/agy-pack"
 ln -sf "$KIT_DIR/scripts/skill_packer.py" "$HOME/.local/bin/xp-pack"
 ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/agy-orchestrate"
 ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/xp-orchestrate"
+ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/agy-goldfish"
+ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/xp-goldfish"
 
 echo "   ✅ xp-orchestrate, agy-orchestrate, xp-spec, agy-spec, agy-pack, xp-pack, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 

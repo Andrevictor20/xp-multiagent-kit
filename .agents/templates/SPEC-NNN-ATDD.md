@@ -1,28 +1,52 @@
-# SPEC-NNN: [Título Conciso da Funcionalidade]
+# SPEC-NNN: {{FEATURE_TITLE}}
 
-> **Status:** {{DRAFT | APPROVED | IMPLEMENTED | ARCHIVED}}
-> **Risco:** {{L1 | L2 | L3}}
-> **Autor:** {{Nome}}
-> **Data:** {{YYYY-MM-DD}}
-
----
-
-## 1. Contexto & Problema de Negócio
-
-- **Por que estamos construindo isso?**
-  {{Descrição do problema ou oportunidade de negócio}}
-
-- **Impacto esperado:**
-  {{Resultado mensurável: métrica de negócio, performance, segurança}}
-
-- **Restrições não negociáveis:**
-  {{Limites técnicos, regulatórios ou de prazo}}
+> **Status:** DRAFT
+> **Risco:** L2
+> **Autor:** Antigravity (Navigator)
+> **Data:** {{DATE}}
 
 ---
 
-## 2. Acceptance Criteria (ATDD)
+## 1. Contexto, Problema de Negócio & Catecismo de Heilmeier (EGM Zoom-Out)
 
-> Cada critério deve ser **verificável por máquina**. Proibido critérios vagos.
+- **Objetivo / Problem Statement (O que estamos tentando fazer):**
+  [Descreva o problema de negócio ou engenharia sem jargões]
+
+- **Estado Atual / How is it done today (Como isso é feito hoje e limites da prática atual):**
+  [Explique o funcionamento atual e seus gargalos/limitações]
+
+- **Nova Abordagem / What is new (O que há de novo e por que terá sucesso):**
+  [Detalhe a inovação arquitetural e o mecanismo técnico]
+
+- **Impacto / Who cares (Quem se importa e que diferença fará):**
+  [Impacto mensurável para usuários, sistema e operação]
+
+- **Riscos e Custos / Trade-offs:**
+  [Riscos técnicos, custos de recursos/latência/tokens e estratégias de mitigação]
+
+- **Métricas e Testes / Evaluation (Critérios de sucesso intermediários e finais):**
+  [Métricas determinísticas e comandos de verificação]
+
+---
+
+## 2. Alternativas Consideradas (EGM Feature Spec Standard)
+
+1. **Alternativa A (Rejeitada):** [Descrição e motivo técnico da rejeição]
+2. **Alternativa B (Rejeitada):** [Descrição e motivo técnico da rejeição]
+3. **Alternativa C (Escolhida):** [Descrição e justificativa técnica da escolha]
+
+---
+
+## 3. Plano de Implementação Zero-Decision (EGM Implementation Readiness)
+
+| Arquivo Alvo | Operação (`Create` \| `Modify` \| `Delete`) | Mudança Exata, Assinaturas e Contratos |
+| :--- | :--- | :--- |
+| `src/...` | `Modify` | [Assinaturas exatas, schemas e regras sem deixar decisões em aberto] |
+| `tests/...` | `Create` | [Casos de teste cobrindo AC-1..AC-N] |
+
+---
+
+## 4. Acceptance Criteria (ATDD)
 
 ### AC-1: [Título descritivo]
 - **Dado:** [pré-condição]
@@ -36,96 +60,49 @@
 - **Então:** [resultado]
 - **Métrica:** [como medir]
 
-### AC-3: [Título descritivo]
-- **Dado:** [pré-condição]
-- **Quando:** [ação]
-- **Então:** [resultado]
-- **Métrica:** [como medir]
-
 ---
 
-## 3. Specification by Example (SbE)
-
-> Tabelas parametrizadas com exemplos concretos. Cada linha vira um caso de teste.
-
-### Regra: [Descrição da regra de negócio]
+## 5. Specification by Example (SbE)
 
 | Input A | Input B | Pré-condição | Resultado Esperado | Código | Motivo |
 |---------|---------|--------------|--------------------|--------|--------|
-| {{val}} | {{val}} | {{cond}}     | {{resultado}}      | {{HTTP}} | {{caso}} |
-| {{val}} | {{val}} | {{cond}}     | {{resultado}}      | {{HTTP}} | {{edge case}} |
-| {{val}} | {{val}} | {{cond}}     | {{resultado}}      | {{HTTP}} | {{erro}} |
-
-### Regra: [Outra regra de negócio, se houver]
-
-| Input | Condição | Resultado | Motivo |
-|-------|----------|-----------|--------|
-| {{val}} | {{cond}} | {{res}}   | {{caso}} |
+| val_1   | val_2   | ativo        | sucesso            | 200    | Happy Path |
+| inval   | val_2   | ativo        | erro_validacao     | 422    | Edge Case |
 
 ---
 
-## 4. Cenários de Aceite (Gherkin BDD)
+## 6. Cenários de Aceite (Gherkin BDD)
 
 ```gherkin
 Feature: [Nome da funcionalidade]
 
   Scenario: [Cenário de sucesso principal]
     Given [pré-condição]
-    And [contexto adicional]
     When [ação]
     Then [resultado esperado]
-    And [efeito colateral esperado]
 
   Scenario: [Cenário de erro / edge case]
     Given [pré-condição]
     When [ação que deve falhar]
     Then [resultado de erro esperado]
-    And [nenhum efeito colateral]
-
-  Scenario Outline: [Cenário parametrizado baseado em SbE]
-    Given <pré-condição>
-    When <ação> com <input>
-    Then o resultado deve ser <resultado>
-
-    Examples:
-      | pré-condição | input | resultado |
-      | {{cond}}     | {{in}}| {{out}}   |
 ```
 
 ---
 
-## 5. Contrato de Domínio & Interfaces
+## 7. Invariantes & Propriedades
 
-- **Schemas de dados:** (TypeScript, Pydantic, Rust Structs ou Protobuf)
-- **Endpoints:** método, rota, payloads e códigos de erro esperados.
-- **Eventos emitidos:** nome, payload e condições de emissão.
-
----
-
-## 6. Invariantes & Propriedades
-
-> Propriedades matemáticas/lógicas que NUNCA devem ser violadas, independente da entrada.
-
-- {{Invariante 1: ex: saldo nunca pode ser negativo}}
-- {{Invariante 2: ex: hash de senha nunca aparece em response}}
-- {{Invariante 3: ex: idempotência em operações de retry}}
+- [Invariante 1: propriedade que nunca deve ser violada]
+- [Invariante 2: idempotência, segurança e limites]
 
 ---
 
-## 7. Conformance Tracking (preenchido pela IA após implementação)
+## 8. Conformance Tracking & Multi-Pass EGM Audit
 
 | # | Acceptance Criteria | Test File | Test Name | Status |
 |---|---|---|---|---|
-| AC-1 | {{descrição}} | {{path}} | {{test_name}} | ⬜ PENDING |
-| AC-2 | {{descrição}} | {{path}} | {{test_name}} | ⬜ PENDING |
-| AC-3 | {{descrição}} | {{path}} | {{test_name}} | ⬜ PENDING |
+| AC-1 | [descrição] | `tests/...` | `test_ac1_...` | ⬜ PENDING |
+| AC-2 | [descrição] | `tests/...` | `test_ac2_...` | ⬜ PENDING |
 
-**Resultado: 0/N critérios cobertos.**
-
----
-
-## 8. Notas de Implementação (preenchido pela IA)
-
-- **Decisões técnicas tomadas:**
-- **Trade-offs aceitos:**
-- **Dívidas técnicas criadas:**
+- **EGM Pass 1 (Spec & Zero-Decision Readiness):** ⬜ PENDING
+- **EGM Pass 2 (Codebase Details & Completeness):** ⬜ PENDING
+- **EGM Pass 3 (Spec-vs-Code Drift & Conformance):** ⬜ PENDING

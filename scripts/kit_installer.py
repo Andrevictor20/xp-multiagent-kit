@@ -47,15 +47,10 @@ class DependencyChecker:
 
     def check_python(self) -> Dict[str, Any]:
         info = sys.version_info
-        major, minor = info[0], info[1]
-        micro = info[2] if len(info) > 2 else 0
+        major, minor, micro = info[0], info[1], (info[2] if len(info) > 2 else 0)
         ok = (major, minor) >= self.REQUIRED_PYTHON
         version_str = f"{major}.{minor}.{micro}"
-        msg = (
-            f"Python {version_str} (compatível >= 3.8)"
-            if ok
-            else f"Python {version_str} incompatível: requer Python >= 3.8"
-        )
+        msg = f"Python {version_str} (compatível >= 3.8)" if ok else f"Python {version_str} incompatível: requer Python >= 3.8"
         return {"ok": ok, "major": major, "minor": minor, "micro": micro, "version": version_str, "message": msg}
 
     def check_command(self, cmd: str, required: bool = True) -> Dict[str, Any]:
@@ -63,13 +58,7 @@ class DependencyChecker:
         if path:
             return {"ok": True, "command": cmd, "path": path, "required": required, "message": f"{cmd} encontrado em {path}"}
         status_msg = "ERRO: Obrigatório" if required else "AVISO: Opcional"
-        return {
-            "ok": not required,
-            "command": cmd,
-            "path": None,
-            "required": required,
-            "message": f"{status_msg} — comando '{cmd}' não encontrado no PATH",
-        }
+        return {"ok": not required, "command": cmd, "path": None, "required": required, "message": f"{status_msg} — comando '{cmd}' não encontrado no PATH"}
 
     def detect_package_manager(self) -> Tuple[Optional[str], Optional[str]]:
         if platform.system().lower() == "darwin":
@@ -87,19 +76,10 @@ class DependencyChecker:
         return None, None
 
     def check_all(self) -> Dict[str, Any]:
-        py_check = self.check_python()
-        git_check = self.check_command("git", required=True)
-        return {
-            "can_proceed": py_check["ok"] and git_check["ok"],
-            "checks": {
-                "python": py_check,
-                "git": git_check,
-                "gh": self.check_command("gh", required=False),
-                "cargo": self.check_command("cargo", required=False),
-                "rtk": self.check_command("rtk", required=False),
-                "od": self.check_command("od", required=False),
-            },
-        }
+        py_check, git_check = self.check_python(), self.check_command("git", required=True)
+        checks = {k: self.check_command(k, required=False) for k in ("gh", "cargo", "rtk", "od")}
+        checks.update({"python": py_check, "git": git_check})
+        return {"can_proceed": py_check["ok"] and git_check["ok"], "checks": checks}
 
 
 class PathConfigurator:
@@ -112,28 +92,21 @@ class PathConfigurator:
         else:
             zdot = Path(os.environ["ZDOTDIR"]) if os.environ.get("ZDOTDIR") else self.home
             self.rc_files = [
-                self.home / ".bashrc",
-                zdot / ".zshrc",
-                self.home / ".profile",
-                zdot / ".zprofile",
-                self.home / ".bash_profile",
-                self.home / ".kshrc",
+                self.home / ".bashrc", zdot / ".zshrc", self.home / ".profile",
+                zdot / ".zprofile", self.home / ".bash_profile", self.home / ".kshrc",
                 self.home / ".config" / "fish" / "config.fish",
             ]
 
     def _ensure_active_shell_rc_exists(self) -> None:
         shell_env = os.environ.get("SHELL", "").lower()
-        target: Optional[Path] = None
-        if "fish" in shell_env:
-            target = self.home / ".config" / "fish" / "config.fish"
-        elif "zsh" in shell_env:
-            zdot = Path(os.environ["ZDOTDIR"]) if os.environ.get("ZDOTDIR") else self.home
-            target = zdot / ".zshrc"
-        elif "bash" in shell_env:
-            target = self.home / ".bashrc"
-        elif "ksh" in shell_env:
-            target = self.home / ".kshrc"
-
+        zdot = Path(os.environ["ZDOTDIR"]) if os.environ.get("ZDOTDIR") else self.home
+        target_map = {
+            "fish": self.home / ".config" / "fish" / "config.fish",
+            "zsh": zdot / ".zshrc",
+            "bash": self.home / ".bashrc",
+            "ksh": self.home / ".kshrc",
+        }
+        target = next((p for k, p in target_map.items() if k in shell_env), None)
         if target is not None:
             if target not in self.rc_files:
                 self.rc_files.append(target)
@@ -147,12 +120,7 @@ class PathConfigurator:
     @staticmethod
     def _format_snippet(rc_file: Path, bin_dir: str) -> str:
         if rc_file.suffix == ".fish" or rc_file.name == "config.fish":
-            return (
-                "# XP Multi-Agent Kit\n"
-                f'if not contains "{bin_dir}" $PATH\n'
-                f'    set -gx PATH "{bin_dir}" $PATH\n'
-                "end\n"
-            )
+            return f'# XP Multi-Agent Kit\nif not contains "{bin_dir}" $PATH\n    set -gx PATH "{bin_dir}" $PATH\nend\n'
         return f'# XP Multi-Agent Kit\nexport PATH="{bin_dir}:$PATH"\n'
 
     def ensure_path_in_rc(self, bin_dir: str) -> bool:
@@ -177,42 +145,30 @@ class PathConfigurator:
 
 
 class ProjectInstaller:
-    """Injects XP Multi-Agent Kit governance into a project for Antigravity, OpenCode, Cursor, and/or Qoder."""
+    """Injects XP Multi-Agent Kit governance into a project for Antigravity, OpenCode, Cursor, Qoder, Codex, and Claude."""
 
     def __init__(self, kit_dir: Optional[Path] = None):
         self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
 
     def install_project(
-        self,
-        project_dir: Path,
-        use_symlinks: bool = True,
-        dry_run: bool = False,
-        targets: Optional[Any] = None,
+        self, project_dir: Path, use_symlinks: bool = True, dry_run: bool = False, targets: Optional[Any] = None,
     ) -> Dict[str, Any]:
         actions: List[str] = []
-        project_dir = Path(project_dir).resolve()
-        resolved_targets = normalize_targets(targets)
-
-        if not dry_run:
-            project_dir.mkdir(parents=True, exist_ok=True)
-        actions.append(f"Diretório do projeto verificado: {project_dir}")
-
+        project_dir, resolved_targets = Path(project_dir).resolve(), normalize_targets(targets)
         agents_dir = project_dir / ".agents"
         if not dry_run:
             agents_dir.mkdir(parents=True, exist_ok=True)
-        actions.append(f"Diretório .agents criado: {agents_dir}")
+        actions.extend([f"Diretório do projeto verificado: {project_dir}", f"Diretório .agents criado: {agents_dir}"])
 
         for folder in ["policies", "rules", "workflows", "templates", "skills", "agents"]:
-            src = self.kit_dir / ".agents" / folder
-            dst = agents_dir / folder
+            src, dst = self.kit_dir / ".agents" / folder, agents_dir / folder
             if not src.exists():
                 continue
             if not dry_run:
-                if dst.exists() or dst.is_symlink():
-                    if dst.is_symlink() or dst.is_file():
-                        dst.unlink()
-                    elif dst.is_dir():
-                        shutil.rmtree(dst)
+                if dst.is_symlink() or dst.is_file():
+                    dst.unlink()
+                elif dst.is_dir():
+                    shutil.rmtree(dst)
                 if use_symlinks:
                     try:
                         dst.symlink_to(src)
@@ -222,11 +178,10 @@ class ProjectInstaller:
                     shutil.copytree(src, dst)
             actions.append(f"Subpasta .agents/{folder} sincronizada ({'symlink' if use_symlinks else 'cópia'})")
 
-        project_agents_md = project_dir / "AGENTS.md"
         src_agents_md = self.kit_dir / "AGENTS.md"
         if src_agents_md.exists():
             if not dry_run:
-                shutil.copy(src_agents_md, project_agents_md)
+                shutil.copy(src_agents_md, project_dir / "AGENTS.md")
             actions.append(f"AGENTS.md configurado na raiz de {project_dir}")
 
         ignore_template = self.kit_dir / "templates" / "universal.geminiignore"
@@ -248,21 +203,11 @@ class ProjectInstaller:
                 if template_file.exists():
                     raw = template_file.read_text(encoding="utf-8")
                     replacements = {
-                        "{{PROJECT_NAME}}": project_dir.name,
-                        "{{LAST_UPDATED}}": "2026-10-16",
-                        "{{STATUS}}": "BOOTSTRAPPING",
-                        "{{VERSION}}": "v0.1.0",
-                        "{{TECH_STACK}}": "Agnostic",
-                        "{{PURPOSE}}": f"Project {project_dir.name}",
-                        "{{ARCHITECTURE}}": "Modular architecture",
-                        "{{BUILD_CMD}}": "make build",
-                        "{{TEST_CMD}}": "make test",
-                        "{{LINT_CMD}}": "make lint",
-                        "{{DEV_CMD}}": "make dev",
-                        "{{CI_STATUS}}": "CONFIGURED",
-                        "{{QUALITY_GATE}}": "Strict TDD + Zero Workarounds",
-                        "{{LAST_EVIDENCE}}": "EV-GENESIS-01",
-                        "{{ENV}}": "Local / Development",
+                        "{{PROJECT_NAME}}": project_dir.name, "{{LAST_UPDATED}}": "2026-10-16", "{{STATUS}}": "BOOTSTRAPPING",
+                        "{{VERSION}}": "v0.1.0", "{{TECH_STACK}}": "Agnostic", "{{PURPOSE}}": f"Project {project_dir.name}",
+                        "{{ARCHITECTURE}}": "Modular architecture", "{{BUILD_CMD}}": "make build", "{{TEST_CMD}}": "make test",
+                        "{{LINT_CMD}}": "make lint", "{{DEV_CMD}}": "make dev", "{{CI_STATUS}}": "CONFIGURED",
+                        "{{QUALITY_GATE}}": "Strict TDD + Zero Workarounds", "{{LAST_EVIDENCE}}": "EV-GENESIS-01", "{{ENV}}": "Local / Development",
                     }
                     for k, v in replacements.items():
                         raw = raw.replace(k, v)
@@ -273,31 +218,25 @@ class ProjectInstaller:
             else:
                 actions.append("Memória existente preservada sem sobrescrita")
 
-        # Multi-Host Adapters (OpenCode, Cursor, Qoder)
         adapters = HostAdapters(kit_dir=self.kit_dir)
-        if "opencode" in resolved_targets:
-            actions.extend(adapters.install_opencode_project(project_dir, dry_run=dry_run))
-        if "cursor" in resolved_targets:
-            actions.extend(adapters.install_cursor_project(project_dir, dry_run=dry_run))
-        if "qoder" in resolved_targets:
-            actions.extend(adapters.install_qoder_project(project_dir, dry_run=dry_run))
-        if "codex" in resolved_targets:
-            actions.extend(adapters.install_codex_project(project_dir, dry_run=dry_run))
+        for t_name, fn in (
+            ("opencode", adapters.install_opencode_project), ("cursor", adapters.install_cursor_project),
+            ("qoder", adapters.install_qoder_project), ("codex", adapters.install_codex_project),
+            ("claude", adapters.install_claude_project),
+        ):
+            if t_name in resolved_targets:
+                actions.extend(fn(project_dir, dry_run=dry_run))
 
         return {"ok": True, "actions": actions, "project_dir": str(project_dir), "targets": resolved_targets}
 
 
 from scripts.mcp_installers import (  # noqa: E402, F401
-    AletheInstaller,
-    CodeReviewGraphInstaller,
-    McpConfigurator,
-    OpenDesignInstaller,
-    RtkInstaller,
+    AletheInstaller, CodeReviewGraphInstaller, McpConfigurator, OpenDesignInstaller, RtkInstaller,
 )
 
 
 class GlobalInstaller:
-    """Orchestrates global kit installation across Antigravity, OpenCode, Cursor, and Qoder."""
+    """Orchestrates global kit installation across Antigravity, OpenCode, Cursor, Qoder, Codex, and Claude."""
 
     def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
         self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
@@ -325,30 +264,22 @@ class GlobalInstaller:
         else:
             PathConfigurator(home_dir=self.home_dir).ensure_path_in_rc(bin_dir)
         McpConfigurator(home_dir=self.home_dir).configure_all()
-        OpenDesignInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
-        CodeReviewGraphInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
-        RtkInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
-        AletheInstaller(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
+        for inst_cls in (OpenDesignInstaller, CodeReviewGraphInstaller, RtkInstaller, AletheInstaller):
+            inst_cls(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
         adapters = HostAdapters(kit_dir=self.kit_dir, home_dir=self.home_dir)
         actions.extend(adapters.install_global_hosts(resolved_targets, dry_run=dry_run))
 
-        # Auto-discover and upgrade existing projects on the machine
         project_installer = ProjectInstaller(kit_dir=self.kit_dir)
         known_roots = [
             self.home_dir / d
-            for d in (
-                "Downloads", "Projects", "workspace", "dev", "code", "src",
-                "source/repos", "source", "Documents"
-            )
+            for d in ("Downloads", "Projects", "Projetos", "workspace", "dev", "code", "src", "source/repos", "source", "Documents", "Documentos")
         ]
         for root in known_roots:
             if root.is_dir():
                 for child in root.iterdir():
                     if child.is_dir() and child.resolve() != self.kit_dir.resolve() and child.name != "xp-multiagent-kit":
                         if (child / ".agents").is_dir() or (child / "AGENTS.md").is_file():
-                            p_res = project_installer.install_project(
-                                child, use_symlinks=True, dry_run=dry_run, targets=resolved_targets
-                            )
+                            p_res = project_installer.install_project(child, use_symlinks=True, dry_run=dry_run, targets=resolved_targets)
                             if p_res.get("ok"):
                                 actions.append(f"Projeto existente sincronizado: {child.name}")
 
@@ -365,20 +296,17 @@ class KitDoctor:
 
     def run_diagnostics(self) -> Dict[str, Any]:
         deps = self.checker.check_all()["checks"]
-        gemini_dir = self.home_dir / ".gemini"
-        bin_dir = self.home_dir / ".local" / "bin"
+        gemini_dir, bin_dir = self.home_dir / ".gemini", self.home_dir / ".local" / "bin"
         dirs_status = {
-            "gemini_root": gemini_dir.is_dir(),
-            "config": (gemini_dir / "config").is_dir(),
-            "ide": (gemini_dir / "antigravity-ide").is_dir(),
-            "cli": (gemini_dir / "antigravity-cli").is_dir(),
+            "gemini_root": gemini_dir.is_dir(), "config": (gemini_dir / "config").is_dir(),
+            "ide": (gemini_dir / "antigravity-ide").is_dir(), "cli": (gemini_dir / "antigravity-cli").is_dir(),
             "bin": bin_dir.is_dir(),
         }
         essential_bins = [
-            "agy-run", "xp-run", "agy-spec", "xp-spec",
-            "agy-debt", "agy-health", "agy-kit", "xp-kit", "od", "agy-design",
-            "code-review-graph", "agy-graph", "agy-crg", "agy-pack", "xp-pack",
-            "agy-orchestrate", "xp-orchestrate", "alethe", "xp-alethe",
+            "agy-run", "xp-run", "agy-spec", "xp-spec", "agy-debt", "agy-health",
+            "agy-kit", "xp-kit", "od", "agy-design", "code-review-graph", "agy-graph",
+            "agy-crg", "agy-pack", "xp-pack", "agy-orchestrate", "xp-orchestrate",
+            "alethe", "xp-alethe", "agy-goldfish", "xp-goldfish",
         ]
         hosts_status = {
             "antigravity": (self.home_dir / ".gemini" / "config" / "AGENTS.md").is_file(),
@@ -395,60 +323,43 @@ class KitDoctor:
             pass
 
         return {
-            "python": deps["python"],
-            "git": deps["git"],
-            "gh": deps["gh"],
-            "rtk": deps["rtk"],
+            "python": deps["python"], "git": deps["git"], "gh": deps["gh"], "rtk": deps["rtk"],
             "antigravity_dirs": {"ok": all(dirs_status.values()), "status": dirs_status, "message": "Diretórios verificados"},
             "path_ok": str(bin_dir) in os.environ.get("PATH", ""),
             "installed_bins": {b: (bin_dir / b).exists() for b in essential_bins},
-            "hosts_status": hosts_status,
-            "update_info": update_info,
+            "hosts_status": hosts_status, "update_info": update_info,
         }
 
     def print_report(self, lang: Optional[str] = None) -> None:
         m = get_i18n_messages(lang)
         diag = self.run_diagnostics()
-        print("=" * 68)
-        print(f" {m['doctor_title']} (xp-kit / agy-kit doctor)")
-        print("=" * 68)
+        print("=" * 68 + f"\n {m['doctor_title']} (xp-kit / agy-kit doctor)\n" + "=" * 68)
         for k in ("python", "git"):
             item = diag[k]
             print(f"• {k.capitalize():7}: {'✅' if item['ok'] else '❌'} {item['message']}")
-
         hosts = diag.get("hosts_status", {})
         if hosts:
             print("\n💻 Ambientes IDE / CLI:")
             for h_name, ok in hosts.items():
                 print(f"  - {h_name.capitalize():13}: {'✅ Configurado' if ok else '⚪ Não detectado'}")
-
         installed = diag.get("installed_bins", {})
         if installed:
             print(f"\n{m['global_bins']}")
             for b, exists in installed.items():
                 print(f"  - {b:18}: {m['installed'] if exists else m['missing']}")
-
         up = diag.get("update_info", {})
         if up.get("has_update"):
-            print("\n" + "=" * 68)
-            print(f"💡 [XP-KIT] Nova atualização disponível ({up.get('latest_version')})!")
-            print("   Execute 'xp-kit update' para sincronizar com as últimas correções.")
+            print("\n" + "=" * 68 + f"\n💡 [XP-KIT] Nova atualização disponível ({up.get('latest_version')})!\n   Execute 'xp-kit update' para sincronizar com as últimas correções.")
         print("=" * 68)
 
 
 def interactive_wizard(kit_dir: Path, dry_run: bool = False, lang: Optional[str] = None) -> int:
     """Bilingual (PT/EN) interactive installation wizard with multi-IDE/CLI target selection."""
     m = get_i18n_messages(lang)
-    print("=" * 68)
-    print(f" {m['wizard_title']}")
+    print("=" * 68 + f"\n {m['wizard_title']}")
     if dry_run:
         print(f" {m['dry_run_banner']}")
-    print("=" * 68)
-    print(f"\n{m['choose_scope']}")
-    print(f"  {m['opt_global']}")
-    print(f"  {m['opt_project']}")
-    print(f"  {m['opt_both']}\n")
-
+    print("=" * 68 + f"\n\n{m['choose_scope']}\n  {m['opt_global']}\n  {m['opt_project']}\n  {m['opt_both']}\n")
     try:
         choice = input(m["prompt_scope"]).strip() or "1"
         print(f"\n{m['choose_targets']}")
@@ -461,7 +372,6 @@ def interactive_wizard(kit_dir: Path, dry_run: bool = False, lang: Optional[str]
 
     target_map = {"1": "all", "2": "antigravity", "3": "opencode", "4": "cursor", "5": "qoder", "6": "codex"}
     targets = normalize_targets(target_map.get(t_choice, "all"))
-
     if not DependencyChecker().check_all()["can_proceed"]:
         print(m["deps_missing"])
         return 1
@@ -495,13 +405,13 @@ def interactive_wizard(kit_dir: Path, dry_run: bool = False, lang: Optional[str]
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="XP Multi-Agent Kit v3.1 — Unified Agnostic Installer (xp-kit / agy-kit)")
+    parser = argparse.ArgumentParser(description="XP Multi-Agent Kit v3.9 — Unified Agnostic Installer (xp-kit / agy-kit)")
     parser.add_argument("command", nargs="?", choices=["install", "doctor", "init", "sync", "version", "update"])
     parser.add_argument("path", nargs="?", default=None, help="Optional project path for init/install")
     parser.add_argument("--global", "-g", dest="install_global", action="store_true", help="Install globally")
     parser.add_argument("--project", "-p", dest="project_path", type=str, help="Inject into specific project directory")
     parser.add_argument("--both", dest="both_path", type=str, help="Install globally and inject into project")
-    parser.add_argument("--target", "-t", default="all", help="Target host(s): all, antigravity, opencode, cursor, qoder, codex")
+    parser.add_argument("--target", "-t", default="all", help="Target host(s): all, antigravity, opencode, cursor, qoder, codex, claude")
     parser.add_argument("--lang", "-l", default=None, choices=["pt", "en", "auto"], help="Language override (pt, en, auto)")
     parser.add_argument("--yes", "-y", action="store_true", help="Non-interactive mode")
     parser.add_argument("--no-deps", action="store_true", help="Skip OS dependency checks")
@@ -517,7 +427,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     targets = normalize_targets(args.target)
 
     if args.command == "version":
-        print("XP Multi-Agent Kit v3.1.0")
+        print("XP Multi-Agent Kit v3.9.0")
         return 0
     if args.command == "update":
         from scripts.update_manager import main as update_main
@@ -554,38 +464,30 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"  • {a}")
         print(f"\n{m['installing_project']} {args.both_path}")
         p_res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.both_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
-        if p_res["ok"]:
-            print(f"{m['project_ok']}: {args.both_path}")
-            return 0
-        else:
-            print(f"{m['project_fail']} {p_res.get('error', '')}")
-            return 1
+        print(f"{m['project_ok']}: {args.both_path}" if p_res["ok"] else f"{m['project_fail']} {p_res.get('error', '')}")
+        return 0 if p_res["ok"] else 1
 
     if args.install_global or (args.yes and not args.project_path):
         print(f"\n{m['installing_global']}")
         res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
         if res["ok"]:
-            print(f"{m['global_ok']}")
-            print(f"🎯 Hosts configurados: {', '.join(res.get('targets', []))}")
+            print(f"{m['global_ok']}\n🎯 Hosts configurados: {', '.join(res.get('targets', []))}")
             for a in res.get("actions", []):
                 print(f"  • {a}")
             return 0
-        else:
-            print(f"{m['global_fail']} {res.get('error', '')}")
-            return 1
+        print(f"{m['global_fail']} {res.get('error', '')}")
+        return 1
 
     if args.project_path:
         print(f"\n{m['installing_project']} {args.project_path}")
-        p_installer = ProjectInstaller(kit_dir=kit_dir)
-        res = p_installer.install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
+        res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
         if res["ok"]:
             print(f"{m['project_ok']}: {args.project_path}")
             for a in res.get("actions", []):
                 print(f"  • {a}")
             return 0
-        else:
-            print(f"{m['project_fail']} {res.get('error', '')}")
-            return 1
+        print(f"{m['project_fail']} {res.get('error', '')}")
+        return 1
 
     return interactive_wizard(kit_dir=kit_dir, dry_run=args.dry_run, lang=lang)
 

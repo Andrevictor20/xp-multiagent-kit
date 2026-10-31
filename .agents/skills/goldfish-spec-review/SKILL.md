@@ -95,8 +95,20 @@ custo e concorrência. Não faça elogios. Seja cirúrgico.
 
 ---
 
-## 4. Auditoria de Desvio (Spec Drift Audit)
+## 4. Motor Automatizado Multi-Pass EGM (`xp-goldfish` / `agy-goldfish`)
 
-Durante a fase de `release-gatekeeper` ou `refactor-warden`:
-- Compare a especificação aprovada em `docs/designs/` com o código final implementado.
-- Relate qualquer divergência de contrato, schema de banco ou endpoints em um relatório de desvio (`docs/designs/drift_report.md`).
+Além da revisão por subagentes cegos (`invoke_subagent`), execute obrigatoriamente o validador CLI em 3 passadas antes de encerrar qualquer entrega L2/L3:
+
+```bash
+# Validação rápida de Prontidão Zero-Decision (Pass 1)
+xp-goldfish --check-readiness .agents/specs/SPEC-NNN.md
+
+# Auditoria completa Multi-Pass (Pass 1: Spec + Pass 2: Code Completeness + Pass 3: Spec-vs-Code Drift)
+xp-goldfish --multipass .agents/specs/SPEC-NNN.md \
+  --code-files src/modulo.py \
+  --test-files tests/test_modulo.py
+```
+
+- **Pass 1 (Spec & Zero-Decision Readiness):** Verifica as 6 dimensões de Heilmeier, Alternativas Consideradas, tabela de arquivos (`Create`/`Modify`/`Delete`), `AC-N`, Anti-Glazing e ausência total de placeholders (`TODO`, `TBD`, `{{...}}`).
+- **Pass 2 (Codebase Details & Completeness):** Verifica que todos os arquivos implementados existem, não contêm stubs (`NotImplementedError`), `TODO`/`FIXME` ou workarounds de tipo (`as any`, `@ts-ignore`).
+- **Pass 3 (Spec-vs-Code Drift):** Confirma que 100% dos `AC-N` possuem testes automatizados correspondentes.
