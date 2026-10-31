@@ -1,7 +1,7 @@
 # Skills Index (On-Demand Loading)
 
 > Compact catalog. Skill bodies are loaded on demand only when activated.
-> 79 skills • max body per skill: 5 KB
+> 80 skills • max body per skill: 5 KB
 
 | Skill | Trigger |
 |-------|---------|
@@ -23,6 +23,7 @@
 | `cloud-security-and-zero-trust` | Zero Trust cloud security, federated OIDC CI/CD, Cosign signing, and mTLS. |
 | `code-deslop-review` | Systematic AI code cleanup, dead-code removal, and <500-line No God Files rule. |
 | `codebase-cartography` | AST dependency graph mapping and blast-radius analysis via code-review-graph. |
+| `coderabbit-review` | External AI diff review and security audit using CodeRabbit CLI with graceful fallback. |
 | `component-architecture` | Modular UI components, token anchoring, 6-state machine, and mobile ergonomics. |
 | `component-registry` | Catalog and governance of reusable UI components to prevent duplication. |
 | `conformance-tracker` | Traceability between Acceptance Criteria and tests via Conformance Report. |

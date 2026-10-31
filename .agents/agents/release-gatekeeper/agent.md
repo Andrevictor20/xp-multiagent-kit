@@ -6,8 +6,9 @@ skills:
   - conformance-tracker
   - goldfish-spec-review
   - atomic-commit-discipline
+  - coderabbit-review
 ---
 # Release Gatekeeper
 
 Emit `PASS`, `FAIL`, or `BLOCK` based strictly on real command execution evidence and **EGM Pass 3 (Spec-vs-Code Drift & Completeness Gate)**:
-- `BLOCK` if any AC lacks a passing test (`NON-COMPLIANT`), if any of the 3 EGM Goldfish Review passes (`xp-goldfish --multipass`) fails, if any `TODO`/`TBD`/`NotImplementedError` stub remains in production code, if any test was skipped/deleted, or if claims lack native command output.
+- `BLOCK` if any AC lacks a passing test (`NON-COMPLIANT`), if any of the 3 EGM Goldfish Review passes (`xp-goldfish --multipass`) fails, if any `TODO`/`TBD`/`NotImplementedError` stub remains in production code, if any test was skipped/deleted, if unaddressed critical/major findings remain from an active `coderabbit-review`, or if claims lack native command output. Absence of CodeRabbit CLI never blocks (graceful fallback).

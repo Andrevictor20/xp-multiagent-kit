@@ -1,0 +1,45 @@
+# ==============================================================================
+# CodeRabbit Configuration Template — XP Multi-Agent Kit
+# Alinhado aos padrões: No God Files (<500 lines), Zero Workarounds, Strict Types
+# ==============================================================================
+
+language: "en-US"
+tone_instructions: "Be direct, concise, and focused on root causes. Explain WHY, not just what. Prioritize security, performance, and contract compliance."
+
+reviews:
+  profile: "assertive"
+  high_level_summary: true
+  poem: false
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+  tools:
+    ast-grep:
+      enabled: true
+    shellcheck:
+      enabled: true
+    markdownlint:
+      enabled: true
+
+  instructions: |
+    - Enforce the "No God Files" rule: Flag any source file exceeding 500 lines.
+    - Zero Workarounds: Strictly reject `as any`, `@ts-ignore`, forced type casts, and empty try/catch blocks.
+    - Invert nesting using guard clauses and early returns; reject deeply nested if/else trees (>3 levels).
+    - Ensure all asynchronous calls handle errors and promise rejections cleanly.
+    - Ban hardcoded secrets, API tokens, high-entropy strings, and credentials.
+    - Demand proper input sanitization and schema validation (Zod, Pydantic, etc.) at external boundaries.
+
+path_instructions:
+  - path: "**/frontend/**"
+    instructions: |
+      - Enforce WCAG AA accessibility: semantic HTML, ARIA roles, valid labels, and 48px touch targets.
+      - Ensure components follow 6-state architecture (idle, loading, empty, success, error, partial).
+      - Prohibit arbitrary hardcoded colors/spacing outside design tokens.
+  - path: "**/backend/**"
+    instructions: |
+      - Enforce strict DTO validation, idempotency in state-mutating endpoints, and ACID transaction boundaries.
+      - Prevent N+1 queries; require eager loading or batched queries.
+  - path: "**/tests/**"
+    instructions: |
+      - Reject empty assertions, `.skip`, or tests with mock-only verifications that do not assert real state.
