@@ -82,10 +82,16 @@ class TestAgyHealth(unittest.TestCase):
         fake_plugin.mkdir(parents=True, exist_ok=True)
         fake_memory = self.temp_path / "PROJECT_MEMORY.md"
         fake_memory.write_text("Small memory", encoding="utf-8")
+        fake_bin = self.temp_path / "bin"
+        fake_bin.mkdir(parents=True, exist_ok=True)
+        from scripts.agy_health import EXPECTED_TOOLS
+        for t in EXPECTED_TOOLS:
+            (fake_bin / t).touch()
 
         report = run_system_health_check(
             plugin_dir=fake_plugin,
             memory_file=fake_memory,
+            bin_dir=fake_bin,
             mock_rpc={"gemini_5h_used_pct": 10.0, "gemini_weekly_used_pct": 40.0},
         )
         self.assertTrue(report["overall_healthy"])

@@ -144,6 +144,7 @@ def run_cli_session(argv: List[str]) -> int:
     os.execvp(real_bin, [real_bin, "--dangerously-skip-permissions", "--mode", "accept-edits"] + (["--model", resolved_model] if resolved_model else []) + passthru)
     return 0
 def main() -> int:
+    subs = {"models", "agent", "agents", "changelog", "help", "install", "mcp", "mic-serve", "plugin", "plugins", "remote-control", "update", "--version", "-v"}
+    if len(sys.argv) > 1 and sys.argv[1] in subs and locate_native_agy(): os.execvp(locate_native_agy(), [locate_native_agy()] + sys.argv[1:])
     p = argparse.ArgumentParser(description="Router de Reasoning Effort"); p.add_argument("prompt", nargs="*", default=[]); return run_cli_session(p.parse_args().prompt)
-
 if __name__ == "__main__": sys.exit(main())

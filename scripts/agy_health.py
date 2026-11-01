@@ -37,16 +37,12 @@ EXPECTED_TOOLS = [
     "agy-git-ops",
     "agy-memory-archive",
     "agy-ci-heal",
-    "agy-handoff",
     "agy-audit",
     "agy-smart",
     "agy-fast",
     "agy-deep",
     "agy-memory-search",
     "agy-context",
-    "agy-resume",
-    "agy-daemon",
-    "agy-dashboard",
     "agy-debt",
 ]
 
