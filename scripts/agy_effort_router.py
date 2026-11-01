@@ -42,17 +42,11 @@ LEVEL_L2_FEATURE = "L2 (Feature)"
 LEVEL_L3_CRITICAL = "L3 (Critical)"
 
 L0_KEYWORDS = [
-    r"\btypo\b", r"\berro de digita[çc][ãa]o\b", r"\bortografia\b", r"\bescrita\b", r"\breadme\b",
-    r"\bdocumenta[çc][ãa]o\b", r"\bdocs?\b", r"\bdocstrings?\b", r"\bcoment[áa]rios?\b", r"\bchangelog\b",
-    r"\bprettier\b", r"\beslint\b", r"\bblack\b", r"\bisort\b", r"\bformate?\b", r"\bformata[çc][ãa]o\b",
-    r"\bidenta[çc][ãa]o\b", r"\bindenta[çc][ãa]o\b", r"\bcss\b", r"\bscss\b", r"\bestilos?\b",
-    r"\bpadding\b", r"\bmargin\b", r"\bcores?\b", r"\bfont-size\b", r"\bo que [ée]\b", r"\bexplique\b",
-    r"\bcomo funciona\b", r"\bquais s[ãa]o\b", r"\bdo que se trata\b", r"\bo que faz\b", r"\bpara que serve\b",
-    r"\bcomo uso\b", r"\bcomo usar\b", r"\bduvida\b", r"\bd[úu]vida\b", r"\bpergunta\b", r"\bquest[ãa]o\b",
-    r"\beconomiza\b", r"\beconomizar\b", r"\beconomia de tokens?\b", r"\bquantos tokens\b",
-    r"\bqual(?: a)? diferen[çc]a\b", r"\bcompar[ea]\b", r"\bcomparativo\b", r"\bde forma simples\b",
-    r"\bsimples\b", r"\br[áa]pido\b", r"\bb[áa]sico\b", r"\bresumo\b", r"\bstatus\b",
-    r"\bgit log\b", r"\bgit status\b", r"\bquais arquivos\b", r"\bclean code\b",
+    r"\btypo\b", r"\berro de digita[çc][ãa]o\b", r"\bortografia\b", r"\bescrita\b", r"\breadme\b", r"\bdocumenta[çc][ãa]o\b", r"\bdocs?\b", r"\bdocstrings?\b", r"\bcoment[áa]rios?\b", r"\bchangelog\b",
+    r"\bprettier\b", r"\beslint\b", r"\bblack\b", r"\bisort\b", r"\bformate?\b", r"\bformata[çc][ãa]o\b", r"\bidenta[çc][ãa]o\b", r"\bindenta[çc][ãa]o\b", r"\bcss\b", r"\bscss\b", r"\bestilos?\b",
+    r"\bpadding\b", r"\bmargin\b", r"\bcores?\b", r"\bfont-size\b", r"\bo que [ée]\b", r"\bexplique\b", r"\bcomo funciona\b", r"\bquais s[ãa]o\b", r"\bdo que se trata\b", r"\bo que faz\b", r"\bpara que serve\b",
+    r"\bcomo uso\b", r"\bcomo usar\b", r"\bduvida\b", r"\bd[úu]vida\b", r"\bpergunta\b", r"\bquest[ãa]o\b", r"\beconomiza\b", r"\beconomizar\b", r"\beconomia de tokens?\b", r"\bquantos tokens\b",
+    r"\bqual(?: a)? diferen[çc]a\b", r"\bcompar[ea]\b", r"\bcomparativo\b", r"\bde forma simples\b", r"\bsimples\b", r"\br[áa]pido\b", r"\bb[áa]sico\b", r"\bresumo\b", r"\bstatus\b", r"\bgit log\b", r"\bgit status\b", r"\bquais arquivos\b", r"\bclean code\b",
 ]
 
 L3_KEYWORDS = [

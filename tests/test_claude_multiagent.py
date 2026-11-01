@@ -61,11 +61,11 @@ class TestClaudeHostAdapter(unittest.TestCase):
         self.assertIn("code-review-graph", mcp_data["mcpServers"])
         self.assertIn("open-design", mcp_data["mcpServers"])
 
-        # 3. .claude/agents/ deve conter os 11 agentes especialistas
+        # 3. .claude/agents/ deve conter os 6 agentes especialistas
         agents_dir = self.project_dir / ".claude" / "agents"
         self.assertTrue(agents_dir.is_dir(), ".claude/agents/ deve ser um diretório")
 
-        for ag_name in ("builder", "orchestrator", "sentinel", "test-guardian", "navigator"):
+        for ag_name in ("builder", "orchestrator", "sentinel", "reviewer", "designer", "shipper"):
             ag_file = agents_dir / f"{ag_name}.md"
             self.assertTrue(ag_file.is_file(), f"Agente {ag_name}.md deve existir em .claude/agents/")
             ag_text = ag_file.read_text(encoding="utf-8")

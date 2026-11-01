@@ -52,6 +52,19 @@ def main() -> int:
         print("Subcomando 'evolve' será ativado na Fase 6 (Auto-Melhoria).")
         return 0
     elif subcmd == "kit":
+        if rest and rest[0] == "pack":
+            if len(rest) > 2 and rest[1] == "enable":
+                pack_name = rest[2]
+                pack_dir = ROOT_DIR / ".agents" / "packs" / pack_name
+                if pack_dir.is_dir():
+                    print(f"Pack '{pack_name}' ativado com sucesso!")
+                    return 0
+                print(f"Erro: Pack '{pack_name}' não encontrado em .agents/packs/")
+                return 1
+            elif len(rest) > 1 and rest[1] == "list":
+                packs = [p.name for p in (ROOT_DIR / ".agents" / "packs").iterdir() if p.is_dir()]
+                print(f"Packs disponíveis: {', '.join(sorted(packs))}")
+                return 0
         if rest and rest[0] == "doctor":
             return subprocess.run([sys.executable, str(SCRIPTS_DIR / "kit_lint.py")] + rest[1:]).returncode
         kit_script = SCRIPTS_DIR / "kit_installer.py"

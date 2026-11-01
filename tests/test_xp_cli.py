@@ -35,6 +35,18 @@ class TestXpCLI(unittest.TestCase):
         self.assertEqual(res.returncode, 0)
         self.assertIn("Aprovação humana registrada", res.stdout)
 
+    def test_xp_cli_kit_pack_list_and_enable(self):
+        cmd = [sys.executable, "scripts/xp", "kit", "pack", "list"]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(res.returncode, 0)
+        self.assertIn("design", res.stdout)
+        self.assertIn("marketing", res.stdout)
+
+        cmd_enable = [sys.executable, "scripts/xp", "kit", "pack", "enable", "design"]
+        res_enable = subprocess.run(cmd_enable, capture_output=True, text=True)
+        self.assertEqual(res_enable.returncode, 0)
+        self.assertIn("Pack 'design' ativado", res_enable.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()
