@@ -5,9 +5,11 @@ Impede adulteração de políticas e execução de ações do tier human sem apr
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -16,18 +18,42 @@ TIER_ORDER = {"auto": 0, "review": 1, "human": 2}
 RISK_TO_TIER = {"L0": "auto", "L1": "auto", "L2": "review", "L3": "human"}
 
 
+def get_project_root() -> Path:
+    env_dir = os.environ.get("KIT_PROJECT_ROOT")
+    if env_dir:
+        return Path(env_dir).expanduser().resolve()
+    try:
+        res = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout.strip():
+            return Path(res.stdout.strip()).resolve()
+    except Exception:
+        pass
+    return Path.cwd().resolve()
+
+
 def get_runtime_dir() -> Path:
     env_dir = os.environ.get("KIT_RUNTIME_DIR")
     if env_dir:
         p = Path(env_dir).expanduser().resolve()
     else:
-        p = Path(__file__).resolve().parent.parent.parent / ".agents" / "runtime"
+        p = get_project_root() / ".agents" / "runtime"
     p.mkdir(parents=True, exist_ok=True)
     return p
 
 
 def get_approvals_path() -> Path:
     return get_runtime_dir() / "approvals.json"
+
+
+def get_reviews_path() -> Path:
+    return get_runtime_dir() / "reviews.json"
+
+
+def compute_action_id(tier: str, human_items: List[str]) -> str:
+    """Calcula ID determinístico: sha1(tier + caminhos e comandos ordenados)[:8]."""
+    sorted_items = sorted(str(item).strip() for item in human_items if str(item).strip())
+    raw = f"{tier}:{':'.join(sorted_items)}"
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:8]
 
 
 def record_approval(id_str: str) -> None:
@@ -57,8 +83,44 @@ def has_approval(id_str: str) -> bool:
         return False
 
 
+def record_review(reviewer: str, verdict: str, diff_hash: str) -> Dict[str, Any]:
+    """Registra revisão aprovada pelo revisor para o diff atual (convenção de processo)."""
+    import time
+    path = get_reviews_path()
+    data = {"reviews": []}
+    if path.is_file():
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            data = {"reviews": []}
+    entry = {
+        "reviewer": reviewer,
+        "verdict": verdict,
+        "diff_hash": diff_hash,
+        "ts": round(time.time(), 3),
+    }
+    data.setdefault("reviews", []).append(entry)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    return entry
+
+
+def load_reviews() -> List[Dict[str, Any]]:
+    path = get_reviews_path()
+    if not path.is_file():
+        return []
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data.get("reviews", [])
+    except Exception:
+        return []
+
+
 def load_policy() -> Dict[str, Any]:
-    policy_path = Path(__file__).resolve().parent.parent.parent / ".agents" / "policy.yaml"
+    proj_policy = get_project_root() / ".agents" / "policy.yaml"
+    policy_path = proj_policy if proj_policy.is_file() else Path(__file__).resolve().parent.parent.parent / ".agents" / "policy.yaml"
     if not policy_path.is_file():
         return {
             "tiers": {
@@ -70,7 +132,6 @@ def load_policy() -> Dict[str, Any]:
                 },
             }
         }
-    # Parse YAML simples sem dependência externa
     tiers: Dict[str, Any] = {"auto": {"patterns": []}, "review": {"patterns": []}, "human": {"patterns": [], "commands": []}}
     cur_tier = None
     cur_key = None
@@ -92,66 +153,96 @@ def load_policy() -> Dict[str, Any]:
 
 def evaluate_policy_for_files_and_commands(
     files: List[str], commands: List[str]
-) -> Tuple[str, List[str]]:
+) -> Tuple[str, List[str], List[str]]:
     policy = load_policy()
     human_patterns = policy["tiers"].get("human", {}).get("patterns", [])
     human_cmds = policy["tiers"].get("human", {}).get("commands", [])
     review_patterns = policy["tiers"].get("review", {}).get("patterns", [])
 
     reasons: List[str] = []
-    # Check commands for human tier
+    human_matches: List[str] = []
     for cmd in commands:
         for h_cmd in human_cmds:
             if h_cmd.lower() in cmd.lower():
                 reasons.append(f"Command '{cmd}' contains human-tier operation '{h_cmd}'")
-                return "human", reasons
+                human_matches.append(cmd)
 
-    # Check files for human tier
     for f in files:
         for p in human_patterns:
             if fnmatch.fnmatch(f, p) or fnmatch.fnmatch(f, f"*/{p}") or p in f:
                 reasons.append(f"File '{f}' matches human-tier pattern '{p}'")
-                return "human", reasons
+                human_matches.append(f)
 
-    # Check files for review tier
+    if human_matches:
+        return "human", reasons, human_matches
+
+    review_matches: List[str] = []
     for f in files:
         for p in review_patterns:
             if fnmatch.fnmatch(f, p) or fnmatch.fnmatch(f, f"*/{p}") or p in f:
                 reasons.append(f"File '{f}' matches review-tier pattern '{p}'")
-                return "review", reasons
+                review_matches.append(f)
 
-    return "auto", reasons
+    if review_matches:
+        return "review", reasons, review_matches
+
+    return "auto", reasons, []
 
 
 def calculate_effective_tier(
     declared_risk: str, changed_files: List[str], commands: List[str]
 ) -> str:
     declared_tier = RISK_TO_TIER.get(declared_risk.upper(), "auto")
-    derived_tier, _ = evaluate_policy_for_files_and_commands(changed_files, commands)
+    derived_tier, _, _ = evaluate_policy_for_files_and_commands(changed_files, commands)
     return "human" if "human" in (declared_tier, derived_tier) else ("review" if "review" in (declared_tier, derived_tier) else "auto")
 
 
 def is_action_permitted(
     tool_name: str, tool_args: Dict[str, Any], action_id: Optional[str] = None
 ) -> Tuple[bool, str]:
-    # 1. Proibição de adulterar policy.yaml e approvals.json
-    target_path = str(tool_args.get("Path", "") or tool_args.get("path", ""))
+    # 1. Proibição estrita de adulterar policy.yaml e approvals.json
+    target_path = str(tool_args.get("Path", "") or tool_args.get("path", "") or tool_args.get("TargetFile", ""))
     if target_path:
         norm = target_path.replace("\\", "/")
         if norm.endswith("policy.yaml") or ".agents/policy.yaml" in norm:
             return False, "Agent is forbidden from modifying .agents/policy.yaml (immutable policy)"
-        if norm.endswith("approvals.json") or "runtime/approvals.json" in norm:
+        if norm.endswith("approvals.json") or "approvals.json" in norm:
             return False, "Agent is forbidden from modifying approvals.json (tamper protection)"
 
     # 2. Verificação de comandos
-    cmd = str(tool_args.get("CommandLine", "") or tool_args.get("command", ""))
+    cmd = str(tool_args.get("CommandLine", "") or tool_args.get("command", "") or "")
     if cmd:
         if re.search(r"\bxp\s+approve\b", cmd):
             return False, "Agent cannot invoke 'xp approve' (requires interactive human approval)"
-        derived_tier, reasons = evaluate_policy_for_files_and_commands([], [cmd])
+        derived_tier, reasons, matches = evaluate_policy_for_files_and_commands([], [cmd])
         if derived_tier == "human":
-            act_id = action_id or cmd.split()[0]
+            act_id = action_id or compute_action_id("human", matches)
             if not has_approval(act_id):
                 return False, f"Action requires explicit human approval via 'xp approve {act_id}': {reasons}"
 
     return True, "Permitted"
+
+
+def main() -> int:
+    try:
+        raw_input = sys.stdin.read() if not sys.stdin.isatty() else ""
+        if raw_input.strip():
+            payload = json.loads(raw_input)
+            tool_name = payload.get("tool_name") or payload.get("tool") or ""
+            tool_args = payload.get("tool_args") or payload.get("parameters") or payload.get("args") or {}
+            allowed, reason = is_action_permitted(tool_name, tool_args)
+            result = {"decision": "allow" if allowed else "deny"}
+            if not allowed:
+                result["reason"] = reason
+        else:
+            result = {"decision": "allow"}
+    except Exception:
+        result = {"decision": "allow"}
+
+    sys.stdout.write(json.dumps(result, ensure_ascii=False) + "\n")
+    sys.stdout.flush()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

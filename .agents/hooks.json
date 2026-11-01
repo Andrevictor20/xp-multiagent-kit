@@ -1,4 +1,18 @@
 {
+  "pre-tool-guard": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ${KIT_ROOT}/scripts/hooks/pre_tool_guard.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
   "tool-size-guard": {
     "PostToolUse": [
       {

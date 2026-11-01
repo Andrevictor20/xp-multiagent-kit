@@ -264,8 +264,19 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # Mensagem efêmera compacta <= 400 bytes (AC-9)
-    ephemeral_msg = f"[xp] risk={risk_code} effort={effort_upper} tier=auto | {decision.reason[:100]}{jit_summary}"
+    # Mensagem efêmera compacta <= 400 bytes (AC-9, B09)
+    eff_tier = "n/a"
+    try:
+        from scripts.xp_contract import load_contract
+        from scripts.hooks.pre_tool_guard import calculate_effective_tier
+        c = load_contract()
+        if c and c.get("risk"):
+            from scripts.xp_gate import get_git_diff_files
+            eff_tier = calculate_effective_tier(c.get("risk", "L1"), get_git_diff_files(), [])
+    except Exception:
+        eff_tier = "n/a"
+
+    ephemeral_msg = f"[xp] risk={risk_code} effort={effort_upper} tier={eff_tier} | {decision.reason[:100]}{jit_summary}"
     encoded = ephemeral_msg.encode("utf-8")
     if len(encoded) > 400:
         ephemeral_msg = encoded[:397].decode("utf-8", errors="ignore") + "..."

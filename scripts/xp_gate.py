@@ -20,32 +20,34 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.evidence_recorder import load_entries, parse_test_summary, record
 from scripts.goldfish_review import audit_code_completeness
-from scripts.hooks.pre_tool_guard import calculate_effective_tier, has_approval
+from scripts.hooks.pre_tool_guard import (
+    calculate_effective_tier,
+    compute_action_id,
+    evaluate_policy_for_files_and_commands,
+    has_approval,
+    load_reviews,
+    record_review,
+)
 from scripts.kit_events import classify_failure, emit
 from scripts.xp_contract import load_contract, record_dead_end
 
 
 def get_git_diff_files() -> List[str]:
-    try:
-        res = subprocess.run(["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True)
+    for target in ("HEAD", ""):
+        args = ["git", "diff", "--name-only"] + ([target] if target else [])
+        res = subprocess.run(args, capture_output=True, text=True)
         if res.returncode == 0 and res.stdout.strip():
             return [line.strip() for line in res.stdout.splitlines() if line.strip()]
-        res2 = subprocess.run(["git", "diff", "--name-only"], capture_output=True, text=True)
-        return [line.strip() for line in res2.stdout.splitlines() if line.strip()]
-    except Exception:
-        return []
+    return []
 
 
 def get_git_diff_hash() -> str:
-    try:
-        res = subprocess.run(["git", "diff", "HEAD"], capture_output=True, text=True)
-        content = res.stdout if res.returncode == 0 else ""
-        if not content:
-            res2 = subprocess.run(["git", "diff"], capture_output=True, text=True)
-            content = res2.stdout if res2.returncode == 0 else ""
-        return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
-    except Exception:
-        return ""
+    for target in ("HEAD", ""):
+        args = ["git", "diff"] + ([target] if target else [])
+        res = subprocess.run(args, capture_output=True, text=True)
+        if res.returncode == 0 and res.stdout:
+            return hashlib.sha256(res.stdout.encode("utf-8")).hexdigest()[:16]
+    return ""
 
 
 def format_failure_block(step: int, failed: str, expected: str, saw: str, fence: str, dead_ends: List[Any], hint: str) -> str:
@@ -135,11 +137,26 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
 
     # 10. Requisitos do tier (review / human)
     if effective_tier == "human":
-        act_id = contract.get("goal", "").split()[0] if contract.get("goal") else "action"
-        if not has_approval(act_id) and not any(has_approval(f.split("/")[0]) for f in files):
-            fail = format_failure_block(10, "Ação human sem aprovação", f"xp approve {act_id}", "Aprovação pendente", "policy.yaml: human tier", tried, "Solicite ao operador executar: xp approve <id>")
+        _, _, human_matches = evaluate_policy_for_files_and_commands(files, [])
+        act_id = compute_action_id("human", human_matches or files)
+        if not has_approval(act_id):
+            fail = format_failure_block(10, f"Ação human sem aprovação (action={act_id})", f"xp approve {act_id}", "Aprovação pendente", "policy.yaml: human tier", tried, f"Solicite ao operador executar: xp approve {act_id}")
             emit("gate", status="BLOCK", tier="human", reason="missing_approval")
             return 2, f"GATE BLOCK tier=human action={act_id}", fail
+
+    if effective_tier == "review":
+        reviews = load_reviews()
+        curr_diff_hash = get_git_diff_hash()
+        approved = any(
+            r.get("verdict") == "approve"
+            and r.get("diff_hash") == curr_diff_hash
+            and r.get("reviewer", "").lower() != "builder"
+            for r in reviews
+        )
+        if not approved:
+            fail = format_failure_block(10, "Tier review requer registro de aprovação de revisor", "xp review record --reviewer <nome> --verdict approve", "Nenhum registro de revisão para o diff atual", "policy.yaml: review tier", tried, "Execute: xp review record --reviewer <nome> --verdict approve (convenção)")
+            emit("gate", status="BLOCK", tier="review", reason="missing_review")
+            return 2, "GATE BLOCK tier=review reason=missing_review", fail
 
     # 9. Conformidade AC->teste (ordem barata antes da execução)
     acs = contract.get("acs", [])
@@ -266,7 +283,8 @@ def main() -> int:
     parser.add_argument("--receipt", action="store_true", help="Emite recibo de mudança")
     parser.add_argument("--sync-memory", help="Sincroniza memória com resumo")
     parser.add_argument("cmd_args", nargs="*", help="Comando para ação record")
-    args = parser.parse_args()
+    args, extra = parser.parse_known_args()
+    all_cmd = args.cmd_args + extra
 
     if args.sync_memory:
         ok = sync_memory(args.sync_memory)
@@ -275,8 +293,16 @@ def main() -> int:
             return 0
         return 1
 
+    if args.action == "review":
+        rev = all_cmd[all_cmd.index("--reviewer") + 1] if "--reviewer" in all_cmd else "reviewer"
+        verd = all_cmd[all_cmd.index("--verdict") + 1] if "--verdict" in all_cmd else "approve"
+        diff_h = get_git_diff_hash()
+        record_review(rev, verd, diff_h)
+        print(f"[review-record] {rev} -> {verd} (diff={diff_h[:8]})")
+        return 0
+
     if args.action == "record":
-        cmd = " ".join(args.cmd_args).strip()
+        cmd = " ".join(all_cmd).strip()
         if not cmd:
             print("❌ Comando não fornecido para 'xp gate record -- <comando>'", file=sys.stderr)
             return 1

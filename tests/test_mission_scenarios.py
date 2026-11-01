@@ -129,6 +129,116 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertNotIn("DEAD ENDS: []", res2.stdout)
 
     # ------------------------------------------------------------------
+    # S5: L1, diff em src/auth/ -> gate sem revisão dá exit 2 BLOCK tier=review; com revisão dá PASS
+    # ------------------------------------------------------------------
+    def test_s5_diff_in_auth_requires_review_record(self):
+        repo_dir, runtime_dir = self.make_temp_repo()
+        auth_file = repo_dir / "src" / "auth" / "login.py"
+        auth_file.parent.mkdir(parents=True, exist_ok=True)
+        auth_file.write_text("def auth(): return True\n", encoding="utf-8")
+        subprocess.run(["git", "add", "src/auth/login.py"], cwd=str(repo_dir), check=True)
+
+        self.run_cmd([
+            sys.executable, str(XP_CONTRACT), "init",
+            "--risk", "L1",
+            "--goal", "Update auth logic",
+            "--verify", "true",
+            "--refactor",
+            "--scope", "src/auth/login.py",
+        ], repo_dir, runtime_dir)
+
+        # 1. Sem registro de revisão -> exit 2 BLOCK tier=review
+        res1 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res1.returncode, 2, f"Expected exit 2 BLOCK tier=review, got {res1.returncode}. Out: {res1.stdout}")
+        self.assertIn("BLOCK tier=review", res1.stdout)
+
+        # 2. Com registro de revisão de outro revisor -> PASS
+        rec_rev = self.run_cmd([
+            sys.executable, str(XP_GATE), "review", "record",
+            "--reviewer", "sentinel",
+            "--verdict", "approve",
+        ], repo_dir, runtime_dir)
+        self.assertEqual(rec_rev.returncode, 0)
+
+        res2 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res2.returncode, 0, f"Expected PASS after review. Out: {res2.stdout}")
+
+    # ------------------------------------------------------------------
+    # S6: diff em db/migrations/ -> gate sem aprovação dá exit 2; aprovar com 1ª palavra não libera; ID exato libera
+    # ------------------------------------------------------------------
+    def test_s6_diff_in_migrations_requires_exact_deterministic_action_id(self):
+        repo_dir, runtime_dir = self.make_temp_repo()
+        mig_file = repo_dir / "db" / "migrations" / "001_create.sql"
+        mig_file.parent.mkdir(parents=True, exist_ok=True)
+        mig_file.write_text("CREATE TABLE users (id INT);\n", encoding="utf-8")
+        subprocess.run(["git", "add", "db/migrations/001_create.sql"], cwd=str(repo_dir), check=True)
+
+        self.run_cmd([
+            sys.executable, str(XP_CONTRACT), "init",
+            "--risk", "L1",
+            "--goal", "Create initial migration table",
+            "--verify", "true",
+            "--refactor",
+            "--scope", "db/migrations/001_create.sql",
+        ], repo_dir, runtime_dir)
+
+        res1 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res1.returncode, 2, f"Expected exit 2 BLOCK tier=human, got {res1.returncode}. Out: {res1.stdout}")
+        self.assertIn("BLOCK tier=human", res1.stdout)
+
+        # Extrai action id: action=([a-f0-9]{8})
+        import re
+        m = re.search(r"action=([a-f0-9]{8})", res1.stdout)
+        self.assertIsNotNone(m, f"Could not find deterministic action ID in output: {res1.stdout}")
+        exact_id = m.group(1)
+
+        # Aprovar com a 1ª palavra do objetivo ("Create") NÃO deve liberar
+        self.run_cmd([sys.executable, str(KIT_ROOT / "scripts" / "xp"), "approve", "Create"], repo_dir, runtime_dir)
+        res2 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res2.returncode, 2, "Approval by 1st word must NOT release the gate")
+
+        # Aprovar com o ID exato deve liberar
+        self.run_cmd([sys.executable, str(KIT_ROOT / "scripts" / "xp"), "approve", exact_id], repo_dir, runtime_dir)
+        res3 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res3.returncode, 0, f"Approval by exact action ID must release the gate: {res3.stdout}")
+
+    # ------------------------------------------------------------------
+    # S11: payload PreToolUse simulado -> guard bloqueia policy/approvals, xp approve, rm -rf; leitura permitida; hooks.json contém guard
+    # ------------------------------------------------------------------
+    def test_s11_pre_tool_guard_security_checks_and_hooks_registration(self):
+        from scripts.hooks.pre_tool_guard import is_action_permitted
+
+        # 1. Escrever approvals.json -> negado
+        allowed, reason = is_action_permitted("write_to_file", {"Path": ".agents/runtime/approvals.json"})
+        self.assertFalse(allowed)
+
+        # 2. Escrever policy.yaml -> negado
+        allowed, reason = is_action_permitted("write_file", {"Path": ".agents/policy.yaml"})
+        self.assertFalse(allowed)
+
+        # 3. Agente chamando xp approve -> negado
+        allowed, reason = is_action_permitted("run_command", {"CommandLine": "xp approve a1b2c3d4"})
+        self.assertFalse(allowed)
+
+        # 4. rm -rf sem aprovação -> negado
+        allowed, reason = is_action_permitted("run_command", {"CommandLine": "rm -rf /tmp/test"})
+        self.assertFalse(allowed)
+
+        # 5. Leitura comum -> permitido
+        allowed, reason = is_action_permitted("read_file", {"Path": "src/app.py"})
+        self.assertTrue(allowed)
+
+        # 6. hooks.json contém o guard registrado sob PreToolUse
+        hooks_json = json.loads((KIT_ROOT / ".agents" / "hooks.json").read_text(encoding="utf-8"))
+        has_guard = False
+        for hook_entry in hooks_json.values():
+            for ptu in hook_entry.get("PreToolUse", []):
+                for h in ptu.get("hooks", []):
+                    if "pre_tool_guard" in h.get("command", ""):
+                        has_guard = True
+        self.assertTrue(has_guard, "hooks.json must contain pre_tool_guard under PreToolUse")
+
+    # ------------------------------------------------------------------
     # S7: memória inicial -> --sync-memory x25 -> título intacto, <= 3000 B, archive preenchido
     # ------------------------------------------------------------------
     def test_s7_sync_memory_25_times_budget_and_header_intact(self):

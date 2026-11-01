@@ -31,6 +31,9 @@ def main() -> int:
     elif subcmd == "gate":
         cmd = [sys.executable, str(SCRIPTS_DIR / "xp_gate.py")] + rest
         return subprocess.run(cmd).returncode
+    elif subcmd == "review":
+        cmd = [sys.executable, str(SCRIPTS_DIR / "xp_gate.py"), "review"] + rest
+        return subprocess.run(cmd).returncode
     elif subcmd == "approve":
         if not rest:
             print("Erro: Forneça o identificador da ação para aprovação: xp approve <id>")
