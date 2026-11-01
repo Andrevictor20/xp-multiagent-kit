@@ -28,6 +28,7 @@
 - **2026-11-01** [`a454c0e`]: Poda de 63 skills redundantes (80 → 25) e arquivos dist/i/docs comerciais; economia de ~59 KB por turno.
 - **2026-11-01** [`54835e7`]: Exclusão de planos na raiz, blindagem no .gitignore e documentação Git no README.
 - **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
+- **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).
