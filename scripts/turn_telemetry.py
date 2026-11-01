@@ -158,6 +158,14 @@ def record_turn(
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    # B15: Emite evento de custo para events.jsonl
+    try:
+        from scripts.kit_events import emit
+        tot = entry["resend_tokens"] + entry["tool_output_tokens"] + entry["response_tokens"]
+        emit("cost", tokens=tot, turn=entry["turn_index"], risk=risk_level)
+    except Exception:
+        pass
     return entry
 
 

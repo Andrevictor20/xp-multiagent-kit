@@ -296,9 +296,23 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
     WHOLE_FILE_READ_MAX_LINES. Só acima disso aplica janela de
     SECTION_READ_MAX_LINES, evitando o fatiamento em N turnos.
     """
-    path_str = args.get("AbsolutePath")
+    path_str = args.get("AbsolutePath") or args.get("Path") or args.get("path")
     if not path_str:
         return "allow", "", None
+
+    # B15: Telemetria de uso de componentes via leitura de .agents/**
+    if ".agents" in path_str:
+        try:
+            m = re.search(r"\.agents/(?:skills|agents|policies)/([^/]+)", path_str)
+            cid = m.group(1).replace(".md", "") if m else None
+            if not cid:
+                m2 = re.search(r"\.agents/([^/]+)", path_str)
+                cid = m2.group(1).replace(".yaml", "").replace(".json", "") if m2 else None
+            if cid:
+                from scripts.kit_events import emit
+                emit("usage", component=cid)
+        except Exception:
+            pass
 
     target_path = Path(path_str)
 

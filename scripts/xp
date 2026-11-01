@@ -58,6 +58,8 @@ def main() -> int:
         if rest and rest[0] == "eval":
             eval_script = SCRIPTS_DIR / "xp_eval.py"
             return subprocess.run([sys.executable, str(eval_script)] + rest[1:]).returncode
+        if rest and rest[0] == "components":
+            return subprocess.run([sys.executable, str(SCRIPTS_DIR / "kit_lint.py"), "components"] + rest[1:]).returncode
         if rest and rest[0] == "pack":
             if len(rest) > 2 and rest[1] == "enable":
                 pack_name = rest[2]

@@ -128,20 +128,14 @@ def validate_workflows(custom_path: Optional[str] = None) -> int:
             continue
         for n in nodes:
             name, run, sks, cmd = n.get("name"), n.get("run"), n.get("skills", []), n.get("exit_cmd")
-            if not run or run not in valid_agents:
-                errors.append(f"{wf}.{name}: agente '{run}' inválido.")
-            if len(sks) > 2 or any(s not in valid_skills for s in sks):
-                errors.append(f"{wf}.{name}: skills inválidas ou > 2 ({sks}).")
-            if not cmd:
-                errors.append(f"{wf}.{name}: exit_cmd vazio.")
+            if not run or run not in valid_agents: errors.append(f"{wf}.{name}: agente '{run}' inválido.")
+            if len(sks) > 2 or any(s not in valid_skills for s in sks): errors.append(f"{wf}.{name}: skills inválidas ({sks}).")
+            if not cmd: errors.append(f"{wf}.{name}: exit_cmd vazio.")
             for ph in re.findall(r"\{([a-zA-Z0-9_]+)\}", cmd or ""):
-                if ph != "verify_cmd":
-                    errors.append(f"{wf}.{name}: placeholder desconhecido '{{{ph}}}'.")
-        if nodes[-1].get("name") != "gate":
-            errors.append(f"{wf}: último nó deve ser 'gate'.")
+                if ph != "verify_cmd": errors.append(f"{wf}.{name}: placeholder '{{{ph}}}'.")
+        if nodes[-1].get("name") != "gate": errors.append(f"{wf}: último nó deve ser 'gate'.")
     if errors:
-        for e in errors:
-            print(f"❌ {e}", file=sys.stderr)
+        for e in errors: print(f"❌ {e}", file=sys.stderr)
         return 1
     print(f"✅ Validação OK: {len(wfs)} fluxos íntegros.")
     return 0
@@ -182,6 +176,14 @@ def next_node() -> int:
     return 0
 
 
+def emit_node(name: str, phase: str, status: Optional[str] = None) -> None:
+    try:
+        from scripts.kit_events import emit
+        emit("node", node=name, phase=phase, status=status)
+    except Exception:
+        pass
+
+
 def advance_flow() -> int:
     state = load_flow_state()
     wf = state.get("workflow")
@@ -191,9 +193,12 @@ def advance_flow() -> int:
         print("❌ Nenhum nó a avançar.", file=sys.stderr)
         return 1
     n = nodes[idx]
+    emit_node(n.get("name", ""), "enter")
     if not run_node_exit_cmd(n.get("exit_cmd", ""), n.get("name", "")):
+        emit_node(n.get("name", ""), "exit", "fail")
         print(f"❌ Nó '{n.get('name')}' falhou: {resolve_cmd(n.get('exit_cmd', ''))}")
         return 1
+    emit_node(n.get("name", ""), "exit", "pass")
     if n.get("freeze_tests"):
         freeze_test_files()
     state["completed"].append(n.get("name"))
@@ -225,12 +230,15 @@ def run_flow(workflow_name: str, step_only: bool = False) -> int:
 
     while state["current_idx"] < len(nodes):
         node = nodes[state["current_idx"]]
-        name = node.get("name")
+        name = node.get("name", "")
+        emit_node(name, "enter")
         print(f"▶ [{state['current_idx']+1}/{len(nodes)}] {name} ({node.get('run', 'agent')})...")
         if not run_node_exit_cmd(node.get("exit_cmd", ""), name):
+            emit_node(name, "exit", "fail")
             print(f"❌ Nó '{name}' falhou: {resolve_cmd(node.get('exit_cmd', ''))}")
             save_flow_state(state)
             return 1
+        emit_node(name, "exit", "pass")
         print(f"✅ Nó '{name}' concluído com sucesso.")
         if node.get("freeze_tests"):
             state["frozen_tests"].update(freeze_test_files())
@@ -293,11 +301,8 @@ def main() -> int:
     sub.add_parser("start").add_argument("workflow")
     for name in ("next", "advance", "where", "status", "reset"):
         sub.add_parser(name)
-    r_p = sub.add_parser("run")
-    r_p.add_argument("workflow"); r_p.add_argument("--step", action="store_true")
-    ro_p = sub.add_parser("reopen")
-    ro_p.add_argument("node"); ro_p.add_argument("--reason", required=True)
-
+    r_p = sub.add_parser("run"); r_p.add_argument("workflow"); r_p.add_argument("--step", action="store_true")
+    ro_p = sub.add_parser("reopen"); ro_p.add_argument("node"); ro_p.add_argument("--reason", required=True)
     args = p.parse_args()
     cmds = {
         "validate": lambda: validate_workflows(args.file), "start": lambda: start_flow(args.workflow),
@@ -305,10 +310,7 @@ def main() -> int:
         "run": lambda: run_flow(args.workflow, step_only=args.step), "status": status_flow,
         "reset": reset_flow, "reopen": lambda: reopen_node(args.node, args.reason),
     }
-    if args.subcommand in cmds:
-        return cmds[args.subcommand]()
-    p.print_help()
-    return 1
+    return cmds[args.subcommand]() if args.subcommand in cmds else (p.print_help() or 1)
 
 
 if __name__ == "__main__":

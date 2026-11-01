@@ -155,6 +155,39 @@ def process_tool_payload(
             except Exception:
                 pass
 
+            # B15: Emite evento failure com class e signature
+            try:
+                from scripts.kit_events import classify_failure, emit
+                cls_name, sig = classify_failure(tool_name, denoised)
+                emit("failure", cls=cls_name, signature=sig, tool=tool_name)
+            except Exception:
+                pass
+
+        # B15: Chama xp gate record automaticamente se comando equivaler a verify_cmd
+        try:
+            cmd = ""
+            if isinstance(data, dict):
+                tool_inp = data.get("tool_input") or data.get("args") or data.get("input") or {}
+                if isinstance(tool_inp, dict):
+                    cmd = tool_inp.get("CommandLine") or tool_inp.get("command") or ""
+                elif isinstance(tool_inp, str):
+                    cmd = tool_inp
+                if not cmd:
+                    cmd = str(data.get("CommandLine") or data.get("command") or "")
+
+            if cmd:
+                from scripts.xp_contract import load_contract
+                contract = load_contract()
+                verify_cmd = contract.get("verify_cmd", "").strip()
+                if verify_cmd and (cmd.strip() == verify_cmd or verify_cmd in cmd):
+                    from scripts.evidence_recorder import compute_diff_hash, record
+                    ret_code = int(data.get("exit_code", 1 if failure_detected else 0))
+                    diff_h = compute_diff_hash()
+                    risk = contract.get("risk_level", "L1")
+                    record(cmd, ret_code, output=denoised, risk_level=risk, diff_hash=diff_h)
+        except Exception:
+            pass
+
     result: Dict[str, Any] = {
         "is_flooding": is_flooding,
         "char_count": char_count,

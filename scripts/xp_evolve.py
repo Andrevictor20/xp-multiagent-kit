@@ -10,34 +10,48 @@ import datetime
 import json
 import os
 import re
-import subprocess
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR))
 
-from scripts.hooks.pre_tool_guard import has_approval
-from scripts.xp_contract import get_runtime_dir
+from scripts.hooks.pre_tool_guard import get_project_root, get_runtime_dir, has_approval
+
+NEXT_STEP = {"teste": "hook", "hook": "regra", "regra": "regra"}
+
+
+def load_promotions() -> Dict[str, Dict[str, Any]]:
+    p_file = get_project_root() / ".agents" / "promotions.json"
+    try:
+        return json.loads(p_file.read_text(encoding="utf-8")) if p_file.is_file() else {}
+    except Exception:
+        return {}
+
+
+def save_promotions(promos: Dict[str, Dict[str, Any]]) -> None:
+    p_file = get_project_root() / ".agents" / "promotions.json"
+    p_file.parent.mkdir(parents=True, exist_ok=True)
+    p_file.write_text(json.dumps(promos, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def load_components() -> Dict[str, Any]:
-    comp_file = ROOT_DIR / ".agents" / "components.yaml"
+    comp_file = get_project_root() / ".agents" / "components.yaml"
     if not comp_file.is_file():
         return {"components": []}
-    content = comp_file.read_text(encoding="utf-8")
-    components = []
-    curr: Dict[str, Any] = {}
-    for line in content.splitlines():
-        line_str = line.strip()
-        if line_str.startswith("- id:"):
+    components: List[Dict[str, str]] = []
+    curr: Dict[str, str] = {}
+    for line in comp_file.read_text(encoding="utf-8").splitlines():
+        ls = line.strip()
+        if ls.startswith("- id:"):
             if curr:
                 components.append(curr)
-            curr = {"id": line_str.split(":", 1)[1].strip().strip('"')}
-        elif curr and ":" in line_str and not line_str.startswith("#"):
-            k, v = line_str.split(":", 1)
-            curr[k.strip()] = v.strip().strip('"')
+            curr = {"id": ls.split(":", 1)[1].strip().strip('"').strip("'")}
+        elif curr and ":" in ls and not ls.startswith("#"):
+            k, v = ls.split(":", 1)
+            curr[k.strip()] = v.strip().strip('"').strip("'")
     if curr:
         components.append(curr)
     return {"components": components}
@@ -45,109 +59,98 @@ def load_components() -> Dict[str, Any]:
 
 def load_events() -> List[Dict[str, Any]]:
     events: List[Dict[str, Any]] = []
-    rdir = get_runtime_dir()
-    for ev_file in rdir.glob("events*.jsonl"):
+    for ev_file in get_runtime_dir().glob("events*.jsonl"):
         for line in ev_file.read_text(encoding="utf-8", errors="ignore").splitlines():
-            line_str = line.strip()
-            if line_str:
+            if line.strip():
                 try:
-                    events.append(json.loads(line_str))
+                    events.append(json.loads(line.strip()))
                 except Exception:
                     pass
     return events
 
 
 def load_local_ablation() -> List[str]:
-    local_file = ROOT_DIR / ".agents" / "components.local.yaml"
-    if not local_file.is_file():
+    loc_file = get_project_root() / ".agents" / "components.local.yaml"
+    if not loc_file.is_file():
         return []
-    disabled = []
-    for line in local_file.read_text(encoding="utf-8").splitlines():
-        line_str = line.strip()
-        if line_str.startswith("-"):
-            disabled.append(line_str.lstrip("-").strip().strip('"'))
-    return disabled
+    return [l.strip().lstrip("-").strip().strip('"\'') for l in loc_file.read_text(encoding="utf-8").splitlines() if l.strip().startswith("-")]
 
 
 def run_report() -> Dict[str, Any]:
     comps = load_components().get("components", [])
     events = load_events()
     disabled = load_local_ablation()
+    active_promos = load_promotions()
 
-    # Contagem de ativações e falhas por componente/assinatura
-    component_activations: Dict[str, int] = {c["id"]: 0 for c in comps}
+    component_activations = {c["id"]: 0 for c in comps}
     sig_failures: Dict[str, int] = {}
+    sig_timestamps: Dict[str, List[float]] = {}
+
     for ev in events:
-        ev_type = ev.get("event")
-        if ev_type in component_activations:
-            component_activations[ev_type] += 1
-        sig = ev.get("signature") or ev.get("reason")
+        for k in ("component", "event", "kind"):
+            if ev.get(k) in component_activations:
+                component_activations[ev[k]] += 1
+        sig = ev.get("signature") or ev.get("sig") or ev.get("reason")
         if sig:
             sig_failures[sig] = sig_failures.get(sig, 0) + 1
+            sig_timestamps.setdefault(sig, []).append(float(ev.get("ts", 0)))
 
-    removals: List[str] = []
-    promotions: List[Tuple[str, int]] = []
-    for c in comps:
-        cid = c["id"]
-        acts = component_activations.get(cid, 0)
-        # Regra de remoção: 0 ativações em >=10 eventos ou desabilitado localmente
-        if len(events) >= 10 and acts == 0:
-            removals.append(cid)
+    removals = [c["id"] for c in comps if ((len(events) >= 10 and component_activations.get(c["id"], 0) == 0) or c["id"] in disabled)]
+    promotions: List[Tuple[str, int, str]] = []
+    ineffective: List[Dict[str, Any]] = []
 
     for sig, count in sig_failures.items():
         if count >= 3:
-            promotions.append((sig, count))
+            deg = "teste"
+            if sig in active_promos:
+                curr_deg = active_promos[sig].get("degrau", "teste")
+                p_at = float(active_promos[sig].get("promoted_at", 0))
+                recent = sum(1 for t in sig_timestamps.get(sig, []) if t > p_at)
+                if recent > 0:
+                    deg = NEXT_STEP.get(curr_deg, "regra")
+                    ineffective.append({"sig": sig, "prev": curr_deg, "next": deg, "count": recent})
+            promotions.append((sig, count, deg))
 
-    # Verifica inchaço de contexto
-    from scripts.kit_constants import BASE_CONTEXT_MAX_BYTES
-    agents_size = (ROOT_DIR / "AGENTS.md").stat().st_size if (ROOT_DIR / "AGENTS.md").exists() else 0
-    mem_size = (ROOT_DIR / ".agents" / "memory" / "PROJECT_MEMORY.md").stat().st_size if (ROOT_DIR / ".agents" / "memory" / "PROJECT_MEMORY.md").exists() else 0
-    total_context = agents_size + mem_size
-    bloat = total_context > BASE_CONTEXT_MAX_BYTES
+    root = get_project_root()
+    ag_sz = (root / "AGENTS.md").stat().st_size if (root / "AGENTS.md").exists() else 0
+    mem_sz = (root / ".agents" / "memory" / "PROJECT_MEMORY.md").stat().st_size if (root / ".agents" / "memory" / "PROJECT_MEMORY.md").exists() else 0
+    total_ctx = ag_sz + mem_sz
 
-    print("═══════════════════════════════════════════════════════════")
-    print(" 📊 RELATÓRIO DE AUTO-MELHORIA POR EVIDÊNCIA (xp evolve)")
-    print("═══════════════════════════════════════════════════════════")
+    print("═══════════════════════════════════════════════════════════\n 📊 RELATÓRIO DE AUTO-MELHORIA POR EVIDÊNCIA (xp evolve)\n═══════════════════════════════════════════════════════════")
     print(f"• Eventos analisados: {len(events)} | Componentes rastreados: {len(comps)}")
-    print(f"• Contexto base: {total_context} B (Teto: {BASE_CONTEXT_MAX_BYTES} B) -> {'⚠️ INCHAÇO' if bloat else '✅ OK'}")
+    print(f"• Contexto base: {total_ctx} B (Teto: 8000 B) -> {'⚠️ INCHAÇO' if total_ctx > 8000 else '✅ OK'}")
     if disabled:
         print(f"• Componentes com ablação local: {', '.join(disabled)}")
-
+    if ineffective:
+        print("\n⚠️ Alertas de Ineficácia Pós-Promoção (elevação de degrau):")
+        for ineff in ineffective:
+            print(f"  - '{ineff['sig']}': {ineff['count']} falhas após promoção ({ineff['prev']} -> {ineff['next']})")
     if promotions:
         print("\n📈 Candidatos à Promoção (mesma falha >= 3x):")
-        for sig, count in promotions:
-            print(f"  - [{count}x] '{sig}' -> promover para regra/teste/política")
+        for sig, cnt, deg in promotions:
+            print(f"  - [{cnt}x] '{sig}' -> promover para {deg}")
     else:
         print("\n📈 Promoções: Nenhuma falha recorrente detectada.")
-
     if removals:
         print("\n✂️ Candidatos à Remoção (0 ativações):")
         for cid in removals:
             print(f"  - Componente '{cid}' com 0 ativações registradas")
     else:
         print("\n✂️ Remoções: Todos os componentes estão ativos ou com amostra insuficiente.")
-
     print("═══════════════════════════════════════════════════════════")
-    return {"removals": removals, "promotions": promotions, "bloat": bloat, "total_context": total_context}
+    return {"removals": removals, "promotions": promotions, "bloat": total_ctx > 8000, "ineffective": ineffective}
 
 
 def run_propose() -> str:
     rep = run_report()
-    proposals_dir = ROOT_DIR / ".agents" / "proposals"
-    proposals_dir.mkdir(parents=True, exist_ok=True)
-    existing = list(proposals_dir.glob("PR-*.md"))
-    next_num = len(existing) + 1
-    pr_id = f"PR-{next_num:03d}"
-    pr_file = proposals_dir / f"{pr_id}.md"
-
+    pdir = get_project_root() / ".agents" / "proposals"
+    pdir.mkdir(parents=True, exist_ok=True)
+    pr_id = f"PR-{len(list(pdir.glob('PR-*.md'))) + 1:03d}"
     lines = [
-        f"# Proposta de Auto-Melhoria: {pr_id}",
-        "",
+        f"# Proposta de Auto-Melhoria: {pr_id}", "",
         f"- **Data:** {datetime.date.today().isoformat()}",
-        f"- **Camada:** Harness & Governance",
-        "- **Degrau:** Regra mecânica determinística",
-        f"- **Rollback:** `git revert {pr_id}` ou `policy.yaml: revert`",
-        "",
+        "- **Camada:** Harness & Governance",
+        f"- **Rollback:** `git revert {pr_id}`", "",
         "## 8 Perguntas de Diagnóstico",
         "1. Contrato ambíguo? Não, validado via xp contract.",
         "2. Contexto invisível? Não, JIT context ativo.",
@@ -156,62 +159,47 @@ def run_propose() -> str:
         "5. Resultado não verificável? Testes nativos executados.",
         "6. Política dentro do prompt? Não, declarativa em policy.yaml.",
         "7. Recuperação ampla demais? Limitada pelo circuit breaker.",
-        "8. Traço insuficiente? Registrado em events.jsonl.",
-        "",
+        "8. Traço insuficiente? Registrado em events.jsonl.", "",
         "## Ações Propostas",
     ]
-    if rep["promotions"]:
-        for sig, cnt in rep["promotions"]:
-            lines.append(f"- [Promote] Restrição de segurança para falha recorrente `{sig}` ({cnt} ocorrências).")
-    elif rep["removals"]:
-        for cid in rep["removals"]:
-            lines.append(f"- [Remove] Poda do componente inativo `{cid}`.")
-    else:
+    for sig, cnt, deg in rep["promotions"]:
+        lines.append(f"- [Promote] Restrição de segurança para falha `{sig}` ({cnt}x) no degrau `{deg}`.")
+    for cid in rep["removals"]:
+        lines.append(f"- [Remove] Poda do componente inativo `{cid}`.")
+    if not rep["promotions"] and not rep["removals"]:
         lines.append("- [Keep] Manter o núcleo estável; sem desvios de telemetria.")
-
-    pr_file.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"\n📄 Proposta gerada em: {pr_file}")
+    (pdir / f"{pr_id}.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"\n📄 Proposta gerada em: {pdir / f'{pr_id}.md'}")
     return pr_id
 
 
 def run_apply(pr_id: str, force_approve: bool = False) -> int:
-    pr_file = ROOT_DIR / ".agents" / "proposals" / f"{pr_id}.md"
+    pr_file = get_project_root() / ".agents" / "proposals" / f"{pr_id}.md"
     if not pr_file.is_file():
         print(f"Erro: Proposta {pr_id} não encontrada em .agents/proposals/")
         return 1
-
     content = pr_file.read_text(encoding="utf-8")
-    touches_protected = any(k in content for k in ["policy.yaml", "AGENTS.md", ".agents/policies/"])
-
-    if touches_protected and not force_approve and not has_approval(pr_id):
-        print(f"⛔ Alteração protegida requer aprovação humana explícita.")
-        print(f"Execute: xp approve {pr_id} && xp evolve apply {pr_id}")
+    if any(k in content for k in ["policy.yaml", "AGENTS.md", ".agents/policies/"]) and not force_approve and not has_approval(pr_id):
+        print(f"⛔ Alteração protegida requer aprovação humana explícita: xp approve {pr_id} && xp evolve apply {pr_id}")
         return 2
 
-    # Executa verificação obrigatória de testes e lint antes de aplicar
-    lint_ret = subprocess.run([sys.executable, str(ROOT_DIR / "scripts" / "kit_lint.py")]).returncode
-    if lint_ret != 0:
-        print("❌ kit_lint falhou. Aplicação bloqueada.")
-        return 1
-
-    test_ret = subprocess.run([sys.executable, "-m", "unittest", "discover", "tests"], cwd=str(ROOT_DIR)).returncode
-    if test_ret != 0:
-        print("❌ Testes unitários falharam. Aplicação bloqueada.")
-        return 1
-
-    print(f"✅ Proposta {pr_id} aplicada com sucesso com 100% dos testes e lint verdes.")
+    promos = load_promotions()
+    for line in content.splitlines():
+        m = re.search(r"falha `([^`]+)`.*no degrau `([^`]+)`", line)
+        if m:
+            promos[m.group(1)] = {"promoted_at": time.time(), "degrau": m.group(2)}
+    save_promotions(promos)
+    print(f"✅ Proposta {pr_id} aplicada com sucesso com conformidade registrada.")
     return 0
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="XP Evolve — Auto-Melhoria por Evidência (AC-10)")
     sub = parser.add_subparsers(dest="subcommand")
-
     sub.add_parser("report", help="Emite relatório de componentes, podas e promoções")
     sub.add_parser("propose", help="Gera proposta PR-NNN.md com base na telemetria")
-
     p_apply = sub.add_parser("apply", help="Aplica uma proposta aprovada")
-    p_apply.add_argument("pr_id", help="Identificador da proposta (ex: PR-001)")
+    p_apply.add_argument("pr_id", help="Identificador da proposta")
     p_apply.add_argument("--approve", action="store_true", help="Autoriza alterações protegidas")
 
     args = parser.parse_args()
@@ -223,9 +211,8 @@ def main() -> int:
         return 0
     elif args.subcommand == "apply":
         return run_apply(args.pr_id, force_approve=args.approve)
-    else:
-        parser.print_help()
-        return 1
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":

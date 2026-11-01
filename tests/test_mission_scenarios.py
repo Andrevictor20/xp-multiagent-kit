@@ -415,6 +415,78 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertLessEqual(len(res_next.stdout.encode("utf-8")), 800, f"xp flow next output ({len(res_next.stdout.encode('utf-8'))} B) must be <= 800 B")
 
     # ------------------------------------------------------------------
+    # S13: eventos de fixture: 1 assinatura repetida x3 e 1 componente sem uso -> report lista 1 promoção e 1 remoção; apply em AGENTS.md sem --approve é recusado
+    # ------------------------------------------------------------------
+    def test_s13_evolve_report_promotion_removal_and_approval_gate(self):
+        repo_dir, runtime_dir = self.make_temp_repo()
+        # Copia estrutura mínima para o repo temporário
+        ag_dir = repo_dir / ".agents"
+        ag_dir.mkdir(parents=True, exist_ok=True)
+        (repo_dir / "AGENTS.md").write_text("# Master\n## CONTRATO\n## CONTEXTO\n## FERRAMENTAS\n## ESTADO\n## POLÍTICA\n## VERIFICAÇÃO\n## RECUPERAÇÃO\n## OBSERVABILIDADE\n", encoding="utf-8")
+
+        # components.yaml com um componente ativo e um inativo
+        comp_file = ag_dir / "components.yaml"
+        comp_file.write_text(
+            "components:\n"
+            "  - id: 'active_comp'\n"
+            "    kind: 'script'\n"
+            "    prevents: 'some failure'\n"
+            "  - id: 'unused_comp'\n"
+            "    kind: 'script'\n"
+            "    prevents: 'prevent unused'\n",
+            encoding="utf-8",
+        )
+
+        # 10+ eventos em events.jsonl
+        events_file = runtime_dir / "events.jsonl"
+        events_lines = []
+        # 3 falhas repetidas com a mesma assinatura
+        for _ in range(3):
+            events_lines.append(json.dumps({"ts": 1000, "event": "failure", "signature": "sig_err_rep"}))
+        # 7 eventos de ativação do active_comp
+        for _ in range(7):
+            events_lines.append(json.dumps({"ts": 1000, "event": "active_comp"}))
+        events_file.write_text("\n".join(events_lines) + "\n", encoding="utf-8")
+
+        XP_EVOLVE = KIT_ROOT / "scripts" / "xp_evolve.py"
+        res_rep = self.run_cmd([sys.executable, str(XP_EVOLVE), "report"], repo_dir, runtime_dir)
+        self.assertEqual(res_rep.returncode, 0, f"evolve report failed: {res_rep.stderr}")
+        self.assertIn("sig_err_rep", res_rep.stdout)
+        self.assertIn("unused_comp", res_rep.stdout)
+
+        # Propose gera proposta que toca AGENTS.md
+        res_prop = self.run_cmd([sys.executable, str(XP_EVOLVE), "propose"], repo_dir, runtime_dir)
+        self.assertEqual(res_prop.returncode, 0)
+
+        # Simula proposta que toca AGENTS.md
+        pr_file = ag_dir / "proposals" / "PR-001.md"
+        pr_file.parent.mkdir(parents=True, exist_ok=True)
+        pr_file.write_text("# PR-001\nAltera AGENTS.md para promover regra\n", encoding="utf-8")
+
+        # Apply sem --approve deve ser recusado com exit 2
+        res_app = self.run_cmd([sys.executable, str(XP_EVOLVE), "apply", "PR-001"], repo_dir, runtime_dir)
+        self.assertEqual(res_app.returncode, 2, f"Expected exit 2 when applying to AGENTS.md without approval. Got: {res_app.returncode}")
+
+    # ------------------------------------------------------------------
+    # S14: skill existente sem entrada em components.yaml -> kit_lint exit != 0
+    # ------------------------------------------------------------------
+    def test_s14_skill_without_components_entry_fails_kit_lint(self):
+        KIT_LINT = KIT_ROOT / "scripts" / "kit_lint.py"
+        repo_dir, runtime_dir = self.make_temp_repo()
+        ag_dir = repo_dir / ".agents"
+        skills_dir = ag_dir / "skills"
+        skills_dir.mkdir(parents=True, exist_ok=True)
+        (skills_dir / "orphan-skill").mkdir(parents=True, exist_ok=True)
+
+        comp_file = ag_dir / "components.yaml"
+        comp_file.write_text("components:\n  - id: 'other_skill'\n    prevents: 'test'\n", encoding="utf-8")
+
+        env = dict(os.environ)
+        env["KIT_RUNTIME_DIR"] = str(runtime_dir)
+        res = subprocess.run([sys.executable, str(KIT_LINT), "--dir", str(repo_dir)], env=env, capture_output=True, text=True)
+        self.assertNotEqual(res.returncode, 0, f"kit_lint must fail when a skill is missing from components.yaml. Output: {res.stdout}")
+
+    # ------------------------------------------------------------------
     # S15: Repositório entregue -> testes de orçamento
     # ------------------------------------------------------------------
     def test_s15_repository_delivered_budget_tests(self):

@@ -15,9 +15,25 @@ from typing import Any, Dict, Optional, Tuple
 
 def get_events_path() -> Path:
     env_dir = os.environ.get("KIT_RUNTIME_DIR")
-    base = Path(env_dir).expanduser().resolve() if env_dir else Path(__file__).resolve().parent.parent / ".agents" / "runtime"
+    if env_dir:
+        base = Path(env_dir).expanduser().resolve()
+    else:
+        try:
+            from scripts.hooks.pre_tool_guard import get_runtime_dir
+            base = get_runtime_dir()
+        except Exception:
+            base = Path(__file__).resolve().parent.parent / ".agents" / "runtime"
     base.mkdir(parents=True, exist_ok=True)
     return base / "events.jsonl"
+
+
+def get_active_run_id() -> Optional[str]:
+    try:
+        from scripts.xp_contract import load_contract
+        c = load_contract()
+        return c.get("run_id") or c.get("task_id")
+    except Exception:
+        return None
 
 
 def classify_failure(tool: str, error_text: str) -> Tuple[str, str]:
@@ -52,6 +68,11 @@ def emit(kind: str, **fields: Any) -> Optional[Dict[str, Any]]:
         path.rename(rot)
 
     event: Dict[str, Any] = {"ts": int(time.time()), "kind": kind}
+    if "run_id" not in fields:
+        rid = get_active_run_id()
+        if rid:
+            event["run_id"] = rid
+
     for k, v in fields.items():
         if isinstance(v, str) and len(v) > 200:
             event[k] = v[:200]
@@ -59,8 +80,15 @@ def emit(kind: str, **fields: Any) -> Optional[Dict[str, Any]]:
             event[k] = v
 
     line = json.dumps(event, ensure_ascii=False)
-    if len(line.encode("utf-8")) > 299:
-        line = line[:295] + '..."}'
+    # Garante teto rígido de <= 300 B gerando JSON válido
+    while len(line.encode("utf-8")) > 300:
+        # Encontra o campo de string mais longo e encurta
+        longest_k = max((k for k, v in event.items() if isinstance(v, str)), key=lambda k: len(event[k]), default=None)
+        if longest_k and len(event[longest_k]) > 10:
+            event[longest_k] = event[longest_k][:-15]
+            line = json.dumps(event, ensure_ascii=False)
+        else:
+            break
 
     with open(path, "a", encoding="utf-8") as f:
         f.write(line + "\n")

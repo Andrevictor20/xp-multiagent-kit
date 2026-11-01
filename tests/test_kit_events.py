@@ -86,6 +86,31 @@ class TestKitEvents(unittest.TestCase):
         rotated = events_file.with_name("events.1.jsonl")
         self.assertTrue(rotated.is_file())
 
+    def test_emit_injects_run_id_from_contract(self):
+        run_file = Path(self.test_dir) / "run.json"
+        run_file.write_text(json.dumps({"run_id": "RUN-TEST-001"}), encoding="utf-8")
+        ev = emit("usage", component="spec_pyramid")
+        self.assertIsNotNone(ev)
+        self.assertEqual(ev.get("run_id"), "RUN-TEST-001")
+        self.assertEqual(ev.get("component"), "spec_pyramid")
+
+    def test_canonical_events_under_budget(self):
+        events = [
+            emit("failure", cls="test_fail", signature="sig123", tool="pytest"),
+            emit("usage", component="builder"),
+            emit("node", node="lint_check", phase="enter"),
+            emit("approval", action_id="a1b2c3d4"),
+            emit("cost", tokens=450, turn=2),
+        ]
+        ev_file = get_events_path()
+        lines = [line.strip() for line in ev_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+        self.assertEqual(len(lines), 5)
+        for line in lines:
+            self.assertLessEqual(len(line.encode("utf-8")), 300, "Cada evento deve ter <= 300 B")
+            data = json.loads(line)
+            self.assertIn("kind", data)
+            self.assertIn("ts", data)
+
 
 if __name__ == "__main__":
     unittest.main()

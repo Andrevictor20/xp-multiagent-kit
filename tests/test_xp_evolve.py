@@ -23,6 +23,12 @@ class TestXpEvolve(unittest.TestCase):
                 pr_file.unlink()
             except Exception:
                 pass
+        p_file = Path(__file__).resolve().parent.parent / ".agents" / "promotions.json"
+        if p_file.is_file():
+            try:
+                p_file.unlink()
+            except Exception:
+                pass
 
     def test_load_components(self) -> None:
         comps = load_components().get("components", [])
@@ -52,6 +58,30 @@ class TestXpEvolve(unittest.TestCase):
             mock_sub.return_value.returncode = 0
             code = run_apply(pr_id, force_approve=True)
             self.assertEqual(code, 0)
+
+    def test_post_promotion_recurrence_escalates_step(self) -> None:
+        from scripts.xp_evolve import save_promotions
+        p_file = Path(__file__).resolve().parent.parent / ".agents" / "promotions.json"
+        save_promotions({"sig_rec_err": {"promoted_at": 1000, "degrau": "teste"}})
+
+        # Cria evento falso de reincidência
+        rdir = Path(__file__).resolve().parent.parent / ".agents" / "runtime"
+        rdir.mkdir(parents=True, exist_ok=True)
+        ev_file = rdir / "events.test.jsonl"
+        ev_lines = [
+            json.dumps({"ts": 2000, "kind": "failure", "signature": "sig_rec_err"})
+            for _ in range(3)
+        ]
+        ev_file.write_text("\n".join(ev_lines) + "\n", encoding="utf-8")
+        try:
+            rep = run_report()
+            ineff = [i for i in rep["ineffective"] if i["sig"] == "sig_rec_err"]
+            self.assertTrue(len(ineff) > 0, "Deveria detectar ineficácia pós-promoção")
+            self.assertEqual(ineff[0]["prev"], "teste")
+            self.assertEqual(ineff[0]["next"], "hook")
+        finally:
+            if ev_file.is_file():
+                ev_file.unlink()
 
 
 if __name__ == "__main__":

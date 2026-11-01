@@ -24,7 +24,7 @@ def get_project_root() -> Path:
         return Path(env_dir).expanduser().resolve()
     try:
         res = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
-        if res.returncode == 0 and res.stdout.strip():
+        if res.returncode == 0 and isinstance(res.stdout, str) and res.stdout.strip():
             return Path(res.stdout.strip()).resolve()
     except Exception:
         pass
@@ -69,6 +69,11 @@ def record_approval(id_str: str) -> None:
         data["approved_ids"].append(id_str)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    try:
+        from scripts.kit_events import emit
+        emit("approval", action_id=id_str)
+    except Exception:
+        pass
 
 
 def has_approval(id_str: str) -> bool:

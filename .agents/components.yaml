@@ -1,10 +1,11 @@
 # .agents/components.yaml — Ledger de Componentes e Garantias de Remoção (P7)
-# Regra: todo componente novo entra aqui na criação com a falha que previne.
+# Regra: todo componente entra aqui com a falha que previne.
 # Se a falha não ocorre em N sessões, o componente paga aluguel ou é removido.
 
 version: "4.0.0"
 
 components:
+  # Scripts nucleares
   - id: "xp_contract"
     kind: "script"
     prevents: "Ambiguous task scope, lost constraints across iterations, and loop amnesia"
@@ -68,5 +69,297 @@ components:
   - id: "xp_eval"
     kind: "script"
     prevents: "Unmeasured performance regressions and token efficiency degradation without benchmark evidence"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "kit_lint"
+    kind: "script"
+    prevents: "Silent configuration errors, broken schemas, and governance rule violations"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "kit_installer"
+    kind: "script"
+    prevents: "Broken installation symlinks, conflicting paths, and environment mismatch"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "memory_archiver"
+    kind: "script"
+    prevents: "Project memory exploding past token limits and lost historical logs"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "evidence_recorder"
+    kind: "script"
+    prevents: "Unverifiable test outputs, lost execution logs, and turn bloat"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "conformance_report"
+    kind: "script"
+    prevents: "Unverified acceptance criteria and undocumented feature coverage"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "goldfish_review"
+    kind: "script"
+    prevents: "Self-serving review bias and uncritical acceptance of architectural drift"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  # Hooks
+  - id: "tool_size_guard"
+    kind: "hook"
+    prevents: "Massive tool output floods consuming agent context window"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "smart_tool_optimizer"
+    kind: "hook"
+    prevents: "Repetitive file reads, redundant directory scans, and token waste"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "dynamic_effort_hook"
+    kind: "hook"
+    prevents: "Over-allocating high reasoning tokens to trivial tasks or under-allocating to critical tasks"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  # Agentes
+  - id: "builder"
+    kind: "agent"
+    prevents: "Incomplete implementation, lingering TODOs, and God files"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "designer"
+    kind: "agent"
+    prevents: "Aesthetically uninspired, inaccessible, and sloppy user interfaces"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "orchestrator"
+    kind: "agent"
+    prevents: "Misrouted tasks, unclassified risk levels, and unstructured execution"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "reviewer"
+    kind: "agent"
+    prevents: "Merged code regressions, bypassed gates, and unverified diffs"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "sentinel"
+    kind: "agent"
+    prevents: "Security vulnerabilities, unauthorized actions, and leaked credentials"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "shipper"
+    kind: "agent"
+    prevents: "Unverified production releases and catastrophic deployment downtime"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  # Políticas
+  - id: "architecture-and-persistence"
+    kind: "policy"
+    prevents: "Unbounded coupling, unindexed database migrations, and architectural drift"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "frontend-and-design-system"
+    kind: "policy"
+    prevents: "Token duplication, non-standard styling, and inconsistent design components"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "memory-and-context"
+    kind: "policy"
+    prevents: "Context budget overflow and untracked project decisions"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "release-and-deployment"
+    kind: "policy"
+    prevents: "Downtime deployments, missing gate checks, and unversioned releases"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "security-and-zero-trust"
+    kind: "policy"
+    prevents: "Unapproved destructive actions and unauthorized credential access"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "testing-and-quality"
+    kind: "policy"
+    prevents: "Test bypass, skipped assertions, and untested code releases"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "token-economy"
+    kind: "policy"
+    prevents: "Context budget explosion and excessive token consumption per turn"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  # Skills
+  - id: "api-contracts"
+    kind: "skill"
+    prevents: "API breaking changes and unversioned endpoint contracts"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "async-messaging-and-resilience"
+    kind: "skill"
+    prevents: "Lost messages, unbounded retries, and cascading failures in distributed workflows"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "browser-e2e-playwright"
+    kind: "skill"
+    prevents: "Uncaught browser regressions and flaky UI interactions"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "ci-auto-heal"
+    kind: "skill"
+    prevents: "Unattended CI build failures and blocked deployment pipelines"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "cloud-and-iac-security"
+    kind: "skill"
+    prevents: "Infrastructure misconfigurations, privilege escalation, and exposed secrets"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "code-hygiene-review"
+    kind: "skill"
+    prevents: "Codebase rot, god files, hacky workarounds, and messy pull requests"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "codebase-cartography"
+    kind: "skill"
+    prevents: "Unknown blast radius, blind edits, and untested circular dependencies"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "coderabbit-review"
+    kind: "skill"
+    prevents: "Unreviewed pull requests and missed static analysis findings"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "conversion-and-seo"
+    kind: "skill"
+    prevents: "Poor conversion rates, inaccessible copywriting, and missed technical SEO signals"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "database-architecture"
+    kind: "skill"
+    prevents: "Data corruption, unindexed slow queries, and migration deadlocks"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "deploy-pipeline-conductor"
+    kind: "skill"
+    prevents: "Downtime deployments, failed canary releases, and missing rollback mechanisms"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "design-intelligence"
+    kind: "skill"
+    prevents: "Generic, uncalibrated visual aesthetics and broken typography choices"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "design-system"
+    kind: "skill"
+    prevents: "Fragmented UI components, hardcoded CSS tokens, and inaccessible design drift"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "frontend-taste-engineering"
+    kind: "skill"
+    prevents: "AI-generated UI slop and visually uninspired frontends"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "git-worktree-workspace"
+    kind: "skill"
+    prevents: "Subagent conflicts, dirty working directory collisions, and git workspace pollution"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "goldfish-spec-review"
+    kind: "skill"
+    prevents: "Blind architectural assumptions, scope drift, and unbacked technical specs"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "image-to-code"
+    kind: "skill"
+    prevents: "Imprecise visual implementation and design-to-code fidelity loss"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "mobile-app-design"
+    kind: "skill"
+    prevents: "Unresponsive touch targets, broken safe-area layouts, and non-native mobile UX"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "project-memory"
+    kind: "skill"
+    prevents: "Cross-session context amnesia and lost architectural decisions"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "release-and-deploy"
+    kind: "skill"
+    prevents: "Broken production releases and missing continuous deployment validation"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "security-review"
+    kind: "skill"
+    prevents: "OWASP vulnerabilities, insecure authentication, and authorization bypasses"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "spec-pyramid"
+    kind: "skill"
+    prevents: "Vague user stories and specs without concrete executable examples"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "tdd-safety-net"
+    kind: "skill"
+    prevents: "Test bypass, untested edge cases, and untracked acceptance criteria"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "threat-modeling"
+    kind: "skill"
+    prevents: "Unmodeled attack surfaces and unexpected security boundary violations"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "ui-accessibility-responsive"
+    kind: "skill"
+    prevents: "WCAG accessibility failures and broken viewport scaling"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "ui-quality-gate"
+    kind: "skill"
+    prevents: "Shipping unpolished, inaccessible user interfaces"
     added: "2026-11-01"
     review_by: "2027-02-01"
