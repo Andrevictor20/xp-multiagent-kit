@@ -34,11 +34,11 @@
 
 | Data | Tipo | Descrição Concisa | Arquivos Chave | Status |
 | :--- | :--- | :--- | :--- | :--- |
+| 2026-11-01 | `FEAT` | Thin Harness Fase 1 (v4.0.0-alpha) — Implementação determinística de contrato (`xp_contract.py`), política por custo de reversão (`.agents/policy.yaml`), hook `pre_tool_guard.py`, telemetria local (`kit_events.py`), gate barato-primeiro (`xp_gate.py`) com recibo de 7 campos em PT-BR e esqueleto CLI `xp` | `scripts/xp*`, `.agents/policy.yaml`, `.agents/components.yaml`, `tests/*` | `PASS (406/406 tests)` |
 | 2026-10-31 | `FEAT` | CodeRabbit Review & Template Declarativo (v3.9.2) — Skill `coderabbit-review` com fallback não-bloqueante à CLI, template `.coderabbit.yaml` (No God Files <500L, Zero Workarounds, WCAG AA), acoplamento aos agentes `refactor-warden` (EGM Pass 2) e `release-gatekeeper` e 80 skills ativas | `.agents/skills/coderabbit-review/`, `.agents/templates/.coderabbit.yaml`, `.agents/agents/` | `PASS (385/385 tests)` |
 | 2026-10-31 | `FEAT` | Motor de Memória JIT e Auto-Injeção via Hook (v3.9.1) — Expansão de `scripts/memory_search.py` (FTS5 BM25) cobrindo policies/specs/details/ADRs com contextual chunking, motor `context_retriever.py` (CLI `agy-context`/`xp-context` <300 tokens) e auto-injeção em `dynamic_effort_hook.py` | `scripts/context_retriever.py`, `scripts/memory_search.py`, `tests/test_context_engine.py` | `PASS (385/385 tests)` |
 | 2026-10-31 | `FEAT` | Motor de Completude Exaustiva & Revisão Multi-Pass EGM (v3.9.0 / SPEC-005) — Mandato `COMPLETENESS_OVER_SPEED`, 3 passadas de EGM em `scripts/goldfish_review.py` (`xp-goldfish`/`agy-goldfish`), `EFFORT_HIGH` no `agy_effort_router.py` e 6 novos testes TDD | `AGENTS.md`, `scripts/goldfish_review.py`, `tests/test_egm_completeness_engine.py` | `PASS (379/379 tests)` |
 | 2026-10-30 | `FEAT` | Integração Inicial do Modelo Elephant-Goldfish (EGM) (v3.8.0) — Criação da skill `goldfish-spec-review`, 9 personas de revisores cegos, padrões Heilmeier e 4 testes unitários | `.agents/skills/goldfish-spec-review/`, `scripts/goldfish_review.py`, `tests/test_goldfish_review.py` | `PASS (373/373 tests)` |
-| 2026-10-30 | `FEAT` | Expansão Multiagente Multi-Host — Etapas 4 (Cursor) e 5 (Qoder) (v3.7.0) — Implementação de `CursorWorkerDriver` e `QoderWorkerDriver` em `scripts/multiagent_drivers.py` e 17 testes TDD | `scripts/multiagent_drivers.py`, `scripts/host_adapters.py`, `tests/test_cursor_multiagent.py` | `PASS (369/369 tests)` |
 
 *(Histórico anterior arquivado em [details/episodic-archive.md](details/episodic-archive.md))*
 
@@ -46,13 +46,13 @@
 
 ## 4. Active Backlog & Immediate Handoff (Working / Episodic)
 
-### 📌 Ponto de Parada Atual (Sessão 2026-10-31):
-- **Status:** Implementada e integrada a skill **`coderabbit-review`** e template **`.coderabbit.yaml`** (v3.9.2), provendo auditoria externa de diffs para o `refactor-warden` (EGM Pass 2) e `release-gatekeeper` (Conformance Gate) com fallback 100% não-bloqueante.
-- **Suíte de Testes:** 385/385 testes PASS (100% GREEN, zero regressão).
+### 📌 Ponto de Parada Atual (Sessão 2026-11-01):
+- **Status:** Concluída a Fase 1 da migração Thin Harness (v4.0.0-alpha / SPEC-006) com TDD estrito. Implementados: contrato em software (`scripts/xp_contract.py`), matriz declarativa por custo de reversão (`.agents/policy.yaml`), hook PreToolUse (`scripts/hooks/pre_tool_guard.py`), telemetria local (`scripts/kit_events.py`), gate determinístico (`scripts/xp_gate.py`), ledger de componentes (`.agents/components.yaml`) e esqueleto CLI (`scripts/xp`).
+- **Suíte de Testes:** 406/406 testes PASS (100% GREEN, zero regressão).
 - **Orçamento de Contexto:** `AGENTS.md` e `PROJECT_MEMORY.md` 100% dentro dos tetos (`audit_context_budget` GREEN).
 
 ### 📋 Próximos Passos:
-1. **[P1] Projeto Piloto Multi-IDE com Multi-Pass EGM:** Validar execução de um projeto externo aplicando as 3 passadas obrigatórias do `xp-goldfish --multipass`.
+1. **[P1] Fase 2 — Cortes Seguros:** Reduzir `AGENTS.md` (≤3.000 B) e `PROJECT_MEMORY.md` (≤3.000 B) para fechar base ≤8.000 B; mover `token-economy.md` para sob demanda; implementar `kit_lint.py`; unificar CLI `xp` (9 subcomandos).
 
 ---
 
