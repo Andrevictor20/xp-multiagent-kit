@@ -65,3 +65,11 @@ A interface CLI unificada `xp` consolida todos os pontos de entrada do kit:
 - **Contexto Base ≤ 8.000 B:** `AGENTS.md` (≤ 3.000 B) + `PROJECT_MEMORY.md` (≤ 3.000 B) carregados inicialmente; demais sob demanda.
 - **TDD Estrito & Anti-Test-Bypass Mecânico:** Testes unitários RED congelados por hash SHA-256; alteração não autorizada bloqueia no gate.
 - **Auditoria Contínua:** `xp kit doctor lint` valida integridade, orçamentos e conformidade com `components.yaml`.
+
+---
+
+## 5. Disciplina Git & Higiene de Repositório
+
+- **Commits Atômicos:** Mensagens estruturadas no padrão Conventional Commits (`feat`, `fix`, `refactor`, `test`, `chore`).
+- **Zero Planos no Git:** Planos de trabalho e prompts transitórios são mantidos fora do versionamento via `.gitignore`.
+- **Gates Bloqueantes:** Todo push exige aprovação prévia em `xp gate check` e 100% dos testes unitários verdes.
