@@ -230,14 +230,22 @@ class HostAdapters:
 
             oc_json_path.write_text(json.dumps(oc_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-            # 3. Export workflows to .opencode/command/<name>.md
-            wf_src = self.kit_dir / ".agents" / "workflows"
-            if wf_src.is_dir():
-                wf_files = list(wf_src.glob("*.md"))
-                for wf_file in sorted(wf_files):
-                    (cmd_dst / wf_file.name).write_text(wf_file.read_text(encoding="utf-8"), encoding="utf-8")
+            # 3. Export workflows to .opencode/command/<name>.md from workflow.yaml or legacy
+            wf_yaml_path = self.kit_dir / ".agents" / "workflow.yaml"
+            if wf_yaml_path.is_file():
+                from scripts.xp_flow import load_workflow_yaml
+                for wf_name, wf_info in load_workflow_yaml().get("workflows", {}).items():
+                    desc = wf_info.get("description", f"{wf_name.capitalize()} workflow")
+                    nodes = wf_info.get("nodes", [])
+                    nodes_doc = "\n".join(f"- `{n.get('name')}` ({n.get('run', 'agent')}): exit_cmd=`{n.get('exit_cmd', '')}`" for n in nodes)
+                    (cmd_dst / f"{wf_name}.md").write_text(f"# {wf_name.capitalize()} Workflow\n\n{desc}\n\nExecute via: `xp flow run {wf_name}`\n\n## Nodes\n{nodes_doc}\n", encoding="utf-8")
+            else:
+                wf_src = self.kit_dir / ".agents" / "workflows"
+                if wf_src.is_dir():
+                    for wf_file in sorted(wf_src.glob("*.md")):
+                        (cmd_dst / wf_file.name).write_text(wf_file.read_text(encoding="utf-8"), encoding="utf-8")
             if not list(cmd_dst.glob("*.md")):
-                for default_wf in ("feature", "bugfix", "small", "trivial", "design"):
+                for default_wf in ("feature", "fix", "refactor", "chore", "release"):
                     (cmd_dst / f"{default_wf}.md").write_text(f"# {default_wf.capitalize()} Workflow\n", encoding="utf-8")
 
         actions.append("OpenCode configured (opencode.json, .opencode/agent/, .opencode/command/)")

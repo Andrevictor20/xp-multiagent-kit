@@ -40,3 +40,15 @@ components:
     prevents: "CLI fragmentation and conflicting entrypoints (xp-* vs agy-*)"
     added: "2026-11-01"
     review_by: "2027-02-01"
+
+  - id: "workflow_yaml"
+    kind: "workflow"
+    prevents: "Undefined multi-step lifecycle transitions and unstructured execution drift"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_flow"
+    kind: "script"
+    prevents: "Arbitrary bypassing of RED test phases and untested code progression without exit criteria"
+    added: "2026-11-01"
+    review_by: "2027-02-01"

@@ -19,7 +19,8 @@
 ## 3. PROGRESSO
 - **2026-11-01** [`3019eb1`]: Conclusão da Fase 0 — baseline e SPEC-006 Thin Harness.
 - **2026-11-01** [`e00b965`]: Conclusão da Fase 1 — contrato, política, gate, eventos e recibo (AC-1 a AC-4).
-- **2026-11-01** [fase 2]: Cortes seguros, AGENTS.md e PROJECT_MEMORY.md ≤ 3.000 B, políticas consolidadas em 7 arquivos, fonte única de constantes.
+- **2026-11-01** [`7e64671`]: Conclusão da Fase 2 — cortes seguros, contexto ≤ 8KB, políticas consolidadas (7 arquivos) e fonte única.
+- **2026-11-01** [fase 3]: Grafo mínimo com workflow.yaml (8 fluxos) e xp_flow.py, congelamento de testes RED, stubs de hosts e remoção dos 11 workflows markdown.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias, ou pular (`.skip`) testes para mascarar falhas (Anti-Test-Bypass rígido).
