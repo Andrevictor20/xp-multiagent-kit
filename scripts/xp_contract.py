@@ -48,7 +48,7 @@ def init_contract(
 def load_contract() -> Dict[str, Any]:
     path = get_runtime_contract_path()
     if not path.is_file():
-        return init_contract(risk="L0", goal="Default initialized contract")
+        return {}
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -62,11 +62,20 @@ def save_contract(contract: Dict[str, Any]) -> Path:
 
 def record_dead_end(signature: str, reason: str, **extra: Any) -> None:
     contract = load_contract()
+    if not contract:
+        contract = init_contract(risk="L1", goal="Implicit contract for dead ends")
     tried = contract.setdefault("tried", [])
+    import time
     for item in tried:
         if isinstance(item, dict) and item.get("signature") == signature:
-            return  # Evita duplicatas idênticas
-    entry = {"signature": signature, "reason": reason}
+            item["count"] = item.get("count", 1) + 1
+            item["last_seen"] = round(time.time(), 3)
+            if reason:
+                item["reason"] = reason
+            item.update(extra)
+            save_contract(contract)
+            return
+    entry = {"signature": signature, "reason": reason, "count": 1, "last_seen": round(time.time(), 3)}
     entry.update(extra)
     tried.append(entry)
     save_contract(contract)
@@ -74,6 +83,8 @@ def record_dead_end(signature: str, reason: str, **extra: Any) -> None:
 
 def add_never(item: str) -> None:
     contract = load_contract()
+    if not contract:
+        contract = init_contract(risk="L1", goal="Implicit contract for never rules")
     never = contract.setdefault("never", [])
     if item not in never:
         never.append(item)

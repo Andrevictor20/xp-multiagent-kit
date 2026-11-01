@@ -79,6 +79,7 @@ def record(
     log_file: Optional[Path] = None,
     risk_level: str = "L1",
     summary: str = "",
+    diff_hash: str = "",
 ) -> Dict[str, Any]:
     """Registra uma evidência e devolve o resumo estruturado."""
     if output is None and log_file:
@@ -96,6 +97,7 @@ def record(
         "status": "PASS" if exit_code == 0 and counts["failed"] == 0 else "FAIL",
         "summary": summary or f"{counts['passed']}/{counts['total']} testes aprovados",
         "tests": counts,
+        "diff_hash": diff_hash,
         "log_path": str(stored),
         "log_sha256": hashlib.sha256(output.encode("utf-8", errors="ignore")).hexdigest()[:16],
         "log_bytes": len(output),
