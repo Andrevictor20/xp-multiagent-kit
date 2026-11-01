@@ -11,3 +11,7 @@ Documento exigido pelo AC-13 do SPEC-006 ("Thin Harness"). Toda remoção de fun
 | 2026-11-01 | Asserção de `feature.md` em `tests/test_spec_003_v3.py` | Teste | Atualizado para validar `.agents/workflow.yaml` diretamente após migração para YAML (AC-7, AC-13). |
 | 2026-11-01 | 5 Agentes Absorvidos (`archivist`, `genesis`, `navigator`, `test-guardian`, `refactor-warden`/`release-gatekeeper`) | Agentes | Reduzidos para 6 nucleares (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) conforme AC-8. |
 | 2026-11-01 | 9 Personas EGM legadas em `goldfish-spec-review/personas/` | Personas | Substituídas por 2 personas especializadas (`spec_reviewer` e `code_reviewer` <= 2 KB) conforme AC-9. |
+| 2026-11-01 | `i` (raiz) | Arquivo | Script redundante na raiz; mantido apenas `install.sh` e `install-global.sh` como instaladores canônicos. |
+| 2026-11-01 | `dist/*.zip` | Arquivos | Bundles binários de marketplace externo (Agensi) removidos do repositório de desenvolvimento. |
+| 2026-11-01 | `docs/AGENSI_PUBLISHING_GUIDE.md` | Documentação | Movido para `contrib/AGENSI_PUBLISHING_GUIDE.md` para isolar guias comerciais de terceiros. |
+| 2026-11-01 | 63 Skills originais redundantes (80 → 25) | Skills | Consolidação no núcleo de 24 skills (16 mantidas + 8 consolidadas: `spec-pyramid`, `security-review`, `cloud-and-iac-security`, `code-hygiene-review`, `release-and-deploy`, `design-system`, `ui-accessibility-responsive`, `conversion-and-seo`) + packs opcionais em `.agents/packs/`, economizando ~59 KB injetados por turno (AC-8). |
