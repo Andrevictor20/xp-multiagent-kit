@@ -24,7 +24,7 @@
 - **2026-11-01** [`2155853`]: Fase 4 — 6 agentes nucleares, 2 personas EGM e packs.
 - **2026-11-01** [`f7c92da`]: Fase 5 — EGM 3 passes, gatilho >8 arquivos, hook <=400B.
 - **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
-- **2026-11-01** [fase 7]: Fase 7 — eval benchmark, README ≤120L, integridade geral (427 testes PASS).
+- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, README ≤120L, integridade geral (427 testes PASS).
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).
