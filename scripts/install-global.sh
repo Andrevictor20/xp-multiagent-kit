@@ -205,8 +205,6 @@ ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/xp-health"
 ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/xp-effort"
 ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/agy-spec"
 ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/xp-spec"
-ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/agy-orchestrate"
-ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/xp-orchestrate"
 ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/agy-goldfish"
 ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/xp-goldfish"
 ln -sf "$KIT_DIR/scripts/xp" "$HOME/.local/bin/xp"
@@ -215,7 +213,7 @@ ln -sf "$KIT_DIR/scripts/xp_contract.py" "$HOME/.local/bin/xp-contract"
 ln -sf "$KIT_DIR/scripts/xp_flow.py" "$HOME/.local/bin/xp-flow"
 ln -sf "$KIT_DIR/scripts/xp_evolve.py" "$HOME/.local/bin/xp-evolve"
 
-echo "   ✅ xp-orchestrate, agy-orchestrate, xp-spec, agy-spec, xp, xp-gate, xp-contract, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-debt, agy-kit, agy-design disponíveis no PATH!"
+echo "   ✅ xp-spec, agy-spec, xp, xp-gate, xp-contract, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)

@@ -56,9 +56,7 @@ class TestMissionScenarios(unittest.TestCase):
             text=True,
         )
 
-    # ------------------------------------------------------------------
     # S1: nenhum contrato -> exit 1, GATE FAIL step=1
-    # ------------------------------------------------------------------
     def test_s1_no_contract_gate_fails_step_1(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         res = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
@@ -66,9 +64,7 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertIn("step=1", res.stdout)
         self.assertIn("GATE FAIL", res.stdout)
 
-    # ------------------------------------------------------------------
     # S2: L1, 3 ACs, nenhum teste os referencia, verify_cmd=true -> exit 1; sem stubs=0 big=0 fixos
-    # ------------------------------------------------------------------
     def test_s2_acs_without_tests_fails_step_9_no_fixed_stubs(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         # Init contract
@@ -80,14 +76,16 @@ class TestMissionScenarios(unittest.TestCase):
             "--verify", "true",
         ], repo_dir, runtime_dir)
 
+        # Registra RED e GREEN para cumprir step 7 (ordem 1..10) antes de step 9
+        self.run_cmd([sys.executable, str(XP_GATE), "record", "--", "false"], repo_dir, runtime_dir)
+        self.run_cmd([sys.executable, str(XP_GATE), "record", "--", "true"], repo_dir, runtime_dir)
+
         res = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
         self.assertEqual(res.returncode, 1, f"Expected exit 1. Output: {res.stdout}\n{res.stderr}")
         self.assertIn("step=9", res.stdout)
         self.assertNotIn("stubs=0 big=0", res.stdout)
 
-    # ------------------------------------------------------------------
-    # S3: arquivo alterado com # TODO -> exit 1, step=4
-    # ------------------------------------------------------------------
+    # S3: arquivo alterado com marcador pendente -> exit 1, step=4
     def test_s3_file_with_todo_fails_step_4(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         self.run_cmd([
@@ -105,9 +103,7 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertEqual(res.returncode, 1, f"Expected exit 1. Output: {res.stdout}")
         self.assertIn("step=4", res.stdout)
 
-    # ------------------------------------------------------------------
     # S4: verify_cmd falha igual duas vezes -> 1ª exit 1, 2ª exit 3 ESCALATE, DEAD ENDS não vazio
-    # ------------------------------------------------------------------
     def test_s4_verify_cmd_fails_twice_escalates(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         self.run_cmd([
@@ -116,6 +112,10 @@ class TestMissionScenarios(unittest.TestCase):
             "--goal", "Task with failing verify",
             "--verify", "false",
         ], repo_dir, runtime_dir)
+
+        # Registra RED e GREEN para cumprir step 7 antes de step 8 (verify_cmd)
+        self.run_cmd([sys.executable, str(XP_GATE), "record", "--", "false"], repo_dir, runtime_dir)
+        self.run_cmd([sys.executable, str(XP_GATE), "record", "--", "true"], repo_dir, runtime_dir)
 
         # 1st attempt -> exit 1
         res1 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
@@ -128,9 +128,7 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertIn("DEAD ENDS: [", res2.stdout)
         self.assertNotIn("DEAD ENDS: []", res2.stdout)
 
-    # ------------------------------------------------------------------
     # S5: L1, diff em src/auth/ -> gate sem revisão dá exit 2 BLOCK tier=review; com revisão dá PASS
-    # ------------------------------------------------------------------
     def test_s5_diff_in_auth_requires_review_record(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         auth_file = repo_dir / "src" / "auth" / "login.py"
@@ -163,9 +161,7 @@ class TestMissionScenarios(unittest.TestCase):
         res2 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
         self.assertEqual(res2.returncode, 0, f"Expected PASS after review. Out: {res2.stdout}")
 
-    # ------------------------------------------------------------------
     # S6: diff em db/migrations/ -> gate sem aprovação dá exit 2; aprovar com 1ª palavra não libera; ID exato libera
-    # ------------------------------------------------------------------
     def test_s6_diff_in_migrations_requires_exact_deterministic_action_id(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         mig_file = repo_dir / "db" / "migrations" / "001_create.sql"
@@ -202,9 +198,7 @@ class TestMissionScenarios(unittest.TestCase):
         res3 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
         self.assertEqual(res3.returncode, 0, f"Approval by exact action ID must release the gate: {res3.stdout}")
 
-    # ------------------------------------------------------------------
     # S11: payload PreToolUse simulado -> guard bloqueia policy/approvals, xp approve, rm -rf; leitura permitida; hooks.json contém guard
-    # ------------------------------------------------------------------
     def test_s11_pre_tool_guard_security_checks_and_hooks_registration(self):
         from scripts.hooks.pre_tool_guard import is_action_permitted
 
@@ -238,9 +232,7 @@ class TestMissionScenarios(unittest.TestCase):
                         has_guard = True
         self.assertTrue(has_guard, "hooks.json must contain pre_tool_guard under PreToolUse")
 
-    # ------------------------------------------------------------------
     # S7: memória inicial -> --sync-memory x25 -> título intacto, <= 3000 B, archive preenchido
-    # ------------------------------------------------------------------
     def test_s7_sync_memory_25_times_budget_and_header_intact(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         mem_dir = repo_dir / ".agents" / "memory"
@@ -268,9 +260,7 @@ class TestMissionScenarios(unittest.TestCase):
         hist_content = hist_file.read_text(encoding="utf-8")
         self.assertIn("Entrega número", hist_content)
 
-    # ------------------------------------------------------------------
     # S8: bugfix L1, verify_cmd passando, sem execução falha registrada -> step=7; com record falho e depois passando -> PASS; refactor: true -> PASS sem RED
-    # ------------------------------------------------------------------
     def test_s8_red_green_evidence_required_for_bugfix_l1(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         # 1. Bugfix sem evidência de RED registrada -> FAIL step=7
@@ -309,9 +299,7 @@ class TestMissionScenarios(unittest.TestCase):
         res_refactor = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
         self.assertEqual(res_refactor.returncode, 0, f"Expected PASS for refactor without RED. Out: {res_refactor.stdout}")
 
-    # ------------------------------------------------------------------
     # S9: execução passando registrada, depois arquivo do escopo editado -> exit 1 step=6 (evidência velha)
-    # ------------------------------------------------------------------
     def test_s9_stale_evidence_fails_step_6(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         app_file = repo_dir / "app.py"
@@ -340,9 +328,7 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertEqual(res.returncode, 1, f"Expected exit 1 step=6 (stale evidence), got {res.returncode}. Out: {res.stdout}")
         self.assertIn("step=6", res.stdout)
 
-    # ------------------------------------------------------------------
     # S10: testes *.test.ts congelados na saída de red -> alterar um congelado dá exit 1 step=3; novo teste permitido
-    # ------------------------------------------------------------------
     def test_s10_frozen_tests_blocking_mutation_and_allowing_new_tests(self):
         from scripts.xp_flow import freeze_test_files
 
@@ -383,9 +369,7 @@ class TestMissionScenarios(unittest.TestCase):
         res2 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
         self.assertEqual(res2.returncode, 0, f"Adding a new test must be allowed and PASS. Out: {res2.stdout}")
 
-    # ------------------------------------------------------------------
     # S12: workflow.yaml entregue -> validate dá exit 0; agente inexistente dá exit ≠ 0; next imprime ≤ 800 B
-    # ------------------------------------------------------------------
     def test_s12_workflow_yaml_validation_and_next_budget(self):
         XP_FLOW = KIT_ROOT / "scripts" / "xp_flow.py"
 
@@ -414,9 +398,7 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertEqual(res_next.returncode, 0, f"xp flow next failed: {res_next.stderr}")
         self.assertLessEqual(len(res_next.stdout.encode("utf-8")), 800, f"xp flow next output ({len(res_next.stdout.encode('utf-8'))} B) must be <= 800 B")
 
-    # ------------------------------------------------------------------
     # S13: eventos de fixture: 1 assinatura repetida x3 e 1 componente sem uso -> report lista 1 promoção e 1 remoção; apply em AGENTS.md sem --approve é recusado
-    # ------------------------------------------------------------------
     def test_s13_evolve_report_promotion_removal_and_approval_gate(self):
         repo_dir, runtime_dir = self.make_temp_repo()
         # Copia estrutura mínima para o repo temporário
@@ -467,9 +449,7 @@ class TestMissionScenarios(unittest.TestCase):
         res_app = self.run_cmd([sys.executable, str(XP_EVOLVE), "apply", "PR-001"], repo_dir, runtime_dir)
         self.assertEqual(res_app.returncode, 2, f"Expected exit 2 when applying to AGENTS.md without approval. Got: {res_app.returncode}")
 
-    # ------------------------------------------------------------------
     # S14: skill existente sem entrada em components.yaml -> kit_lint exit != 0
-    # ------------------------------------------------------------------
     def test_s14_skill_without_components_entry_fails_kit_lint(self):
         KIT_LINT = KIT_ROOT / "scripts" / "kit_lint.py"
         repo_dir, runtime_dir = self.make_temp_repo()
@@ -486,9 +466,7 @@ class TestMissionScenarios(unittest.TestCase):
         res = subprocess.run([sys.executable, str(KIT_LINT), "--dir", str(repo_dir)], env=env, capture_output=True, text=True)
         self.assertNotEqual(res.returncode, 0, f"kit_lint must fail when a skill is missing from components.yaml. Output: {res.stdout}")
 
-    # ------------------------------------------------------------------
     # S15: Repositório entregue -> testes de orçamento
-    # ------------------------------------------------------------------
     def test_s15_repository_delivered_budget_tests(self):
         from scripts.kit_constants import BASE_CONTEXT_MAX_BYTES, MEMORY_INDEX_MAX_BYTES
 

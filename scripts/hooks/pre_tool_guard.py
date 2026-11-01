@@ -168,7 +168,14 @@ def evaluate_policy_for_files_and_commands(
     human_matches: List[str] = []
     for cmd in commands:
         for h_cmd in human_cmds:
-            if h_cmd.lower() in cmd.lower():
+            h_lower = h_cmd.lower()
+            cmd_lower = cmd.lower()
+            # Casamento por palavra inteira para comandos de uma única palavra (ex: DROP não casa com dropdown/dropzone)
+            if " " in h_lower:
+                matched = h_lower in cmd_lower
+            else:
+                matched = re.search(r"\b" + re.escape(h_lower) + r"\b", cmd_lower) is not None
+            if matched:
                 reasons.append(f"Command '{cmd}' contains human-tier operation '{h_cmd}'")
                 human_matches.append(cmd)
 
@@ -202,10 +209,56 @@ def calculate_effective_tier(
     return "human" if "human" in (declared_tier, derived_tier) else ("review" if "review" in (declared_tier, derived_tier) else "auto")
 
 
+_PROTECTED_FILES = ("approvals.json", "policy.yaml")
+
+# Revisores que indicam autoaprovação/forjaria de tier review via shell do agente.
+_AUTO_REVIEWERS = ("qa", "builder")
+
+
+def _basename(path: str) -> str:
+    return path.replace("\\", "/").rsplit("/", 1)[-1]
+
+
+def _shell_writes_protected_file(cmd: str) -> bool:
+    """Detecta gravação direta em approvals.json / policy.yaml via shell (echo >, tee, sed -i, cp/mv/install)."""
+    norm = cmd.replace("\\", "/")
+    names = _PROTECTED_FILES
+
+    # Redirecionamento de saída: cmd > arquivo / cmd >> arquivo / cmd >| arquivo
+    for m in re.finditer(r'(?:>>|>|>\|)\s*(["\']?)([^\s"\']+)\1', norm):
+        dest = m.group(2)
+        if _basename(dest) in names or ".agents/policy.yaml" in dest:
+            return True
+
+    # tee <arquivo> (opcional -a)
+    for m in re.finditer(r'\btee\b(?:\s+-a)?\s*(["\']?)([^\s"\']+)\1', norm):
+        dest = m.group(2)
+        if _basename(dest) in names or ".agents/policy.yaml" in dest:
+            return True
+
+    # sed -i / --in-place sobre arquivo protegido
+    if re.search(r'\bsed\b', norm) and re.search(r'(?:^|[ \t])(-i|--in-place)(?:[ \t]|$)', norm):
+        for name in names:
+            if re.search(r'\b' + re.escape(name) + r'\b', norm):
+                return True
+        if ".agents/policy.yaml" in norm:
+            return True
+
+    # cp / mv / install que mencionam arquivo protegido
+    if re.search(r'\b(cp|mv|install)\b', norm):
+        for name in names:
+            if re.search(r'\b' + re.escape(name) + r'\b', norm):
+                return True
+        if ".agents/policy.yaml" in norm:
+            return True
+
+    return False
+
+
 def is_action_permitted(
     tool_name: str, tool_args: Dict[str, Any], action_id: Optional[str] = None
 ) -> Tuple[bool, str]:
-    # 1. Proibição estrita de adulterar policy.yaml e approvals.json
+    # 1. Proibição estrita de adulterar policy.yaml e approvals.json (arquivo direto)
     target_path = str(tool_args.get("Path", "") or tool_args.get("path", "") or tool_args.get("TargetFile", ""))
     if target_path:
         norm = target_path.replace("\\", "/")
@@ -214,11 +267,24 @@ def is_action_permitted(
         if norm.endswith("approvals.json") or "approvals.json" in norm:
             return False, "Agent is forbidden from modifying approvals.json (tamper protection)"
 
-    # 2. Verificação de comandos
+    # 1b. Bloqueia gravação direta via shell (echo >, tee, sed -i, cp/mv/install)
     cmd = str(tool_args.get("CommandLine", "") or tool_args.get("command", "") or "")
+    if cmd and _shell_writes_protected_file(cmd):
+        return False, "Agent is forbidden from writing approvals.json or policy.yaml via shell (tamper protection)"
+
+    # 2. Verificação de comandos
     if cmd:
+        # xp approve só é válido com stdin interativo (Decisão 14 do SPEC-006)
         if re.search(r"\bxp\s+approve\b", cmd):
             return False, "Agent cannot invoke 'xp approve' (requires interactive human approval)"
+
+        # Remoção de autoaprovação via --reviewer (qa / builder)
+        m = re.search(r"\bxp\s+gate\s+review\b", cmd)
+        if m:
+            m2 = re.search(r"--reviewer\s+(\S+)", cmd)
+            if m2 and m2.group(1).lower() in _AUTO_REVIEWERS:
+                return False, f"Auto-approval via --reviewer {m2.group(1)} is not allowed (human review required)"
+
         derived_tier, reasons, matches = evaluate_policy_for_files_and_commands([], [cmd])
         if derived_tier == "human":
             act_id = action_id or compute_action_id("human", matches)
@@ -235,14 +301,21 @@ def main() -> int:
             payload = json.loads(raw_input)
             tool_name = payload.get("tool_name") or payload.get("tool") or ""
             tool_args = payload.get("tool_args") or payload.get("parameters") or payload.get("args") or {}
-            allowed, reason = is_action_permitted(tool_name, tool_args)
-            result = {"decision": "allow" if allowed else "deny"}
-            if not allowed:
-                result["reason"] = reason
+            cmd = str(tool_args.get("CommandLine", "") or tool_args.get("command", "") or "")
+
+            # Decisão 14 do SPEC-006: xp approve exige stdin interativo (isatty verdadeiro).
+            if re.search(r"\bxp\s+approve\b", cmd) and not sys.stdin.isatty():
+                result = {"decision": "deny", "reason": "'xp approve' requires interactive human stdin (isatty)"}
+            else:
+                allowed, reason = is_action_permitted(tool_name, tool_args)
+                result = {"decision": "allow" if allowed else "deny"}
+                if not allowed:
+                    result["reason"] = reason
         else:
             result = {"decision": "allow"}
     except Exception:
-        result = {"decision": "allow"}
+        # Fail closed: JSON inválido ou exceção no hook BLOQUEIA a ação.
+        result = {"decision": "deny", "reason": "hook error"}
 
     sys.stdout.write(json.dumps(result, ensure_ascii=False) + "\n")
     sys.stdout.flush()

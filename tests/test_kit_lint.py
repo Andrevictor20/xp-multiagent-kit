@@ -57,7 +57,7 @@ class TestKitLint(unittest.TestCase):
         res = lint_readme_accuracy()
         self.assertTrue(res["valid"], msg=f"Errors: {res.get('errors')}")
         self.assertEqual(res["real_agents"], 6)
-        self.assertEqual(res["real_skills"], 25)
+        self.assertEqual(res["real_skills"], 24)
         self.assertEqual(res["real_flows"], 9)
         self.assertEqual(res["real_steps"], 10)
 

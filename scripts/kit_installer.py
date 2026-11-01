@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 scripts/kit_installer.py
-XP Multi-Agent Kit v3.0 — Unified Agnostic Installer & Portability Engine (SPEC-002 & SPEC-003)
+XP Multi-Agent Kit v4.0.0 — Unified Agnostic Installer & Portability Engine (SPEC-002 & SPEC-003)
 
 Supports:
 - 4 Host Environments (IDE & CLI): Antigravity, OpenCode, Cursor, Qoder
@@ -422,7 +422,7 @@ def interactive_wizard(kit_dir: Path, dry_run: bool = False, lang: Optional[str]
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    parser = argparse.ArgumentParser(description="XP Multi-Agent Kit v3.9 — Unified Agnostic Installer (xp-kit / agy-kit)")
+    parser = argparse.ArgumentParser(description="XP Multi-Agent Kit v4.0.0 — Unified Agnostic Installer (xp-kit / agy-kit)")
     parser.add_argument("command", nargs="?", choices=["install", "doctor", "init", "sync", "version", "update"])
     parser.add_argument("path", nargs="?", default=None, help="Optional project path for init/install")
     parser.add_argument("--global", "-g", dest="install_global", action="store_true", help="Install globally")

@@ -96,13 +96,25 @@ def main() -> int:
         if ctx_script.is_file():
             return subprocess.run([sys.executable, str(ctx_script)] + rest).returncode
         return subprocess.run([sys.executable, str(SCRIPTS_DIR / "memory_search.py")] + rest).returncode
+    elif subcmd == "session":
+        session_script = SCRIPTS_DIR / "xp_session.py"
+        if session_script.is_file():
+            return subprocess.run([sys.executable, str(session_script)] + rest).returncode
+        print("Subcomando 'session' não disponível (scripts/xp_session.py ausente).")
+        return 1
+    elif subcmd == "conformance":
+        conf_script = SCRIPTS_DIR / "conformance_report.py"
+        if conf_script.is_file():
+            return subprocess.run([sys.executable, str(conf_script)] + rest).returncode
+        print("Subcomando 'conformance' não disponível (scripts/conformance_report.py ausente).")
+        return 1
     elif subcmd == "run":
         run_script = SCRIPTS_DIR / "agy-run"
         if run_script.is_file():
             return subprocess.run([str(run_script)] + rest).returncode
         return subprocess.run(rest).returncode
     else:
-        print(f"Subcomando desconhecido: '{subcmd}'. Opções: contract, gate, flow, evolve, kit, memory, context, approve, run.")
+        print(f"Subcomando desconhecido: '{subcmd}'. Opções: contract, gate, flow, evolve, kit, memory, context, approve, session, conformance, run.")
         return 1
 
 

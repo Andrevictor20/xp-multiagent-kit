@@ -67,7 +67,7 @@ class TestEgmCompletenessEngine(unittest.TestCase):
             KIT_ROOT / "scripts" / "goldfish_review.py",
             KIT_ROOT / "scripts" / "agy_effort_router.py",
             KIT_ROOT / "scripts" / "kit_constants.py",
-            KIT_ROOT / "scripts" / "antigravity_multiagent.py",
+            KIT_ROOT / "scripts" / "xp_flow.py",
         ]
         test_files = [Path(__file__).resolve()]
 
@@ -160,15 +160,14 @@ class TestEgmCompletenessEngine(unittest.TestCase):
     def test_ac4_goldfish_in_core_skills(self):
         from scripts.skill_profiles import CORE_SKILLS, SKILL_DESCRIPTIONS
 
-        self.assertIn("goldfish-spec-review", CORE_SKILLS)
+        self.assertNotIn("goldfish-spec-review", CORE_SKILLS)
         self.assertIn("spec-driven-development", CORE_SKILLS)
-        self.assertIn("goldfish-spec-review", SKILL_DESCRIPTIONS)
+        self.assertNotIn("goldfish-spec-review", SKILL_DESCRIPTIONS)
 
     # ------------------------------------------------------------------
     # AC-5: Governance Constants, Context Budget & Multi-Pass EGM in Mission Engine
     # ------------------------------------------------------------------
     def test_ac5_governance_and_mission_egm_passes(self):
-        from scripts.antigravity_multiagent import AntigravityMissionEngine
         from scripts.kit_constants import (
             BASE_CONTEXT_MAX_BYTES,
             EGM_MIN_REVIEW_PASSES,
@@ -190,30 +189,17 @@ class TestEgmCompletenessEngine(unittest.TestCase):
             f"Context budget exceeded: {budget_report['findings']}",
         )
 
-        with tempfile.TemporaryDirectory() as tmp:
-            engine = AntigravityMissionEngine(project_dir=Path(tmp))
-            manifest = {
-                "mission_id": "mission-egm-01",
-                "feature_name": "Feature Com Multi-Pass EGM",
-                "egm_review_passes": 3,
-                "tasks": [
-                    {
-                        "task_id": "t1-spec-and-code",
-                        "subagent": "builder",
-                        "model": "gemini-3.8-flash",
-                        "effort": "high",
-                        "execution_group": 1,
-                        "allowed_paths": ["scripts/"],
-                        "objective": "Implementar feature completa com 3 revisões EGM",
-                        "verification_cmd": "python3 -c 'print(1)'",
-                    }
-                ],
-            }
-            res = engine.run_mission(manifest)
-            self.assertTrue(res["success"])
-            self.assertEqual(res.get("egm_review_passes"), 3)
-            report_text = (Path(tmp) / ".agents" / "mission-report.md").read_text(encoding="utf-8")
-            self.assertIn("EGM", report_text)
+        # 3 passes EGM são verificados via goldfish_review (multipass)
+        from scripts.goldfish_review import run_multipass_egm_review
+
+        spec_005_path = KIT_ROOT / ".agents" / "specs" / "SPEC-005-EGM-COMPLETENESS-ENGINE.md"
+        report = run_multipass_egm_review(
+            spec_path=spec_005_path,
+            code_paths=[KIT_ROOT / "scripts" / "goldfish_review.py"],
+            test_paths=[Path(__file__).resolve()],
+        )
+        self.assertEqual(report["passes_completed"], 3)
+        self.assertTrue(report["overall_compliant"])
 
     # ------------------------------------------------------------------
     # AC-6: Global CLI Binaries xp-goldfish & agy-goldfish
@@ -238,14 +224,13 @@ class TestEgmCompletenessEngine(unittest.TestCase):
         from scripts.goldfish_review import should_trigger_llm_review
         from unittest.mock import patch
 
-        personas_dir = KIT_ROOT / ".agents" / "skills" / "goldfish-spec-review" / "personas"
-        persona_files = list(personas_dir.glob("*.md"))
-        self.assertEqual(len(persona_files), 2)
-        persona_names = {p.name for p in persona_files}
-        self.assertEqual(persona_names, {"spec_reviewer.md", "code_reviewer.md"})
-
-        for pf in persona_files:
-            self.assertLessEqual(len(pf.read_bytes()), 2048, f"{pf.name} excede 2 KB")
+        # As personas spec_reviewer e code_reviewer estão consolidadas em
+        # scripts/goldfish_review.py (skill goldfish-spec-review descontinuada,
+        # SPEC-006 AC-9). Verificar que as regras EGM estão presentes.
+        spec_006 = (KIT_ROOT / ".agents" / "specs" / "SPEC-006-THIN-HARNESS.md").read_text(encoding="utf-8")
+        self.assertIn("spec_reviewer", spec_006)
+        self.assertIn("code_reviewer", spec_006)
+        self.assertIn("EGM_LLM_REVIEW", spec_006)
 
         # L3 always triggers single review
         trig, reason = should_trigger_llm_review("L3")

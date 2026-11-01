@@ -41,7 +41,6 @@ CONCISE_DESCRIPTIONS: Dict[str, str] = {
     'crypto-guardian': 'Cryptographic primitive auditing, key management, and ban on weak ciphers.',
     'database-architecture': 'SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention.',
     'dependency-governance': 'Third-party dependency risk evaluation, license audit, and bloat prevention.',
-    'deploy-pipeline-conductor': 'Continuous deployment (CD) pipelines, staging promotion, health checks, rollback.',
     'design-system-architecture': 'Design System governance from semantic tokens and primitives to page templates.',
     'design-intelligence': 'Offline design catalog search (product archetypes, palettes, fonts, UX rules, charts) generating a persistent design-system MASTER.md.',
     'design-tokens': 'Semantic visual tokens with Color Consistency Lock and Concentric Shape Lock.',

@@ -121,6 +121,36 @@ components:
     added: "2026-11-01"
     review_by: "2027-02-01"
 
+  - id: "smart_tool_optimizer_state"
+    kind: "hook"
+    prevents: "Repetitive file reads and blind re-reads after edits"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "smart_tool_optimizer_view"
+    kind: "hook"
+    prevents: "Blind file slicing beyond the single-read budget"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "smart_tool_optimizer_command"
+    kind: "hook"
+    prevents: "Verbose command output flooding the agent context window"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "smart_tool_optimizer_loop"
+    kind: "hook"
+    prevents: "Repetitive identical tool calls in a loop"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "smart_tool_optimizer_dir_grep_write"
+    kind: "hook"
+    prevents: "Uncontrolled root directory scans and oversized file writes"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
   - id: "dynamic_effort_hook"
     kind: "hook"
     prevents: "Over-allocating high reasoning tokens to trivial tasks or under-allocating to critical tasks"
@@ -268,11 +298,6 @@ components:
     added: "2026-11-01"
     review_by: "2027-02-01"
 
-  - id: "deploy-pipeline-conductor"
-    kind: "skill"
-    prevents: "Downtime deployments, failed canary releases, and missing rollback mechanisms"
-    added: "2026-11-01"
-    review_by: "2027-02-01"
 
   - id: "design-intelligence"
     kind: "skill"
@@ -295,12 +320,6 @@ components:
   - id: "git-worktree-workspace"
     kind: "skill"
     prevents: "Subagent conflicts, dirty working directory collisions, and git workspace pollution"
-    added: "2026-11-01"
-    review_by: "2027-02-01"
-
-  - id: "goldfish-spec-review"
-    kind: "skill"
-    prevents: "Blind architectural assumptions, scope drift, and unbacked technical specs"
     added: "2026-11-01"
     review_by: "2027-02-01"
 

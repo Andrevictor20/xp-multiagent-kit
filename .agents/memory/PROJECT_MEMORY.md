@@ -19,15 +19,9 @@
 
 ## 3. PROGRESSO
 
-- **2026-11-01** [`ad5772a`]: Sincronização global resiliente (install-global.sh), resolução de symlinks/bypass de subcomandos no agy wrapper, atualização do health check e push concluído para o GitHub (main).
-- **2026-11-01** [`d0c2178`]: Atualização do install-global.sh com comandos v4 (xp, gate, flow, evolve) e implantação global em 62 projetos.
-- **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
-- **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
-- **2026-11-01** [`54835e7`]: Exclusão de planos na raiz, blindagem no .gitignore e documentação Git no README.
-- **2026-11-01** [`a454c0e`]: Poda de 63 skills redundantes (80 → 25) e arquivos dist/i/docs comerciais; economia de ~59 KB por turno.
-- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, README ≤120L, integridade geral (427 testes PASS).
+- **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer (778→170L) e context_compactor (538→133L) divididos; workflow.yaml movido para .agents/graph/; goldfish-spec-review e deploy-pipeline-conductor removidos (25→24 skills); sections/ em todas as 24 skills; kit_lint 100% verde.
+- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, integridade geral (417 testes PASS).
 - **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
-- **2026-11-01** [`f7c92da`]: Fase 5 — EGM 3 passes, gatilho >8 arquivos, hook <=400B.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).

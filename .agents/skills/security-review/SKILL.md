@@ -36,3 +36,13 @@ Consolidates application security governance: **AuthN/AuthZ**, **OWASP API**, **
 - **PII Governance:** Anonymization/pseudonymization of personal data; strict prohibition of PII in application logs.
 - **Data Minimization:** Retention schedules with automatic TTL and right-to-erasure compliance.
 - **Audit Logging:** Structured append-only logging for auth failures, privilege elevation, and sensitive queries.
+
+## Apêndice — Regras de Segurança Descartadas
+
+Regras avaliadas e descartadas para o escopo atual (consulte `sections/9-apendice-regras-descartadas.md`):
+
+- **R1 mTLS universal:** descartada por complexidade operacional; mantida como recomendação opcional para serviços de alto risco.
+- **R2 Banimento de JWT simétrico (HS256):** descartado como regra rígida; exigência de validação de `exp`/`iss`/`aud` e rotação de chaves permanece; banimento só para risco elevado (L2/L3).
+- **R3 HSM para todas as chaves:** descartado por indisponibilidade em dev/homolog; KMS/Secret Manager permanece obrigatório.
+- **R4 Bloqueio de qualquer vulnerabilidade CVSS > 0:** descartado por falsos positivos; bloqueio apenas em vulnerabilidades críticas diretas + integridade de lockfile.
+- **R5 Criptografia de campos PII com rotação semanal:** descartada por sobrecarga; adotada anonimização/pseudonimização, proibição de PII em logs, retenção com TTL e direito ao esquecimento.

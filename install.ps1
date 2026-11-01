@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    XP Multi-Agent Kit v3.1 — Unified Windows PowerShell Bootstrapper (PT / EN Auto-Detected)
+    XP Multi-Agent Kit v4.0.0 — Unified Windows PowerShell Bootstrapper (PT / EN Auto-Detected)
     Supports Antigravity, OpenCode, Cursor, Qoder, and Codex (IDE & CLI)
 .DESCRIPTION
     Installs, configures, and injects the XP Multi-Agent Kit on Windows environments.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 scripts/host_adapters.py
-Multi-Host Agnostic Adapters & Bilingual (PT/EN) Localization for XP Multi-Agent Kit v3.0.
+Multi-Host Agnostic Adapters & Bilingual (PT/EN) Localization for XP Multi-Agent Kit v4.0.0.
 Supports Antigravity, OpenCode, Cursor, and Qoder (both IDE and CLI).
 """
 
@@ -18,7 +18,7 @@ SUPPORTED_TARGETS = ("antigravity", "opencode", "cursor", "qoder", "codex", "cla
 
 I18N_MESSAGES: Dict[str, Dict[str, str]] = {
     "pt": {
-        "wizard_title": "🚀 INSTALADOR UNIFICADO (Instalação Multi-IDE & CLI) — XP MULTI-AGENT KIT v3.0",
+        "wizard_title": "🚀 INSTALADOR UNIFICADO (Instalação Multi-IDE & CLI) — XP MULTI-AGENT KIT v4.0.0",
         "dry_run_banner": "⚠️  [MODO SIMULAÇÃO / DRY-RUN ATIVO]",
         "choose_scope": "Como deseja instalar o kit?",
         "opt_global": "[1] Global -> Instala em ~/.local/bin e sincroniza IDEs/CLIs globais",
@@ -47,7 +47,7 @@ I18N_MESSAGES: Dict[str, Dict[str, str]] = {
         "global_bins": "📦 Binários Globais:", "installed": "✅ Instalado", "missing": "❌ Ausente",
     },
     "en": {
-        "wizard_title": "🚀 UNIFIED INSTALLER (Multi-IDE & CLI Installer) — XP MULTI-AGENT KIT v3.0",
+        "wizard_title": "🚀 UNIFIED INSTALLER (Multi-IDE & CLI Installer) — XP MULTI-AGENT KIT v4.0.0",
         "dry_run_banner": "⚠️  [SIMULATION / DRY-RUN MODE ACTIVE]",
         "choose_scope": "How would you like to install the kit?",
         "opt_global": "[1] Global (Recommended) -> Installs tools in ~/.local/bin and syncs global IDEs/CLIs",
@@ -180,6 +180,7 @@ class HostAdapters:
                 "AGENTS.md",
                 ".agents/memory/PROJECT_MEMORY.md",
                 ".agents/policies/*.md",
+                "scripts/hooks/pre_tool_guard.py",
             ]
             oc_data["default_agent"] = "orchestrator"
             oc_data["subagent_depth"] = 2
@@ -231,7 +232,7 @@ class HostAdapters:
             oc_json_path.write_text(json.dumps(oc_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
             # 3. Export workflows to .opencode/command/<name>.md from workflow.yaml or legacy
-            wf_yaml_path = self.kit_dir / ".agents" / "workflow.yaml"
+            wf_yaml_path = self.kit_dir / ".agents" / "graph" / "workflow.yaml"
             if wf_yaml_path.is_file():
                 from scripts.xp_flow import load_workflow_yaml
                 for wf_name, wf_info in load_workflow_yaml().get("workflows", {}).items():
@@ -438,7 +439,7 @@ class HostAdapters:
             agy_global = self.home_dir / ".gemini" / "config"
             agy_global.mkdir(parents=True, exist_ok=True)
             dispatcher_content = (
-                "# Global Agent Dispatcher — XP Multi-Agent Kit v3.9 (Agnostic Core)\n\n"
+                "# Global Agent Dispatcher — XP Multi-Agent Kit v4.0.0 (Agnostic Core)\n\n"
                 "Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder):\n"
                 "1. If workspace contains `AGENTS.md`, follow its directives as single source of truth.\n"
                 "2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.\n"

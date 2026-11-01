@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 scripts/update_manager.py — Autonomous Update Checker & Synchronizer (xp-kit update)
-XP Multi-Agent Kit v3.1
+XP Multi-Agent Kit v4.0.0
 
 Features:
 - Non-blocking 24h cached remote update check
@@ -64,8 +64,8 @@ class UpdateManager:
         res_data: Dict[str, Any] = {
             "checked_at": now,
             "has_update": False,
-            "latest_version": "v3.1.0",
-            "current_version": "v3.1.0",
+            "latest_version": "v4.0.0",
+            "current_version": "v4.0.0",
             "remote_commit": "",
             "local_commit": "",
         }

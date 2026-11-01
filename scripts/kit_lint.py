@@ -203,19 +203,23 @@ def lint_concept_duplications(root_dir: Optional[Path] = None) -> Dict[str, Any]
     policy_files = list(policies_dir.glob("*.md")) if policies_dir.is_dir() else []
     all_files = [base / "AGENTS.md"] + policy_files
 
-    counts: Dict[str, int] = {"completeness": 0, "heilmeier": 0, "stop_gate": 0}
+    concepts: Dict[str, str] = {
+        "completeness": "Completeness Over Speed",
+        "heilmeier": "Heilmeier",
+        "stop_gate": "Stop Gate",
+        "egm": "EGM Pass",
+    }
+    counts: Dict[str, int] = {k: 0 for k in concepts}
     for f in all_files:
         if not f.is_file():
             continue
         txt = f.read_text(encoding="utf-8")
-        if "Completeness Over Speed" in txt:
-            counts["completeness"] += 1
-        if "Heilmeier" in txt:
-            counts["heilmeier"] += 1
-        if "Stop Gate" in txt:
-            counts["stop_gate"] += 1
+        for key, needle in concepts.items():
+            if needle in txt:
+                counts[key] += 1
 
-    return {"valid": True, "counts": counts}
+    violations = {k: v for k, v in counts.items() if v > 1}
+    return {"valid": len(violations) == 0, "counts": counts, "violations": violations}
 
 
 def lint_context_budget(root_dir: Optional[Path] = None) -> Dict[str, Any]:
@@ -264,7 +268,7 @@ def lint_readme_accuracy(root_dir: Optional[Path] = None) -> Dict[str, Any]:
         ])
 
     # 3. Contagem real de workflows
-    wf_file = base / ".agents" / "workflow.yaml"
+    wf_file = base / ".agents" / "graph" / "workflow.yaml"
     real_flows = 0
     if wf_file.is_file():
         try:
@@ -346,6 +350,13 @@ def run_all_lints(root_dir: Optional[Path] = None) -> int:
         errors += 1
     else:
         print(f"✅ [README] Contagens auditadas ({r_res['real_agents']} agentes, {r_res['real_skills']} skills, {r_res['real_flows']} workflows, {r_res['real_steps']} passos)")
+
+    d_res = lint_concept_duplications(base)
+    if not d_res["valid"]:
+        print(f"❌ [FONTE ÚNICA] Violações de conceito duplicado: {d_res['violations']} (contagens: {d_res['counts']})")
+        errors += 1
+    else:
+        print(f"✅ [FONTE ÚNICA] Conceitos de governança com fonte única ({d_res['counts']})")
 
     print(f"ℹ️  [BUDGET] AGENTS.md: {b_res['agents_bytes']} B | Memory: {b_res['memory_bytes']} B | Total: {b_res['total_bytes']} B (Teto: 8.000 B)")
 
