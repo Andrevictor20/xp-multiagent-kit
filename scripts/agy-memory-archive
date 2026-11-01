@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Wrapper executável para o motor de arquivamento de memória episódica
+echo "⚠️ [DEPRECAÇÃO] 'agy-memory-archive' está depreciado no v4. Use 'xp memory' em seu lugar." >&2
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 python3 "${SCRIPT_DIR}/memory_archiver.py" "$@"

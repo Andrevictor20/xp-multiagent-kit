@@ -31,3 +31,8 @@ Consolidates application security governance: **AuthN/AuthZ**, **OWASP API**, **
   - Missing token -> HTTP 401.
   - Expired token or invalid signature -> HTTP 401.
   - Attempted access to another user/tenant resource -> HTTP 403 / 404.
+
+## 6. Privacy (GDPR/LGPD) & Security Observability
+- **PII Governance:** Anonymization/pseudonymization of personal data; strict prohibition of PII in application logs.
+- **Data Minimization:** Retention schedules with automatic TTL and right-to-erasure compliance.
+- **Audit Logging:** Structured append-only logging for auth failures, privilege elevation, and sensitive queries.

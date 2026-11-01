@@ -281,7 +281,7 @@ class GlobalInstaller:
                 except Exception:
                     pass
         McpConfigurator(home_dir=self.home_dir).configure_all()
-        for inst_cls in (OpenDesignInstaller, CodeReviewGraphInstaller, RtkInstaller, AletheInstaller):
+        for inst_cls in (CodeReviewGraphInstaller, RtkInstaller, AletheInstaller):
             inst_cls(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
         adapters = HostAdapters(kit_dir=self.kit_dir, home_dir=self.home_dir)
         actions.extend(adapters.install_global_hosts(resolved_targets, dry_run=dry_run))

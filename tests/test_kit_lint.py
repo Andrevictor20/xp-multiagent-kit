@@ -11,6 +11,7 @@ from scripts.kit_lint import (
     lint_components_yaml,
     lint_agents_md_sections,
     lint_concept_duplications,
+    lint_readme_accuracy,
     run_all_lints,
 )
 
@@ -51,6 +52,22 @@ class TestKitLint(unittest.TestCase):
         res = lint_agents_md_sections(sample)
         self.assertFalse(res["valid"])
         self.assertIn("VERIFICAÇÃO", res["missing"])
+
+    def test_lint_readme_accuracy_real(self):
+        res = lint_readme_accuracy()
+        self.assertTrue(res["valid"], msg=f"Errors: {res.get('errors')}")
+        self.assertEqual(res["real_agents"], 6)
+        self.assertEqual(res["real_skills"], 25)
+        self.assertEqual(res["real_flows"], 9)
+        self.assertEqual(res["real_steps"], 10)
+
+    def test_lint_readme_accuracy_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            (tmp / "README.md").write_text("# Test\n99 skills\n", encoding="utf-8")
+            res = lint_readme_accuracy(tmp)
+            self.assertFalse(res["valid"])
+            self.assertTrue(any("99 skills" in e for e in res["errors"]))
 
 
 if __name__ == "__main__":

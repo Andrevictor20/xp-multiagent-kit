@@ -17,16 +17,16 @@ Deterministic governance Thin Harness for AI agent pair-programming (**Antigravi
 ├────────────────────────────────────────────────────────────────────────┤
 │ 2. LOOP: xp contract (run.json) + xp gate (10 steps) + EGM (2 personas)│
 ├────────────────────────────────────────────────────────────────────────┤
-│ 3. GRAPH: workflow.yaml (8 flows) + xp flow (RED SHA-256 test freeze)  │
+│ 3. GRAPH: workflow.yaml (9 flows) + xp flow (RED SHA-256 test freeze)  │
 ├────────────────────────────────────────────────────────────────────────┤
-│ 4. CORE: 6 core agents + 24 skills + packs (.agents/packs/)            │
+│ 4. CORE: 6 core agents + 25 skills + packs (.agents/packs/)            │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 1. **Harness (Outer Layer):** Deterministic interception via hooks (`pre_tool_guard`), permission tiers in `policy.yaml` (`auto|review|human`), and structured telemetry in `.agents/runtime/events.jsonl`.
 2. **Loop (Focused Execution):** Structured contract in `run.json` (`xp contract`), 10-step delivery gate (`xp gate`), and EGM audit with 2 personas (`spec_reviewer`, `code_reviewer`).
 3. **Graph (Transitions):** State machine driven by `workflow.yaml`, verified progression, and RED test freezing (`xp flow`).
-4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 24 skills in the main catalog, with optional bundles in `.agents/packs/`.
+4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 25 skills in the main catalog, with optional bundles in `.agents/packs/`.
 
 ---
 

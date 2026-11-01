@@ -207,11 +207,6 @@ def should_skip_duplicate_injection(
     return False
 
 
-def sync_dynamic_skill_profile(risk_level: str, prompt_text: str) -> Optional[str]:
-    """Removido conforme AC-8 e AC-9 do SPEC-006 (perfil estático por stack)."""
-    return None
-
-
 def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Processa o evento PreInvocation do Antigravity CLI."""
     transcript_path = payload.get("transcriptPath", "")

@@ -14,22 +14,104 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from collections import Counter
+import re
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-kit_dir = Path(__file__).resolve().parent.parent.parent
-if str(kit_dir) not in sys.path:
-    sys.path.insert(0, str(kit_dir))
-if not os.environ.get("KIT_ROOT"):
-    os.environ["KIT_ROOT"] = str(kit_dir)
+try:
+    from scripts.kit_constants import (  # noqa: E402
+        ASCII_ART_LETTER_DOMINANCE,
+        SANITIZE_HEAD_LINES,
+        SANITIZE_TAIL_LINES,
+        SHELL_NOISE_LINE_PATTERNS,
+        SHELL_NOISE_MIN_CONSECUTIVE,
+        TOOL_OUTPUT_MAX_CHARS,
+        TOOL_OUTPUT_MAX_LINES,
+        runtime_dir,
+    )
+except ImportError:
+    from kit_constants import (  # noqa: E402
+        ASCII_ART_LETTER_DOMINANCE,
+        SANITIZE_HEAD_LINES,
+        SANITIZE_TAIL_LINES,
+        SHELL_NOISE_LINE_PATTERNS,
+        SHELL_NOISE_MIN_CONSECUTIVE,
+        TOOL_OUTPUT_MAX_CHARS,
+        TOOL_OUTPUT_MAX_LINES,
+        runtime_dir,
+    )
 
-from scripts.kit_constants import (  # noqa: E402
-    SANITIZE_HEAD_LINES,
-    SANITIZE_TAIL_LINES,
-    TOOL_OUTPUT_MAX_CHARS,
-    TOOL_OUTPUT_MAX_LINES,
-    runtime_dir,
-)
-from scripts.output_noise import clean_output, noise_stats  # noqa: E402
+_NOISE_RE = tuple(re.compile(p, re.IGNORECASE) for p in SHELL_NOISE_LINE_PATTERNS)
+_REPEAT_RUN_RE = re.compile(r"(.)\1{3,}")
+
+
+def is_ascii_art(line: str) -> bool:
+    stripped = line.strip()
+    if not _REPEAT_RUN_RE.search(stripped):
+        return False
+    letters = [c for c in stripped if c.isalpha()]
+    if len(letters) < 4:
+        return False
+    dominant = Counter(letters).most_common(1)[0][1]
+    return dominant / len(letters) >= ASCII_ART_LETTER_DOMINANCE
+
+
+def is_noise_line(line: str) -> bool:
+    stripped = line.strip()
+    if not stripped:
+        return False
+    if any(pattern.match(stripped) for pattern in _NOISE_RE):
+        return True
+    return is_ascii_art(stripped)
+
+
+def strip_shell_noise(lines: Sequence[str]) -> Tuple[List[str], int]:
+    kept: List[str] = []
+    noise_block: List[str] = []
+    removed = 0
+
+    def drain() -> None:
+        nonlocal removed
+        if not noise_block:
+            return
+        if len(noise_block) >= SHELL_NOISE_MIN_CONSECUTIVE:
+            kept.append(f"[... {len(noise_block)} linhas de banner/decoração de shell removidas ...]\n")
+            removed += len(noise_block)
+        else:
+            kept.extend(noise_block)
+        noise_block.clear()
+
+    for line in lines:
+        normalized = line if line.endswith("\n") else line + "\n"
+        if is_noise_line(line):
+            noise_block.append(normalized)
+        else:
+            drain()
+            kept.append(normalized)
+    drain()
+    return kept, removed
+
+
+def never_worse(raw: str, filtered: str) -> str:
+    return raw if len(filtered) > len(raw) else filtered
+
+
+def clean_output(text: str) -> str:
+    cleaned, _ = strip_shell_noise(text.splitlines(keepends=True))
+    return never_worse(text, "".join(cleaned))
+
+
+def noise_stats(text: str) -> dict:
+    lines = text.splitlines()
+    cleaned, removed = strip_shell_noise(text.splitlines(keepends=True))
+    original_chars = len(text)
+    cleaned_chars = sum(len(line) for line in cleaned)
+    return {
+        "original_lines": len(lines),
+        "noise_lines": removed,
+        "original_chars": original_chars,
+        "saved_chars": max(0, original_chars - cleaned_chars),
+    }
 
 
 def clamp_output_text(

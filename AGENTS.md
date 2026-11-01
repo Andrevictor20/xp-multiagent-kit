@@ -9,7 +9,7 @@ Separar O QUÊ (especificação, ACs, SbE) do COMO (código, testes). Validar vi
 Contexto base fixo restrito (≤ 8 KB total). Consultar memória sob demanda via `xp context <query>`. Políticas detalhadas residem em `.agents/policies/` e carregam JIT.
 
 ## 3. FERRAMENTAS
-Uso prioritário de ferramentas determinísticas locais (`xp`) e AST graph (`code-review-graph` / `agy-graph`) para impacto e chamadas em arquivos > 800 linhas. Sem spam de chamadas.
+Uso prioritário de ferramentas determinísticas locais (`xp`) e AST graph (`code-review-graph` / `agy-graph`) para impacto e chamadas em arquivos > 800 linhas (com fallback textual se ausente). Sem spam de chamadas.
 
 ## 4. ESTADO
 Estado transiente de execução mantido em `.agents/runtime/` (`run.json`, `events.jsonl`, `flow_state.json`). Não versionado em Git.

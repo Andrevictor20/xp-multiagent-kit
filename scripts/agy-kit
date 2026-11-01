@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
+echo "⚠️ [DEPRECAÇÃO] 'agy-kit' está depreciado no v4. Use 'xp kit' em seu lugar." >&2
 # agy-kit: Utilitário CLI de Gestão e Portabilidade do XP Multi-Agent Kit (SPEC-002)
 # ==============================================================================
 set -euo pipefail

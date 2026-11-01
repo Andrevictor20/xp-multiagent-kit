@@ -31,3 +31,6 @@ Deterministic AST (Tree-sitter) and dependency graph mapping via MCP (`code-revi
 - Prefer structured graph queries over full-file `view_file` scans.
 - Default to `detail_level="minimal"`; escalate to `"standard"` only when needed.
 - Budget at most 3 graph calls (~800 total tokens) per analysis cycle, then read only the exact line ranges required.
+
+## 4. Graceful Fallback (Zero Blocking)
+If `code-review-graph` (MCP or CLI) is not installed or indexed, fall back gracefully to targeted textual search (`grep` / `ripgrep`) without blocking execution.

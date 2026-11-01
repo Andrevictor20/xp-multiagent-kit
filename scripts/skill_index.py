@@ -203,7 +203,7 @@ def audit_context_budget(root: Optional[Path] = None) -> Dict[str, Any]:
                     "over": skill["body_bytes"] - SKILL_BODY_MAX_BYTES,
                 })
 
-    index_path = skills_dir / INDEX_FILE
+    index_path = (base / ".agents" / "runtime" / INDEX_FILE) if (base / ".agents" / "runtime" / INDEX_FILE).is_file() else (skills_dir / INDEX_FILE)
     findings.append({
         "artifact": "skills_catalog (injetado por turno)",
         "bytes": catalog_bytes,
@@ -237,7 +237,9 @@ def main() -> int:
         return 1
 
     if args.action == "generate":
-        index_path = skills_dir / INDEX_FILE
+        runtime_d = base / ".agents" / "runtime"
+        runtime_d.mkdir(parents=True, exist_ok=True)
+        index_path = runtime_d / INDEX_FILE
         content = render_index(collect_skills(skills_dir))
         if not args.dry_run:
             index_path.write_text(content, encoding="utf-8")

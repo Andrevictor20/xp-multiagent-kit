@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys; sys.stderr.write("⚠️ [DEPRECAÇÃO] 'agy-audit-config' está depreciado no v4. Use 'xp kit doctor' em seu lugar.\n")
 """
 agy-audit-config: Universal configuration auditor for Antigravity.
 Detects bloat in global rules, eager MCP servers, and skill count saturation

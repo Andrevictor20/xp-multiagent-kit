@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # scripts/agy-repo-map
+echo "⚠️ [DEPRECAÇÃO] 'agy-repo-map' está depreciado no v4. Use 'xp context' em seu lugar." >&2
 # Atalho CLI para gerar ou atualizar o REPO_MAP.md ultracompacto (< 80 linhas)
 set -euo pipefail
 

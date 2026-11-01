@@ -65,6 +65,14 @@ def main() -> int:
                 pack_name = rest[2]
                 pack_dir = ROOT_DIR / ".agents" / "packs" / pack_name
                 if pack_dir.is_dir():
+                    if pack_name == "design":
+                        try:
+                            from kit_installer import OpenDesignInstaller
+                            res = OpenDesignInstaller(kit_dir=ROOT_DIR).install()
+                            if res and not res.get("ok"):
+                                print(f"Aviso ao instalar componentes do OpenDesign: {res.get('message')}")
+                        except Exception as e:
+                            print(f"Aviso: Não foi possível provisionar OpenDesign automaticamente: {e}")
                     print(f"Pack '{pack_name}' ativado com sucesso!")
                     return 0
                 print(f"Erro: Pack '{pack_name}' não encontrado em .agents/packs/")

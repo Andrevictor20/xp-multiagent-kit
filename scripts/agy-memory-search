@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # scripts/agy-memory-search
+echo "⚠️ [DEPRECAÇÃO] 'agy-memory-search' está depreciado no v4. Use 'xp context' em seu lugar." >&2
 # Wrapper executável para o Motor de Busca Rápida de Memória (SQLite FTS5) do XP Kit.
 set -euo pipefail
 

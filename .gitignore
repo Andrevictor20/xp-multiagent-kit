@@ -22,6 +22,8 @@ Especificacao Tecnica - Motor Multiagente Dinamico xp-multiagent-kit.md
 .agents/components.local.yaml
 
 # Planos de modificação e prompts de trabalho temporários (fora do git)
+SKILLS_INDEX.md
+REPO_MAP.md
 PLANO-*.md
 *PLANO*
 PROMPT-*.md

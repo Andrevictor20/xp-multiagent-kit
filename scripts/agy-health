@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Wrapper executável para o scanner de diagnóstico e saúde do sistema
+echo "⚠️ [DEPRECAÇÃO] 'agy-health' está depreciado no v4. Use 'xp kit doctor' em seu lugar." >&2
 REAL_SCRIPT="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "${REAL_SCRIPT}")" && pwd)"
 python3 "${SCRIPT_DIR}/agy_health.py" "$@"

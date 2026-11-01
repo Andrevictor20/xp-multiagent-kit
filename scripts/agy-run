@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys; sys.stderr.write("⚠️ [DEPRECAÇÃO] 'agy-run' está depreciado no v4. Use 'xp run' em seu lugar.\n")
 """
 agy-run: executor de comandos com enforcement portátil (C1).
 
@@ -35,7 +36,14 @@ from kit_constants import (  # noqa: E402
     needs_posix_wrapper,
     posix_wrapper,
 )
-from output_noise import clean_output, noise_stats  # noqa: E402
+try:
+    from hooks.tool_size_guard import clean_output, noise_stats  # noqa: E402
+except ImportError:
+    try:
+        from scripts.hooks.tool_size_guard import clean_output, noise_stats  # noqa: E402
+    except ImportError:
+        def clean_output(t): return t  # noqa: E402
+        def noise_stats(t): return {"noise_lines": 0, "saved_chars": 0}  # noqa: E402
 from turn_telemetry import record_turn  # noqa: E402
 
 

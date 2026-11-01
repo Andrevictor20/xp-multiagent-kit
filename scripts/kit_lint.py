@@ -29,17 +29,19 @@ MANDATORY_AGENTS_SECTIONS = [
 def lint_version(root_dir: Optional[Path] = None) -> Dict[str, Any]:
     base = root_dir or ROOT_DIR
     v_file = base / "VERSION"
-    if v_file.is_file():
-        val = v_file.read_text(encoding="utf-8").strip()
-    else:
-        comp_file = base / ".agents" / "components.yaml"
-        if comp_file.is_file():
-            m = re.search(r'^version:\s*["\']?([^"\']+)["\']?', comp_file.read_text(encoding="utf-8"), re.MULTILINE)
-            val = m.group(1).strip() if m else "4.0.0"
-        else:
-            val = "4.0.0"
+    if not v_file.is_file():
+        return {"valid": False, "version": "unknown", "error": "Arquivo VERSION ausente"}
+    val = v_file.read_text(encoding="utf-8").strip()
     if not re.match(r"^\d+\.\d+\.\d+", val):
-        return {"valid": False, "version": val, "error": f"Versão '{val}' inválida"}
+        return {"valid": False, "version": val, "error": f"Versão '{val}' em VERSION inválida"}
+
+    # B21: Valida divergência com components.yaml
+    comp_file = base / ".agents" / "components.yaml"
+    if comp_file.is_file():
+        m = re.search(r'^version:\s*["\']?([^"\']+)["\']?', comp_file.read_text(encoding="utf-8"), re.MULTILINE)
+        if m and m.group(1).strip() != val:
+            return {"valid": False, "version": val, "error": f"Divergência: VERSION ({val}) != components.yaml ({m.group(1).strip()})"}
+
     return {"valid": True, "version": val, "error": None}
 
 
@@ -57,8 +59,11 @@ def discover_disk_components(base: Path) -> List[Dict[str, str]]:
     # 2. Agents
     agents_dir = base / ".agents" / "agents"
     if agents_dir.is_dir():
-        for child in sorted(agents_dir.glob("*.md")):
-            found.append({"id": child.stem, "kind": "agent"})
+        for child in sorted(agents_dir.iterdir()):
+            if child.is_dir() and not child.name.startswith("."):
+                found.append({"id": child.name, "kind": "agent"})
+            elif child.is_file() and child.suffix == ".md":
+                found.append({"id": child.stem, "kind": "agent"})
 
     # 3. Policies
     policies_dir = base / ".agents" / "policies"
@@ -230,12 +235,93 @@ def lint_context_budget(root_dir: Optional[Path] = None) -> Dict[str, Any]:
     }
 
 
+def lint_readme_accuracy(root_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """B23: Valida se as contagens citadas no README.md correspondem à realidade em disco."""
+    base = root_dir or ROOT_DIR
+    readme_file = base / "README.md"
+    if not readme_file.is_file():
+        return {"valid": False, "errors": ["README.md ausente"]}
+
+    text = readme_file.read_text(encoding="utf-8")
+    errors: List[str] = []
+
+    # 1. Contagem real de agentes
+    agents_dir = base / ".agents" / "agents"
+    real_agents = 0
+    if agents_dir.is_dir():
+        real_agents = len([
+            p for p in agents_dir.iterdir()
+            if (p.is_dir() and not p.name.startswith(".")) or (p.is_file() and p.suffix == ".md")
+        ])
+
+    # 2. Contagem real de skills
+    skills_dir = base / ".agents" / "skills"
+    real_skills = 0
+    if skills_dir.is_dir():
+        real_skills = len([
+            p for p in skills_dir.iterdir()
+            if p.is_dir() and not p.name.startswith(".") and (p / "SKILL.md").exists()
+        ])
+
+    # 3. Contagem real de workflows
+    wf_file = base / ".agents" / "workflow.yaml"
+    real_flows = 0
+    if wf_file.is_file():
+        try:
+            import yaml
+            wf_data = yaml.safe_load(wf_file.read_text(encoding="utf-8")) or {}
+            real_flows = len(wf_data.get("workflows", {}))
+        except Exception:
+            m = re.findall(r"^  [a-zA-Z0-9_-]+:\s*$", wf_file.read_text(encoding="utf-8"), re.MULTILINE)
+            real_flows = len(m)
+
+    # 4. Passos do gate
+    gate_file = base / "scripts" / "xp_gate.py"
+    real_steps = 10
+    if gate_file.is_file():
+        gate_txt = gate_file.read_text(encoding="utf-8")
+        step_matches = set(re.findall(r"Step\s+(\d+)", gate_txt))
+        if step_matches:
+            real_steps = max(int(s) for s in step_matches)
+
+    # Verifica menções no README.md
+    for m in re.finditer(r"(\d+)\s+(?:core\s+)?agents\b", text, re.IGNORECASE):
+        claimed = int(m.group(1))
+        if claimed != real_agents:
+            errors.append(f"README declara '{m.group(0)}' ({claimed}), mas disco tem {real_agents} agentes")
+
+    for m in re.finditer(r"(\d+)\s+skills\b", text, re.IGNORECASE):
+        claimed = int(m.group(1))
+        if claimed != real_skills:
+            errors.append(f"README declara '{m.group(0)}' ({claimed}), mas disco tem {real_skills} skills")
+
+    for m in re.finditer(r"(\d+)\s+(?:workflows|flows)\b", text, re.IGNORECASE):
+        claimed = int(m.group(1))
+        if claimed != real_flows:
+            errors.append(f"README declara '{m.group(0)}' ({claimed}), mas workflow.yaml tem {real_flows} workflows")
+
+    for m in re.finditer(r"(\d+)[ -]step\b", text, re.IGNORECASE):
+        claimed = int(m.group(1))
+        if claimed != real_steps:
+            errors.append(f"README declara '{m.group(0)}' ({claimed}), mas xp_gate tem {real_steps} passos")
+
+    return {
+        "valid": len(errors) == 0,
+        "errors": errors,
+        "real_agents": real_agents,
+        "real_skills": real_skills,
+        "real_flows": real_flows,
+        "real_steps": real_steps,
+    }
+
+
 def run_all_lints(root_dir: Optional[Path] = None) -> int:
     base = root_dir or ROOT_DIR
     v_res = lint_version(base)
     c_res = lint_components_yaml(base)
     a_res = lint_agents_md_sections(root_dir=base)
     b_res = lint_context_budget(base)
+    r_res = lint_readme_accuracy(base)
 
     errors = 0
     if not v_res["valid"]:
@@ -254,6 +340,12 @@ def run_all_lints(root_dir: Optional[Path] = None) -> int:
         print(f"⚠️  [AGENTS.md] Seções pendentes: {a_res['missing']}")
     else:
         print("✅ [AGENTS.md] Todas as 8 seções de harness apontam mecanismos")
+
+    if not r_res["valid"]:
+        print(f"❌ [README] Inconsistências de contagem: {r_res['errors']}")
+        errors += 1
+    else:
+        print(f"✅ [README] Contagens auditadas ({r_res['real_agents']} agentes, {r_res['real_skills']} skills, {r_res['real_flows']} workflows, {r_res['real_steps']} passos)")
 
     print(f"ℹ️  [BUDGET] AGENTS.md: {b_res['agents_bytes']} B | Memory: {b_res['memory_bytes']} B | Total: {b_res['total_bytes']} B (Teto: 8.000 B)")
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 # Wrapper executável para o gerenciador de Git Worktrees do XP Kit
+echo "⚠️ [DEPRECAÇÃO] 'agy-worktree' está depreciado no v4. Use 'xp' em seu lugar." >&2
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 python3 "${SCRIPT_DIR}/git_worktree_manager.py" "$@"

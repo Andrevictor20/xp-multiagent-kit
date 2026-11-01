@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
+echo "⚠️ [DEPRECAÇÃO] 'agy-git-ops' está depreciado no v4. Use 'xp' em seu lugar." >&2
 # agy-git-ops: Utilitário para Operações Git e CI/CD Ultra-Econômicas em Tokens
 # XP Multi-Agent Kit v2
 # ==============================================================================

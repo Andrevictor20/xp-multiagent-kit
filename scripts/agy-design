@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # scripts/agy-design
+echo "⚠️ [DEPRECAÇÃO] 'agy-design' está depreciado no v4. Use 'xp kit pack enable design' em seu lugar." >&2
 # Wrapper executável para o OpenDesign no XP Multi-Agent Kit.
 set -euo pipefail
 

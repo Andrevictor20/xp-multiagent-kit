@@ -444,7 +444,7 @@ class HostAdapters:
                 "2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.\n"
                 "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
                 "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
-                "5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks.\n"
+                "5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks. If unavailable, fall back to textual search (grep/ripgrep) without blocking.\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
             for sub in ("skills", "agents", "workflows", "policies", "rules", "templates"):

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
+echo "⚠️ [DEPRECAÇÃO] 'agy-effort' está depreciado no v4. Use 'xp' em seu lugar." >&2
 # agy-effort: CLI entrypoint para o Router Inteligente de Reasoning Effort
 # XP Multi-Agent Kit v2
 # ==============================================================================

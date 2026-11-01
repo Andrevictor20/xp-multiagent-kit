@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # scripts/agy-context
+echo "⚠️ [DEPRECAÇÃO] 'agy-context' está depreciado no v4. Use 'xp context' em seu lugar." >&2
 # Wrapper executável para o Motor de Recuperação JIT de Memória & Contexto do XP Kit.
 set -euo pipefail
 

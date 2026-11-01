@@ -15,6 +15,7 @@
 - **Consolidação de Políticas (12 → 7):** Fusão em 7 políticas modulares; limites numéricos em `kit_constants.py`.
 - **EGM (9 → 2 Personas):** `spec_reviewer` e `code_reviewer` com Pass 3 Conformance determinístico.
 - **Limpeza de Duplicações:** Remoção de `REPO_MAP.md` e `COMPLETENESS_OVER_SPEED` (fonte única).
+- **Skills Catalog JIT (P1):** A métrica de 29.378 B decorre da estimativa min(len, 1200) em `skill_index.py`; no v4 as skills operam sob demanda (JIT) e não no contexto base (fixo ≤ 8 KB).
 
 ## 3. PROGRESSO
 

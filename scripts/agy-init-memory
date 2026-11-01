@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import sys; sys.stderr.write("⚠️ [DEPRECAÇÃO] 'agy-init-memory' está depreciado no v4. Use 'xp memory' em seu lugar.\n")
 """
 agy-init-memory: Inicializa memória isolada para um novo projeto.
 

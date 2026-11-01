@@ -106,7 +106,12 @@ class TestSpec003Acceptance(unittest.TestCase):
         self.assertIn("feature:", wf_yaml)
         self.assertIn("description:", wf_yaml)
 
-        skills_index = (KIT_ROOT / ".agents" / "skills" / "SKILLS_INDEX.md").read_text(encoding="utf-8")
+        skills_index_path = KIT_ROOT / ".agents" / "runtime" / "SKILLS_INDEX.md"
+        if not skills_index_path.is_file():
+            from scripts.skill_index import collect_skills, render_index
+            skills_index = render_index(collect_skills(KIT_ROOT / ".agents" / "skills"))
+        else:
+            skills_index = skills_index_path.read_text(encoding="utf-8")
         self.assertIn("# Skills Index", skills_index)
 
     # ------------------------------------------------------------------

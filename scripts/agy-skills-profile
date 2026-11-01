@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # scripts/agy-skills-profile
+echo "⚠️ [DEPRECAÇÃO] 'agy-skills-profile' está depreciado no v4. Use 'xp kit' em seu lugar." >&2
 # Wrapper para o gerenciador de perfis de skills (A2 / D3).
 set -euo pipefail
 
