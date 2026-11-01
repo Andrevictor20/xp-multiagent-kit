@@ -28,7 +28,7 @@ mkdir -p "$GLOBAL_SKILLS_DIR"
 # 3. Configurar AGENTS.md como Global Dispatcher Minimalista (elimina duplicação de 5k tokens por turno)
 echo "🔗 Gerando AGENTS.md mestre global como dispatcher minimalista..."
 cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
-# Global Agent Dispatcher — XP Multi-Agent Kit v3.9 (Agnostic Core)
+# Global Agent Dispatcher — XP Multi-Agent Kit v4 (Thin Harness)
 
 Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder, Claude):
 1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
@@ -52,8 +52,13 @@ done
 # Garantir que o diretório do plugin interno exista para evitar falhas em hooks de PreToolUse
 mkdir -p "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
 
-# 4. Vincular todas as Skills globais dinamicamente
+# 4. Vincular todas as Skills globais dinamicamente (removendo links órfãos da poda)
 echo "🔗 Sincronizando Skills globais do kit..."
+for existing_link in "$GLOBAL_SKILLS_DIR"/*; do
+  if [ -L "$existing_link" ]; then
+    rm -f "$existing_link"
+  fi
+done
 skill_count=0
 for skill_path in "$KIT_DIR/.agents/skills"/*; do
   if [ -d "$skill_path" ]; then
@@ -211,6 +216,11 @@ ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/agy-orches
 ln -sf "$KIT_DIR/scripts/antigravity_multiagent.py" "$HOME/.local/bin/xp-orchestrate"
 ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/agy-goldfish"
 ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/xp-goldfish"
+ln -sf "$KIT_DIR/scripts/xp" "$HOME/.local/bin/xp"
+ln -sf "$KIT_DIR/scripts/xp_gate.py" "$HOME/.local/bin/xp-gate"
+ln -sf "$KIT_DIR/scripts/xp_contract.py" "$HOME/.local/bin/xp-contract"
+ln -sf "$KIT_DIR/scripts/xp_flow.py" "$HOME/.local/bin/xp-flow"
+ln -sf "$KIT_DIR/scripts/xp_evolve.py" "$HOME/.local/bin/xp-evolve"
 
 echo "   ✅ xp-orchestrate, agy-orchestrate, xp-spec, agy-spec, agy-pack, xp-pack, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-handoff, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-resume, agy-daemon, agy-dashboard, agy-session-compact, agy-debt, agy-kit, agy-design disponíveis no PATH!"
 

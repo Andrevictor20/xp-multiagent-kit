@@ -29,6 +29,7 @@
 - **2026-11-01** [`54835e7`]: Exclusão de planos na raiz, blindagem no .gitignore e documentação Git no README.
 - **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
 - **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
+- **2026-11-01** [`d0c2178`]: Atualização do install-global.sh com comandos v4 (xp, gate, flow, evolve) e implantação global em 62 projetos.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).
