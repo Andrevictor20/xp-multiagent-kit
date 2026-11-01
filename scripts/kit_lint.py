@@ -154,6 +154,7 @@ def run_all_lints() -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="XP Kit Governance Linter")
+    parser.add_argument("command", nargs="?", default="lint", help="Subcomando opcional (ex: lint)")
     parser.add_argument("--json", action="store_true", help="Saída em JSON")
     args = parser.parse_args()
     return run_all_lints()

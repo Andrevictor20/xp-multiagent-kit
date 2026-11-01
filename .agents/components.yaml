@@ -58,3 +58,15 @@ components:
     prevents: "Stale, unused components lingering in the kit and unaddressed recurring failure patterns"
     added: "2026-11-01"
     review_by: "2027-02-01"
+
+  - id: "xp_session"
+    kind: "script"
+    prevents: "Fragmented session compaction, resume failures, and untracked handoff contracts"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_eval"
+    kind: "script"
+    prevents: "Unmeasured performance regressions and token efficiency degradation without benchmark evidence"
+    added: "2026-11-01"
+    review_by: "2027-02-01"

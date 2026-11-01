@@ -1,0 +1,8 @@
+{
+  "id": "task_l0_typo",
+  "risk": "L0",
+  "workflow": "chore",
+  "prompt": "Corrija erro de digitação na documentação de instalação",
+  "expected_files": ["README.md"],
+  "verify_cmd": "python3 scripts/kit_lint.py"
+}

@@ -52,6 +52,9 @@ def main() -> int:
         print("Subcomando 'evolve' será ativado na Fase 6 (Auto-Melhoria).")
         return 0
     elif subcmd == "kit":
+        if rest and rest[0] == "eval":
+            eval_script = SCRIPTS_DIR / "xp_eval.py"
+            return subprocess.run([sys.executable, str(eval_script)] + rest[1:]).returncode
         if rest and rest[0] == "pack":
             if len(rest) > 2 and rest[1] == "enable":
                 pack_name = rest[2]

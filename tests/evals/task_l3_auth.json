@@ -1,0 +1,8 @@
+{
+  "id": "task_l3_auth",
+  "risk": "L3",
+  "workflow": "migration",
+  "prompt": "Implemente validação de tokens JWT assimétricos RS256 com rotação de chaves e STRIDE threat model",
+  "expected_files": ["scripts/jwt_validator.py", "tests/test_jwt_validator.py"],
+  "verify_cmd": "python3 -m unittest tests/test_jwt_validator.py"
+}

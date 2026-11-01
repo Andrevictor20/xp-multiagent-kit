@@ -1,0 +1,8 @@
+{
+  "id": "task_l1_bugfix",
+  "risk": "L1",
+  "workflow": "fix",
+  "prompt": "Corrija regressão de parsing de datas no extrator de telemetria",
+  "expected_files": ["scripts/turn_telemetry.py", "tests/test_turn_telemetry.py"],
+  "verify_cmd": "python3 -m unittest tests/test_turn_telemetry.py"
+}
