@@ -1,0 +1,38 @@
+# .agents/policy.yaml — Matriz Declarativa de Permissão por Custo de Desfazer
+# Tiers: auto < review < human. Tier efetivo = max(declarado, derivado).
+version: "4.0.0"
+tiers:
+  auto:
+    description: "Reversível por commit local: documentação, testes e funções isoladas"
+    patterns:
+      - "docs/**"
+      - "*.md"
+      - "tests/**"
+      - "test_*.py"
+      - "*.css"
+  review:
+    description: "Alto impacto em produção: exige build verde, traço e revisão independente"
+    patterns:
+      - "**/auth/**"
+      - "**/billing/**"
+      - "**/payments/**"
+      - "**/schema/**"
+      - ".github/**"
+      - "**/ci/**"
+      - "**/security/**"
+  human:
+    description: "Ações irreversíveis ou destrutivas: exige aprovação humana (xp approve)"
+    patterns:
+      - "**/migrations/**"
+      - "*.tf"
+      - "*.tfvars"
+      - ".env*"
+      - "k8s/**"
+      - "Dockerfile*"
+    commands:
+      - "rm -rf"
+      - "DROP"
+      - "terraform apply"
+      - "git push --force"
+      - "npm publish"
+      - "docker push"

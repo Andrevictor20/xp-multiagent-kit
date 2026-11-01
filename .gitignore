@@ -19,3 +19,11 @@ code-review-graph-staging.zip
 dist/
 Especificacao Tecnica - Motor Multiagente Dinamico xp-multiagent-kit.md
 .~lock.*
+.agents/components.local.yaml
+
+# Planos de modificação e prompts de trabalho temporários (fora do git)
+PLANO-*.md
+*PLANO*
+PROMPT-*.md
+*PROMPT*
+/SPEC-006-THIN-HARNESS.md

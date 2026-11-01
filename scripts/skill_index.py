@@ -39,15 +39,36 @@ SECTION_PATTERN = re.compile(r"^##\s+(.+)$", re.MULTILINE)
 
 
 def parse_frontmatter(text: str) -> Tuple[Dict[str, str], str]:
-    """Separa o frontmatter YAML simples do corpo da skill."""
+    """Separa o frontmatter YAML simples do corpo da skill, tratando escalares multiline (>-)."""
     match = FRONTMATTER_PATTERN.match(text)
     if not match:
         return {}, text
     meta: Dict[str, str] = {}
+    current_key = None
+    multiline_buf: List[str] = []
+
     for line in match.group(1).splitlines():
-        if ":" in line and not line.startswith((" ", "\t", "#")):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if ":" in line and not line.startswith((" ", "\t")):
+            if current_key and multiline_buf:
+                meta[current_key] = " ".join(multiline_buf).strip().strip("'\"")
+                multiline_buf = []
             key, _, value = line.partition(":")
-            meta[key.strip()] = value.strip().strip("'\"")
+            current_key = key.strip()
+            val = value.strip().strip("'\"")
+            if val in (">-", ">", "|", "|-"):
+                multiline_buf = []
+            elif val:
+                meta[current_key] = val
+                current_key = None
+        elif current_key and line.startswith((" ", "\t")):
+            multiline_buf.append(stripped)
+
+    if current_key and multiline_buf:
+        meta[current_key] = " ".join(multiline_buf).strip().strip("'\"")
+
     return meta, text[match.end():]
 
 

@@ -58,11 +58,11 @@ class TestQoderHostAdapter(unittest.TestCase):
         self.assertIn("mcpServers", mcp_data)
         self.assertIn("code-review-graph", mcp_data["mcpServers"])
 
-        # 3. .qoder/agents/ deve conter os subagentes especialistas
+        # 3. .qoder/agents/ deve conter os subagentes especialistas (6 nucleares)
         agents_dir = self.project_dir / ".qoder" / "agents"
         self.assertTrue(agents_dir.is_dir(), ".qoder/agents deve ser criado como diretório")
 
-        for ag_name in ("builder", "orchestrator", "sentinel", "test-guardian", "navigator"):
+        for ag_name in ("builder", "orchestrator", "sentinel", "reviewer", "designer", "shipper"):
             ag_file = agents_dir / f"{ag_name}.md"
             self.assertTrue(ag_file.is_file(), f"Agente {ag_name}.md deve existir em .qoder/agents/")
             content = ag_file.read_text(encoding="utf-8")

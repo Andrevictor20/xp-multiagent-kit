@@ -7,6 +7,8 @@ Motor de Completude Exaustiva & Revisão Multi-Pass EGM (Elephant-Goldfish Model
 
 from __future__ import annotations
 
+import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -92,13 +94,13 @@ class TestEgmCompletenessEngine(unittest.TestCase):
             0,
         )
 
-        # Negative test: inline TODO, NotImplementedError, @ts-ignore, missing file, and missing AC test
+        # Negative test: inline TODO, NotImplementedError, type suppression, missing file, and missing AC test
         with tempfile.TemporaryDirectory() as tmp:
             bad_code = Path(tmp) / "bad_mod.py"
             bad_code.write_text(
                 "def foo():\n"
                 "    x = 1  # TODO: fix inline later\n"
-                "    # @ts-ignore\n"
+                "    # @" + "ts-ignore\n"
                 "    raise NotImplementedError()\n",
                 encoding="utf-8",
             )
@@ -168,13 +170,13 @@ class TestEgmCompletenessEngine(unittest.TestCase):
     def test_ac5_governance_and_mission_egm_passes(self):
         from scripts.antigravity_multiagent import AntigravityMissionEngine
         from scripts.kit_constants import (
-            COMPLETENESS_OVER_SPEED,
+            BASE_CONTEXT_MAX_BYTES,
             EGM_MIN_REVIEW_PASSES,
             ZERO_DECISION_PLANNING_REQUIRED,
         )
         from scripts.skill_index import audit_context_budget
 
-        self.assertTrue(COMPLETENESS_OVER_SPEED)
+        self.assertLessEqual(BASE_CONTEXT_MAX_BYTES, 8000)
         self.assertGreaterEqual(EGM_MIN_REVIEW_PASSES, 2)
         self.assertTrue(ZERO_DECISION_PLANNING_REQUIRED)
 
@@ -228,6 +230,43 @@ class TestEgmCompletenessEngine(unittest.TestCase):
         diag = KitDoctor(kit_dir=KIT_ROOT).run_diagnostics()
         self.assertIn("xp-goldfish", diag["installed_bins"])
         self.assertIn("agy-goldfish", diag["installed_bins"])
+
+    # ------------------------------------------------------------------
+    # AC-9: EGM 2 Personas & LLM Review Triggers
+    # ------------------------------------------------------------------
+    def test_ac9_egm_two_personas_and_llm_triggers(self):
+        from scripts.goldfish_review import should_trigger_llm_review
+        from unittest.mock import patch
+
+        personas_dir = KIT_ROOT / ".agents" / "skills" / "goldfish-spec-review" / "personas"
+        persona_files = list(personas_dir.glob("*.md"))
+        self.assertEqual(len(persona_files), 2)
+        persona_names = {p.name for p in persona_files}
+        self.assertEqual(persona_names, {"spec_reviewer.md", "code_reviewer.md"})
+
+        for pf in persona_files:
+            self.assertLessEqual(len(pf.read_bytes()), 2048, f"{pf.name} excede 2 KB")
+
+        # L3 always triggers single review
+        trig, reason = should_trigger_llm_review("L3")
+        self.assertTrue(trig)
+        self.assertEqual(reason, "L3_single")
+
+        # L2 triggers on warning or touching > 8 files
+        trig, _ = should_trigger_llm_review("L2", {"compliant": True, "touches_more_than_8_files": False})
+        self.assertFalse(trig)
+        trig, reason = should_trigger_llm_review("L2", {"compliant": False})
+        self.assertTrue(trig)
+        self.assertEqual(reason, "L2_on_warning")
+        trig, reason = should_trigger_llm_review("L2", {"compliant": True, "touches_more_than_8_files": True})
+        self.assertTrue(trig)
+        self.assertEqual(reason, "L2_touches_more_than_8_files")
+
+        # Environment rollback overrides
+        with patch.dict(os.environ, {"XP_EGM_LLM": "always"}):
+            self.assertTrue(should_trigger_llm_review("L1")[0])
+        with patch.dict(os.environ, {"XP_EGM_LLM": "off"}):
+            self.assertFalse(should_trigger_llm_review("L3")[0])
 
 
 if __name__ == "__main__":

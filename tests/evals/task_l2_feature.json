@@ -1,0 +1,8 @@
+{
+  "id": "task_l2_feature",
+  "risk": "L2",
+  "workflow": "feature",
+  "prompt": "Adicione suporte a exportação de métricas em formato Prometheus com spec e testes",
+  "expected_files": ["scripts/metrics_exporter.py", "tests/test_metrics_exporter.py"],
+  "verify_cmd": "python3 -m unittest tests/test_metrics_exporter.py"
+}

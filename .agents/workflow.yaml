@@ -1,0 +1,59 @@
+# .agents/workflow.yaml — Grafo Mínimo e Fluxos de Execução do Kit (AC-7)
+version: "4.0.0"
+
+workflows:
+  feature:
+    description: "Ciclo completo de nova funcionalidade com ATDD e EGM"
+    nodes:
+      - {name: "spec", run: "navigator", exit_cmd: "python3 scripts/xp contract validate", on_fail: "retry", timeout: 10}
+      - {name: "test_red", run: "test-guardian", exit_cmd: "! python3 -m unittest discover tests -q", on_fail: "retry", timeout: 15, freeze_tests: true}
+      - {name: "impl_green", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "retry", timeout: 30}
+      - {name: "egm_review", run: "refactor-warden", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "retry", timeout: 15}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  fix:
+    description: "Correção de defeito reproduzível com teste de regressão RED"
+    nodes:
+      - {name: "reproduce_red", run: "test-guardian", exit_cmd: "! python3 -m unittest discover tests -q", on_fail: "retry", timeout: 10, freeze_tests: true}
+      - {name: "impl_green", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "retry", timeout: 20}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  refactor:
+    description: "Refatoração estrutural sem alteração de comportamento"
+    nodes:
+      - {name: "baseline_green", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "abort", timeout: 5}
+      - {name: "refactor_step", run: "refactor-warden", exit_cmd: "python3 scripts/kit_lint.py", on_fail: "retry", timeout: 20}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  chore:
+    description: "Manutenção, atualização de dependências e lint"
+    nodes:
+      - {name: "lint_check", run: "builder", exit_cmd: "python3 scripts/kit_lint.py", on_fail: "retry", timeout: 10}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  hotfix:
+    description: "Correção crítica urgente em produção com patch pontual"
+    nodes:
+      - {name: "test_red", run: "test-guardian", exit_cmd: "! python3 -m unittest discover tests -q", on_fail: "retry", timeout: 10, freeze_tests: true}
+      - {name: "patch_green", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "retry", timeout: 15}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  release:
+    description: "Auditoria final e liberação de entrega com conformidade"
+    nodes:
+      - {name: "full_suite", run: "release-gatekeeper", exit_cmd: "python3 -m unittest discover tests", on_fail: "abort", timeout: 10}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  migration:
+    description: "Migração de esquema de banco de dados expand-and-contract"
+    nodes:
+      - {name: "expand_schema", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "retry", timeout: 15}
+      - {name: "contract_schema", run: "builder", exit_cmd: "python3 -m unittest discover tests", on_fail: "retry", timeout: 15}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+
+  incident:
+    description: "Mitigação emergencial de incidente e registro de lição"
+    nodes:
+      - {name: "mitigate", run: "shipper", exit_cmd: "test -f .agents/runtime/run.json", on_fail: "retry", timeout: 10}
+      - {name: "post_mortem", run: "archivist", exit_cmd: "test -f .agents/memory/PROJECT_MEMORY.md", on_fail: "retry", timeout: 10}
+      - {name: "gate", run: "release-gatekeeper", exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}

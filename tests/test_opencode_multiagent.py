@@ -62,8 +62,8 @@ class TestOpenCodeHostAdapter(unittest.TestCase):
         self.assertEqual(agents["builder"]["prompt"], "{file:.opencode/agent/builder.md}")
         self.assertTrue(len(agents["builder"]["description"]) > 10)
 
-        # Verifica outros agentes especialistas
-        for ag_name in ("sentinel", "test-guardian", "refactor-warden", "navigator"):
+        # Verifica outros agentes especialistas (6 agentes nucleares)
+        for ag_name in ("sentinel", "reviewer", "designer", "shipper"):
             self.assertIn(ag_name, agents)
             self.assertEqual(agents[ag_name]["mode"], "subagent")
 

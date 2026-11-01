@@ -65,11 +65,14 @@ SANITIZE_HEAD_LINES = 10
 SANITIZE_TAIL_LINES = 20
 
 # ---------------------------------------------------------------------------
-# Diretrizes de Completude Exaustiva & Revisão Multi-Pass EGM (SPEC-005)
+# Thin Harness & Gate Determinístico (SPEC-006)
 # ---------------------------------------------------------------------------
 
-COMPLETENESS_OVER_SPEED = True
-"""Prioriza 100% de completude no planejamento e implementação acima de velocidade/turnos."""
+BASE_CONTEXT_MAX_BYTES = 8000
+"""Teto total combinado de contexto base fixo (AGENTS.md + PROJECT_MEMORY.md)."""
+
+EGM_LLM_REVIEW = {"L2": "on_warning", "L3": "single"}
+"""Configuração canônica de ativação de LLM no EGM."""
 
 EGM_MIN_REVIEW_PASSES = 2
 """Mínimo obrigatório de rodadas de revisão cega EGM (Planejamento + Implementação)."""
@@ -108,8 +111,8 @@ POST_EDIT_REREAD_TTL_SECONDS = 30.0
 # Memória (A3)
 # ---------------------------------------------------------------------------
 
-MEMORY_INDEX_MAX_BYTES = 8192
-"""Teto duro do PROJECT_MEMORY.md lido no Passo 0 (Fast Bootstrap)."""
+MEMORY_INDEX_MAX_BYTES = 3000
+"""Teto duro do PROJECT_MEMORY.md lido no Passo 0 (Fast Bootstrap) - Thin Harness v4."""
 
 MEMORY_INDEX_MAX_TOKENS = 2000
 MEMORY_DETAILS_DIR = "details"
@@ -118,12 +121,22 @@ MEMORY_DETAILS_DIR = "details"
 # Orçamento dos artefatos de contexto base (A1/A2)
 # ---------------------------------------------------------------------------
 
-AGENTS_MD_MAX_BYTES = 6000
+AGENTS_MD_MAX_BYTES = 3000
 SKILL_INDEX_LINE_MAX_CHARS = 110
 SKILL_BODY_MAX_BYTES = 6000
 """Acima disso a skill deve ser fatiada em índice + seções carregáveis (E4)."""
 
 CONTEXT_BASE_ALERT_BYTES = 30000
+
+
+def get_kit_version() -> str:
+    version_file = kit_root() / "VERSION"
+    if version_file.exists():
+        return version_file.read_text(encoding="utf-8").strip()
+    return "4.0.0"
+
+
+KIT_VERSION = get_kit_version()
 
 # ---------------------------------------------------------------------------
 # Telemetria (D)

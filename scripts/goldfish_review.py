@@ -11,10 +11,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 HEILMEIER_QUESTIONS = [
     ("goal", re.compile(r"(o que estamos tentando fazer|what are we trying to do|objetivo|problem statement|por que estamos construindo)", re.I)),
@@ -101,6 +102,8 @@ def validate_implementation_readiness(content: str) -> Dict[str, Any]:
     has_alternatives = bool(ALTERNATIVES_PATTERN.search(content))
     has_target_files = bool(TARGET_FILES_OP_PATTERN.search(content))
     acs = AC_HEADER_PATTERN.findall(content)
+    target_matches = TARGET_FILES_OP_PATTERN.findall(content)
+    touches_more_than_8 = len(target_matches) > 8
 
     checks = {
         "heilmeier_catechism": heilmeier["compliant"],
@@ -123,7 +126,31 @@ def validate_implementation_readiness(content: str) -> Dict[str, Any]:
         "placeholders": placeholders,
         "glazing": glazing,
         "declared_acs": acs,
+        "touches_more_than_8_files": touches_more_than_8,
     }
+
+
+def should_trigger_llm_review(risk: str = "L1", p1_result: Optional[Dict[str, Any]] = None) -> Tuple[bool, str]:
+    """
+    Decides whether an LLM Goldfish review is triggered (AC-9).
+    EGM_LLM_REVIEW = {"L2": "on_warning", "L3": "single"}
+    Rollback: XP_EGM_LLM=always|off
+    Extra trigger: spec touches >8 files
+    """
+    env_override = os.environ.get("XP_EGM_LLM", "").strip().lower()
+    if env_override == "always":
+        return True, "override_always"
+    if env_override == "off":
+        return False, "override_off"
+
+    if risk == "L3":
+        return True, "L3_single"
+    if risk == "L2":
+        if p1_result and not p1_result.get("compliant"):
+            return True, "L2_on_warning"
+        if p1_result and p1_result.get("touches_more_than_8_files"):
+            return True, "L2_touches_more_than_8_files"
+    return False, "no_trigger"
 
 
 def audit_code_completeness(code_paths: List[Path], max_lines: int = 500) -> Dict[str, Any]:

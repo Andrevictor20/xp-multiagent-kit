@@ -208,37 +208,7 @@ def should_skip_duplicate_injection(
 
 
 def sync_dynamic_skill_profile(risk_level: str, prompt_text: str) -> Optional[str]:
-    """Sincroniza dinamicamente o perfil de skills conforme risco e escopo da tarefa."""
-    try:
-        from scripts import skill_profiles as sp
-        p_lower = prompt_text.lower()
-        risk_lower = risk_level.lower()
-
-        # Determina perfil alvo
-        if any(w in p_lower for w in ["subagente", "multiagente", "equipe", "paralelo"]) or "l3" in risk_lower:
-            target_profile = "all"
-        elif "l2" in risk_lower:
-            if any(w in p_lower for w in ["css", "tela", "interface", "frontend", "ui", "component", "html", "react", "design"]):
-                target_profile = "frontend"
-            else:
-                target_profile = "backend"
-        else:
-            target_profile = "core"
-
-        # Verifica perfil ativo atual para evitar reescritas redundantes
-        global_skills = sp.DEFAULT_GLOBAL_SKILLS_DIR
-        if global_skills.exists():
-            active_skills = {p.name for p in global_skills.iterdir() if p.is_dir() or p.is_symlink()}
-            current_profile = sp.detect_current_profile(active_skills)
-            if current_profile == target_profile:
-                return target_profile
-
-        master_skills = PROJECT_ROOT / ".agents" / "skills"
-        if master_skills.exists() and global_skills.exists():
-            sp.apply_profile_symlinks(target_profile, master_skills, global_skills)
-            return target_profile
-    except Exception:
-        pass
+    """Removido conforme AC-8 e AC-9 do SPEC-006 (perfil estático por stack)."""
     return None
 
 
@@ -258,19 +228,6 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         conversation_context=conv_ctx,
     )
 
-    # Sincroniza silenciosamente os arquivos de settings (CLI e IDE)
-    try:
-        sync_global_settings(decision.effort)
-    except Exception:
-        pass
-
-    # Sincroniza dinamicamente o perfil de skills (Core -> Frontend/Backend -> All)
-    applied_profile = None
-    try:
-        applied_profile = sync_dynamic_skill_profile(decision.risk_level, prompt_text)
-    except Exception:
-        pass
-
     conv_id = payload.get("conversationId", "default")
     tpath = payload.get("transcriptPath", "")
     tpath_hash = hashlib.md5(tpath.encode("utf-8")).hexdigest()[:8] if tpath else "notrans"
@@ -289,22 +246,9 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
             pass
 
     effort_upper = decision.effort.upper()
-    if decision.effort == "high":
-        guidance = (
-            "HIGH mode (COMPLETENESS OVER SPEED): Deliver 100% exhaustive planning (Heilmeier + Zero-Decision Rule) "
-            "and complete feature implementation regardless of time/turns. Execute mandatory Multi-Pass EGM Goldfish "
-            "reviews (Spec + Code + Drift), AST code-review-graph impact mapping, and strict TDD."
-        )
-    elif decision.effort == "low":
-        guidance = "LOW mode: direct, concise response, strictly Zero-Tool for conceptual queries."
-    else:
-        guidance = (
-            "MEDIUM mode (COMPLETENESS FIRST): Complete all planned steps thoroughly without shortcuts, "
-            "use AST code-review-graph callers lookup, surgical tests, and EGM completeness check."
-        )
-    profile_tag = f" | Profile: {applied_profile.upper()}" if applied_profile else ""
+    risk_code = decision.risk_level.split()[0] if decision.risk_level else "L1"
     
-    # Recupera contexto JIT automaticamente se for tarefa L1, L2 ou L3
+    # Recupera contexto JIT automaticamente se for tarefa L1, L2 ou L3 (teto de 80 tokens, AC-9)
     jit_summary = ""
     if decision.risk_level != "L0 (Trivial)" and prompt_text:
         try:
@@ -312,17 +256,19 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
             jit_items = get_jit_context(
                 workspace=PROJECT_ROOT,
                 query=prompt_text,
-                max_items=2,
-                token_budget=120,
+                max_items=1,
+                token_budget=80,
             )
             if jit_items:
-                jit_summary = "\n" + format_jit_prompt(jit_items)
+                jit_summary = f" | jit: JIT Memory ({jit_items[0].get('title', '')})"
         except Exception:
             pass
 
-    ephemeral_msg = (
-        f"⚡ [AGY-EFFORT-ACTIVE] Effort: {effort_upper} | Risk: {decision.risk_level}{profile_tag} | {guidance}{jit_summary}"
-    )
+    # Mensagem efêmera compacta <= 400 bytes (AC-9)
+    ephemeral_msg = f"[xp] risk={risk_code} effort={effort_upper} tier=auto | {decision.reason[:100]}{jit_summary}"
+    encoded = ephemeral_msg.encode("utf-8")
+    if len(encoded) > 400:
+        ephemeral_msg = encoded[:397].decode("utf-8", errors="ignore") + "..."
 
     return {
         "injectSteps": [

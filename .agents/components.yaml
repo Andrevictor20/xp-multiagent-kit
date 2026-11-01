@@ -1,0 +1,72 @@
+# .agents/components.yaml — Ledger de Componentes e Garantias de Remoção (P7)
+# Regra: todo componente novo entra aqui na criação com a falha que previne.
+# Se a falha não ocorre em N sessões, o componente paga aluguel ou é removido.
+
+version: "4.0.0"
+
+components:
+  - id: "xp_contract"
+    kind: "script"
+    prevents: "Ambiguous task scope, lost constraints across iterations, and loop amnesia"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "policy_yaml"
+    kind: "policy"
+    prevents: "Unauthenticated destructive commands (drop, rm, tf, publish) executed without human approval"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "pre_tool_guard"
+    kind: "hook"
+    prevents: "Agent forging approvals or modifying policies to bypass human safety gates"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_gate"
+    kind: "script"
+    prevents: "Shipping broken, untested code, stubs (TODO/as any), or regressions based on verbal claims"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "kit_events"
+    kind: "script"
+    prevents: "Silent repetitive failures and token waste without circuit breaker intervention"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_cli"
+    kind: "script"
+    prevents: "CLI fragmentation and conflicting entrypoints (xp-* vs agy-*)"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "workflow_yaml"
+    kind: "workflow"
+    prevents: "Undefined multi-step lifecycle transitions and unstructured execution drift"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_flow"
+    kind: "script"
+    prevents: "Arbitrary bypassing of RED test phases and untested code progression without exit criteria"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_evolve"
+    kind: "script"
+    prevents: "Stale, unused components lingering in the kit and unaddressed recurring failure patterns"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_session"
+    kind: "script"
+    prevents: "Fragmented session compaction, resume failures, and untracked handoff contracts"
+    added: "2026-11-01"
+    review_by: "2027-02-01"
+
+  - id: "xp_eval"
+    kind: "script"
+    prevents: "Unmeasured performance regressions and token efficiency degradation without benchmark evidence"
+    added: "2026-11-01"
+    review_by: "2027-02-01"

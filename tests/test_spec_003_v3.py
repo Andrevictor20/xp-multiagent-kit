@@ -102,9 +102,9 @@ class TestSpec003Acceptance(unittest.TestCase):
         )
 
         # Check sample workflows & skills are in English
-        feature_wf = (KIT_ROOT / ".agents" / "workflows" / "feature.md").read_text(encoding="utf-8")
-        self.assertIn("Acceptance Criteria", feature_wf)
-        self.assertIn("## Flow", feature_wf)
+        wf_yaml = (KIT_ROOT / ".agents" / "workflow.yaml").read_text(encoding="utf-8")
+        self.assertIn("feature:", wf_yaml)
+        self.assertIn("description:", wf_yaml)
 
         skills_index = (KIT_ROOT / ".agents" / "skills" / "SKILLS_INDEX.md").read_text(encoding="utf-8")
         self.assertIn("# Skills Index", skills_index)
