@@ -21,7 +21,8 @@
 - **2026-11-01** [`e00b965`]: Conclusão da Fase 1 — contrato, política, gate, eventos e recibo (AC-1 a AC-4).
 - **2026-11-01** [`7e64671`]: Conclusão da Fase 2 — cortes seguros, contexto ≤ 8KB, políticas consolidadas (7 arquivos) e fonte única.
 - **2026-11-01** [`c41adb9`]: Conclusão da Fase 3 — grafo mínimo, workflow.yaml, xp flow e congelamento RED.
-- **2026-11-01** [fase 4]: Consolidação de 6 agentes nucleares, 2 personas EGM, packs e gancho efêmero ≤400B sem reescrita de settings.
+- **2026-11-01** [`2155853`]: Conclusão da Fase 4 — 6 agentes nucleares, 2 personas EGM, packs e gancho <=400B.
+- **2026-11-01** [fase 5]: EGM em 3 passes, gatilho de >8 arquivos, hook PreInvocation <=400B e fusão de compressores.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias, ou pular (`.skip`) testes para mascarar falhas (Anti-Test-Bypass rígido).
