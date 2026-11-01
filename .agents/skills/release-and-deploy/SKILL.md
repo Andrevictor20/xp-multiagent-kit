@@ -5,20 +5,20 @@ description: End-to-end continuous deployment, CI security gates, dependency gov
 
 # Release and Deploy (`release-and-deploy`)
 
-Consolida as disciplinas de **CI/CD**, **Gates de Release**, **Governança de Dependências**, **Observabilidade** e **Zero-Downtime Deployment**.
+Consolidates disciplines of **CI/CD**, **Release Gates**, **Dependency Governance**, **Observability**, and **Zero-Downtime Deployment**.
 
-## 1. Portões de CI (Continuous Integration)
-- Pipelines automatizados com execução sequencial: Lint -> Audit -> SAST -> Testes Unitários -> Testes de Integração.
-- Falha em qualquer etapa bloqueia imediatamente o avanço do release.
+## 1. CI (Continuous Integration) Gates
+- Automated pipelines with sequential execution: Lint -> Audit -> SAST -> Unit Tests -> Integration Tests.
+- Failure at any step immediately blocks release progression.
 
-## 2. Governança de Dependências & Licenças
-- Avaliação de dependências de terceiros contra inchaço (bloat) e licenças restritivas incompatíveis.
-- Lockfiles estritos com hashes SHA-256 fixados em versionamento.
+## 2. Dependency Governance & Licensing
+- Evaluation of third-party dependencies against bloat and incompatible restrictive licenses.
+- Strict lockfiles with pinned SHA-256 hashes in version control.
 
-## 3. Estratégias de Deploy com Zero Downtime
-- **Canary & Blue/Green:** Promoção gradual de tráfego (10% -> 50% -> 100%) monitorando taxa de erro.
-- **Rollback Instantâneo Automatizado:** Se a taxa de erro HTTP 5xx ou latência p99 exceder o SLO durante o deploy, abortar e reverter imediatamente.
+## 3. Zero-Downtime Deployment Strategies
+- **Canary & Blue/Green:** Gradual traffic promotion (10% -> 50% -> 100%) monitoring error rates.
+- **Automated Instant Rollback:** If HTTP 5xx error rate or p99 latency breaches SLO thresholds during rollout, immediately abort and revert.
 
-## 4. Observabilidade & Métricas RED/SLO
-- Logs em formato JSON estruturado com campos obrigatórios: `timestamp`, `level`, `trace_id`, `service`, `message`.
-- Monitoramento contínuo das métricas RED (Rate, Errors, Duration) e SLIs/SLOs de disponibilidade.
+## 4. Observability & RED/SLO Metrics
+- Structured JSON logging with mandatory fields: `timestamp`, `level`, `trace_id`, `service`, `message`.
+- Continuous tracking of RED metrics (Rate, Errors, Duration) and availability SLIs/SLOs.

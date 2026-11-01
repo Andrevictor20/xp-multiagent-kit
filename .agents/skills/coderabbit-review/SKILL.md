@@ -11,61 +11,61 @@ entrypoint: SKILL.md
 
 # CodeRabbit Review (External Diff & Security Audit)
 
-Audita diffs locais e segurança de código via CodeRabbit CLI como verificação externa opcional. Opera de forma 100% não-bloqueante: se a CLI não estiver instalada ou autenticada, aplica fallback automático para o EGM Pass 2 interno e ferramentas locais.
+Audits local diffs and code security using CodeRabbit CLI as an optional external verification. Operates in a 100% non-blocking manner: if the CLI is not installed or authenticated, it applies automatic fallback to internal EGM Pass 2 and local tooling.
 
-## 1. Princípio Fundamental: Não-Bloqueante & Zero Hard-Dependency
+## 1. Core Principle: Non-Blocking & Zero Hard-Dependency
 
-- **Nunca bloqueie o pipeline por ausência do CodeRabbit:** O XP Kit é autossuficiente e funciona offline com `code-review-graph`, linters locais e o modelo EGM de 3 passos (`xp-goldfish`).
-- **Uso Opcional/Aditivo:** O CodeRabbit atua como uma segunda opinião externa especializada em diffs, bugs de regressão e segurança de código.
-- Se a CLI estiver indisponível ou desautenticada, emita `[CODERABBIT_SKIPPED]` e prossiga normalmente sem falhar o gate.
+- **Never block the pipeline due to missing CodeRabbit:** The XP Kit is self-contained and operates offline with `code-review-graph`, local linters, and the 3-step EGM model (`xp-goldfish`).
+- **Optional/Additive Usage:** CodeRabbit acts as an external second opinion specializing in diffs, regression bugs, and code security.
+- If the CLI is unavailable or unauthenticated, emit `[CODERABBIT_SKIPPED]` and proceed normally without failing the gate.
 
-## 2. Protocolo de Verificação de Ambiente
+## 2. Environment Verification Protocol
 
-Antes de executar qualquer comando de revisão:
+Before executing any review command:
 
-1. **Checar Presença do Binário:**
+1. **Check Binary Presence:**
    ```bash
    command -v coderabbit >/dev/null 2>&1
    ```
-2. **Checar Autenticação:**
+2. **Check Authentication:**
    ```bash
    coderabbit auth status 2>/dev/null || coderabbit --version >/dev/null 2>&1
    ```
-3. **Decisão:**
-   - **Disponível e Autenticado:** Prosseguir para o Passo 3.
-   - **Indisponível / Não Autenticado:** Registrar log e prosseguir com a governança nativa:
+3. **Decision:**
+   - **Available and Authenticated:** Proceed to Step 3.
+   - **Unavailable / Unauthenticated:** Log status and proceed with native governance:
      ```text
-     ℹ️ [CODERABBIT_SKIPPED]: CodeRabbit CLI não instalado ou não autenticado.
-     Prosseguindo com linters locais, AST graph (code-review-graph) e EGM Pass 2 nativo.
+     ℹ️ [CODERABBIT_SKIPPED]: CodeRabbit CLI not installed or not authenticated.
+     Proceeding with local linters, AST graph (code-review-graph), and native EGM Pass 2.
      ```
 
-## 3. Comandos de Execução Local (`--agent`)
+## 3. Local Execution Commands (`--agent`)
 
-Sempre utilize a flag `--agent` para saída em formato NDJSON estruturado para agentes de IA:
+Always use the `--agent` flag for structured NDJSON output tailored for AI agents:
 
-### 3.A Revisar Modificações Não-Commitadas (Inner Loop)
+### 3.A Review Uncommitted Modifications (Inner Loop)
 ```bash
 coderabbit review --agent --uncommitted
 ```
 
-### 3.B Revisar Alterações contra Branch Base (Pre-PR / Conformance)
+### 3.B Review Changes Against Base Branch (Pre-PR / Conformance)
 ```bash
 coderabbit review --agent --base main
 ```
 
-### 3.C Revisar Diretório Específico
+### 3.C Review Specific Directory
 ```bash
-coderabbit review --agent --dir <caminho_do_modulo>
+coderabbit review --agent --dir <module_path>
 ```
 
-## 4. Tratamento de Severidades e Remediação
+## 4. Severity Handling and Remediation
 
-Ao processar a saída NDJSON:
-- `critical` e `major`: Devem ser analisados obrigatoriamente. Se representarem falhas reais (vulnerabilidades, race conditions, leaks, quebras de contrato), devem ser corrigidos antes da aprovação do `refactor-warden` ou `release-gatekeeper`.
-- `minor`, `trivial`, `info`: Avaliados contra as diretrizes do kit (`No God Files < 500 linhas`, `No Workarounds`, remoção de slop).
-- **Sem falsos positivos:** Se um apontamento do CodeRabbit conflitar com uma regra explícita do XP Kit ou especificação aprovada, prevalece a especificação do kit.
+When processing NDJSON output:
+- `critical` and `major`: Must be addressed mandatorily. If they represent genuine defects (vulnerabilities, race conditions, leaks, contract breaches), they must be fixed before approval by `refactor-warden` or `release-gatekeeper`.
+- `minor`, `trivial`, `info`: Evaluated against kit directives (`No God Files < 500 lines`, `No Workarounds`, slop removal).
+- **No false positives:** If a CodeRabbit finding conflicts with an explicit XP Kit rule or approved specification, the kit specification takes precedence.
 
-## 5. Integração com Subagentes do Kit
+## 5. Integration with Kit Subagents
 
-- **`refactor-warden` (EGM Pass 2):** Dispara `coderabbit review --agent --uncommitted` após o código atingir status GREEN para detectar complexidade estática, duplicações e code smells adicionais.
-- **`release-gatekeeper` (Conformance Gate):** Valida se não há pendências críticas em aberto apontadas pelo CodeRabbit antes da emissão do selo `PASS`.
+- **`refactor-warden` (EGM Pass 2):** Triggers `coderabbit review --agent --uncommitted` after code reaches GREEN status to detect static complexity, duplications, and additional code smells.
+- **`release-gatekeeper` (Conformance Gate):** Validates that no open critical issues flagged by CodeRabbit remain before issuing the `PASS` seal.

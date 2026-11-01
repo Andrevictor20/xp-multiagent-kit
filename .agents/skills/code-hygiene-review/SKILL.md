@@ -5,24 +5,24 @@ description: Strict code quality guardian enforcing atomic commits, code deslop,
 
 # Code Hygiene Review (`code-hygiene-review`)
 
-Consolida as disciplinas de **Higiene de Código**, **Commits Atômicos**, **No-Workarounds**, **Diff Simplification** e **No-God-Files**.
+Consolidates disciplines of **Code Hygiene**, **Atomic Commits**, **No-Workarounds**, **Diff Simplification**, and **No-God-Files**.
 
-## 1. Commits Atômicos & Git Ops
-- Cada commit deve conter uma unidade única, indivisível e testada de trabalho.
-- Mensagens padronizadas segundo Conventional Commits: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
-- A suíte de testes deve passar (100% verde) em cada commit individual.
+## 1. Atomic Commits & Git Ops
+- Each commit must represent a single, indivisible, and tested unit of work.
+- Standardized messages following Conventional Commits: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
+- The test suite must pass (100% green) on each individual commit.
 
-## 2. No Workarounds & Causa Raiz
-- **Proibição Absoluta de Contornos:** Nunca suprimir tipagem (`as any`, `@ts-ignore`, `# type: ignore`) ou testes para passar gates.
-- **Sem Sleeps Arbitrários:** Substituir `time.sleep()` ou pausas temporais por polling condicional determinístico ou awaits de estado.
-- Resolver sempre a causa raiz ao invés de mascarar sintomas.
+## 2. No Workarounds & Root Cause
+- **Absolute Prohibition of Workarounds:** Never suppress typing (`as any`, `@ts-ignore`, `# type: ignore`) or tests to pass gates.
+- **No Arbitrary Sleeps:** Replace `time.sleep()` or temporal pauses with deterministic conditional polling or state awaits.
+- Always address the root cause rather than masking symptoms.
 
-## 3. Deslop & Simplificação de Diff (YAGNI)
-- Remoção ativa de código morto, variáveis não utilizadas, comentários gerados por IA e prosa redundante.
-- Minimalismo de diff: alterar somente os arquivos estritamente necessários para satisfazer o contrato da tarefa.
-- Sem abstrações para requisitos hipotéticos.
+## 3. Deslop & Diff Simplification (YAGNI)
+- Active removal of dead code, unused variables, boilerplate AI-generated comments, and redundant prose.
+- Diff minimalism: modify only files strictly necessary to satisfy task contracts.
+- No speculative abstractions for hypothetical requirements.
 
-## 4. No God Files (< 500 Linhas)
-- Nenhum arquivo de código de produção, script ou suíte de testes deve ultrapassar 500 linhas.
-- Ao aproximar-se do teto, refatorar extraindo submódulos de responsabilidade única.
-- Sem duplicação de lógica entre módulos.
+## 4. No God Files (< 500 Lines)
+- No production source file, script, or test suite may exceed 500 lines.
+- When approaching the limit, refactor by extracting single-responsibility submodules.
+- No logic duplication across modules.

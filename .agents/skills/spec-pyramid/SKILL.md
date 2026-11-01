@@ -5,27 +5,27 @@ description: Specification Pyramid combining ATDD/BDD, Spec-Driven Development (
 
 # Specification Pyramid (`spec-pyramid`)
 
-Consolida as disciplinas de **ATDD/BDD**, **SDD**, **SbE** e **Pair Navigation** em uma fonte única e concisa.
+Consolidates the disciplines of **ATDD/BDD**, **SDD**, **SbE**, and **Pair Navigation** into a single concise source of truth.
 
-## 1. Separação de Contrato: O QUÊ vs COMO
-- **Humano define O QUÊ:** Critérios de Aceitação (ACs), tabelas de Specification by Example (SbE) e cenários de negócio.
-- **IA implementa COMO:** Testes unitários RED determinísticos, implementação mínima GREEN e refatoração sem regressão.
-- **Regra Anti-Self-Test:** O agente nunca redige a especificação e os testes sem submeter a spec ao Stop Gate humano (`approve_spec`).
+## 1. Contract Separation: WHAT vs HOW
+- **Human defines WHAT:** Acceptance Criteria (ACs), Specification by Example (SbE) tables, and business scenarios.
+- **AI implements HOW:** Deterministic RED unit tests, minimal GREEN implementation, and regression-free refactoring.
+- **Anti-Self-Test Rule:** The agent never drafts the specification and tests without submitting the spec to the Human Stop Gate (`approve_spec`).
 
 ## 2. Specification by Example (SbE)
-- Regras ambíguas de negócio DEVEM ser expressas através de tabelas concretas com entradas e saídas esperadas:
-  - Cenários de caminho feliz (Happy Path).
-  - Casos de borda (Boundary values: limites zero, nulos, vazios, extremos).
-  - Casos de erro e exceções controladas.
+- Ambiguous business logic MUST be expressed through concrete tables with explicit inputs and expected outputs:
+  - Happy path scenarios.
+  - Boundary cases (zero, null, empty, extreme limits).
+  - Error conditions and handled exceptions.
 
-## 3. Estrutura SDD (Specification-Driven Development)
-- Toda especificação em `.agents/specs/` deve conter:
-  1. **Objetivo & Contexto:** O problema real resolvido e quem é impactado.
-  2. **Alternativas Rejeitadas:** Pelo menos duas alternativas descartadas com justificativa técnica.
-  3. **Critérios de Aceitação (ACs):** Mensuráveis, testáveis e com rastreabilidade direta aos testes.
-  4. **Restrições de Escopo:** Arquivos permitidos para alteração e o que está expressamente proibido mudar.
+## 3. SDD Structure (Specification-Driven Development)
+- Every specification in `.agents/specs/` must contain:
+  1. **Goal & Context:** The actual problem solved and who is affected.
+  2. **Rejected Alternatives:** At least two discarded alternatives with technical justifications.
+  3. **Acceptance Criteria (ACs):** Measurable, testable, and with direct traceability to tests.
+  4. **Scope Constraints:** Permitted files for alteration and strictly prohibited changes.
 
 ## 4. Pair Navigation & Anti-Over-Engineering
-- Implementar a solução mais simples que atenda aos critérios.
-- Sem abstrações prematuras ou antecipação de requisitos inexistentes (YAGNI).
-- Parar na segunda tentativa de falha idêntica (Circuit Breaker).
+- Implement the simplest solution satisfying the criteria.
+- No premature abstractions or speculative features (YAGNI).
+- Halt on the second consecutive identical failure (Circuit Breaker).

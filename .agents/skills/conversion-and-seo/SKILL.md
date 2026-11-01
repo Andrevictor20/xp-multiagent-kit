@@ -5,22 +5,22 @@ description: High-conversion UI copywriting, CRO landing page optimization, mult
 
 # Conversion & Technical SEO (`conversion-and-seo`)
 
-Consolida as disciplinas de **Copywriting de Alta Conversão**, **Otimização de Landing Pages (CRO)**, **Revisão de Prosa** e **SEO Técnico**.
+Consolidates disciplines of **High-Conversion Copywriting**, **Landing Page Optimization (CRO)**, **Prose Editing**, and **Technical SEO**.
 
-## 1. Copywriting de Alta Conversão & Hierarquia de CTA
-- Headlines orientadas a benefícios claros e resolução de dor real do usuário.
-- Chamadas para ação (CTAs) em hierarquia evidente: uma ação primária clara acima da dobra.
-- Eliminação de jargões técnicos em interfaces voltadas a usuários finais.
+## 1. High-Conversion Copywriting & CTA Hierarchy
+- Benefit-driven headlines solving concrete user pain points.
+- Calls to Action (CTAs) structured in clear hierarchy: a single, prominent primary action above the fold.
+- Elimination of internal technical jargon in end-user interfaces.
 
 ## 2. CRO (Conversion Rate Optimization)
-- Teste dos 5 segundos: a proposta de valor deve ser compreendida nos primeiros 5 segundos de leitura.
-- Redução de atrito em formulários (campos estritamente necessários, máscaras amigáveis e validação em tempo real).
+- 5-Second Test: value proposition must be clearly understandable within the first 5 seconds of reading.
+- Form friction reduction (strictly necessary fields, friendly input masks, real-time validation).
 
-## 3. Revisão de Prosa em 7 Passos
-- Eliminação sistemática de clichês de IA ("delve", "testament", "tapestry", "seamless").
-- Frases concisas e ativas com verbos fortes e eliminação de voz passiva desnecessária.
+## 3. Multi-Sweep Prose Editing
+- Systematic removal of AI clichés ("delve", "testament", "tapestry", "seamless", "game-changer").
+- Concise, active sentences with strong verbs and elimination of unnecessary passive voice.
 
-## 4. SEO Técnico On-Page
-- Marcação semântica com Schema.org JSON-LD estruturado (`Product`, `Article`, `FAQPage`).
-- Metatags canônicas, OpenGraph e Twitter Cards configurados.
-- Core Web Vitals respeitados para ranqueamento otimizado.
+## 4. Technical On-Page SEO
+- Semantic markup with structured Schema.org JSON-LD (`Product`, `Article`, `FAQPage`).
+- Canonical meta tags, OpenGraph, and Twitter Cards configured.
+- Core Web Vitals respected for optimal search ranking and fast performance.
