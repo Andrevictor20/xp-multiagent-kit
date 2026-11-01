@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
-[![Version: 4.0.0](https://img.shields.io/badge/version-4.0.0-brightgreen.svg)](VERSION)
+[![Version: 4.0.0](https://img.shields.io/badge/version-4.0.0-brightgreen.svg)](#)
 [![TDD: Strict RED-GREEN](https://img.shields.io/badge/TDD-strict-success.svg)](#garantias-de-engenharia)
 
 Thin Harness determinístico de governança para pair-programming com agentes de IA (**Antigravity**, **OpenCode**, **Cursor**, **Codex**, **Qoder** e **Claude**). Substitui prosa redundante por mecanismos verificáveis em código e reduz o contexto base fixo para ≤ 8 KB.

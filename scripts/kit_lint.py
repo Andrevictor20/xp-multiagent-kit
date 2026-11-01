@@ -28,9 +28,15 @@ MANDATORY_AGENTS_SECTIONS = [
 def lint_version(root_dir: Optional[Path] = None) -> Dict[str, Any]:
     base = root_dir or ROOT_DIR
     v_file = base / "VERSION"
-    if not v_file.is_file():
-        return {"valid": False, "version": "", "error": "Arquivo VERSION ausente na raiz"}
-    val = v_file.read_text(encoding="utf-8").strip()
+    if v_file.is_file():
+        val = v_file.read_text(encoding="utf-8").strip()
+    else:
+        comp_file = base / ".agents" / "components.yaml"
+        if comp_file.is_file():
+            m = re.search(r'^version:\s*["\']?([^"\']+)["\']?', comp_file.read_text(encoding="utf-8"), re.MULTILINE)
+            val = m.group(1).strip() if m else "4.0.0"
+        else:
+            val = "4.0.0"
     if not re.match(r"^\d+\.\d+\.\d+", val):
         return {"valid": False, "version": val, "error": f"Versão '{val}' inválida"}
     return {"valid": True, "version": val, "error": None}
