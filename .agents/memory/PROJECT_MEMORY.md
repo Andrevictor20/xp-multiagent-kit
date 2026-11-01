@@ -17,19 +17,15 @@
 - **Limpeza de Duplicações:** Remoção de `REPO_MAP.md` e `COMPLETENESS_OVER_SPEED` (fonte única).
 
 ## 3. PROGRESSO
-- **2026-11-01** [`3019eb1`]: Fase 0 — baseline e SPEC-006 Thin Harness.
-- **2026-11-01** [`e00b965`]: Fase 1 — contrato, política, gate, eventos e recibo (AC-1 a AC-4).
-- **2026-11-01** [`7e64671`]: Fase 2 — cortes seguros, contexto ≤ 8KB, 7 políticas e fonte única.
-- **2026-11-01** [`c41adb9`]: Fase 3 — workflow.yaml, xp flow e congelamento RED.
-- **2026-11-01** [`2155853`]: Fase 4 — 6 agentes nucleares, 2 personas EGM e packs.
-- **2026-11-01** [`f7c92da`]: Fase 5 — EGM 3 passes, gatilho >8 arquivos, hook <=400B.
-- **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
-- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, README ≤120L, integridade geral (427 testes PASS).
-- **2026-11-01** [`a454c0e`]: Poda de 63 skills redundantes (80 → 25) e arquivos dist/i/docs comerciais; economia de ~59 KB por turno.
-- **2026-11-01** [`54835e7`]: Exclusão de planos na raiz, blindagem no .gitignore e documentação Git no README.
-- **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
-- **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
+
 - **2026-11-01** [`d0c2178`]: Atualização do install-global.sh com comandos v4 (xp, gate, flow, evolve) e implantação global em 62 projetos.
+- **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
+- **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
+- **2026-11-01** [`54835e7`]: Exclusão de planos na raiz, blindagem no .gitignore e documentação Git no README.
+- **2026-11-01** [`a454c0e`]: Poda de 63 skills redundantes (80 → 25) e arquivos dist/i/docs comerciais; economia de ~59 KB por turno.
+- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, README ≤120L, integridade geral (427 testes PASS).
+- **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
+- **2026-11-01** [`f7c92da`]: Fase 5 — EGM 3 passes, gatilho >8 arquivos, hook <=400B.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).

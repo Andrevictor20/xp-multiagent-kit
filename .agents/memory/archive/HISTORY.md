@@ -141,3 +141,15 @@ Este arquivo armazena as entregas, alterações e decisões que foram podadas do
 | 2026-10-16 | `FIX` | SPEC-006: Instalação Global Cursor & Auto-Discovery — (1) Correção do bug de diretório aninhado `.cursor/.cursor/`, (2) Geração de regras globais em `~/.cursor/rules/*.mdc` e injeção de instruções em `settings.json`, (3) Auto-descoberta e sync automático de `AGENTS.md` v3 em projetos de trabalho (`vito`, `Saturn`, `Essenza`), (4) Leitor SQLite OpenCode e telemetria adaptativa multi-host | `scripts/host_adapters.py`, `scripts/kit_installer.py`, `scripts/telemetry/*`, `tests/test_multi_host_telemetry.py` | `PASS (EV-KIT-V3.1-CURSOR-GLOBAL-20261016-02)` |
 
 | 2026-10-16 | `FEAT` | SPEC-005: Suporte Nativo ao Windows — (1) Scripts `install.ps1` e `install.cmd`, (2) Shims `.cmd` em `%USERPROFILE%\.local\bin`, (3) PATH via `winreg`, (4) Fallback NTFS para cópia, (5) Documentação no `README.md` | `install.ps1`, `install.cmd`, `scripts/windows_support.py`, `scripts/kit_installer.py`, `tests/test_windows_installer.py`, `README.md` | `PASS (EV-KIT-V3.1-WINDOWS-20261016-01)` |
+
+---
+
+- **2026-11-01** [`2155853`]: Fase 4 — 6 agentes nucleares, 2 personas EGM e packs.
+
+- **2026-11-01** [`c41adb9`]: Fase 3 — workflow.yaml, xp flow e congelamento RED.
+
+- **2026-11-01** [`7e64671`]: Fase 2 — cortes seguros, contexto ≤ 8KB, 7 políticas e fonte única.
+
+- **2026-11-01** [`e00b965`]: Fase 1 — contrato, política, gate, eventos e recibo (AC-1 a AC-4).
+
+- **2026-11-01** [`3019eb1`]: Fase 0 — baseline e SPEC-006 Thin Harness.

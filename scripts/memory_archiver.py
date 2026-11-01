@@ -64,6 +64,8 @@ def parse_episodic_entries(content: str) -> List[str]:
             if re.match(r"^\|[\s\-:|]+\|$", line_stripped):
                 continue
             entries.append(line_stripped)
+        elif line_stripped.startswith(("- ", "* ")):
+            entries.append(line_stripped)
 
     if not entries and "### " in sec3_body:
         blocks = re.split(r"(?m)(?=^### )", sec3_body)
@@ -106,6 +108,8 @@ def split_memory_sections(content: str) -> Tuple[str, List[str], str]:
             if re.match(r"^\|[\s\-:|]+\|$", line_stripped):
                 continue
             entries.append(line_stripped)
+        elif line_stripped.startswith(("- ", "* ")):
+            entries.append(line_stripped)
 
     if not entries and "### " in sec3_body:
         blocks = re.split(r"(?m)(?=^### )", sec3_body)
@@ -124,7 +128,8 @@ def split_memory_sections(content: str) -> Tuple[str, List[str], str]:
 
 def _compose_memory(prefix: str, entries: List[str], suffix: str) -> str:
     """Remonta o conteúdo do PROJECT_MEMORY.md com as entregas retidas."""
-    body = prefix.rstrip() + "\n\n" + "\n\n".join(entries)
+    sep = "\n\n" if any(e.startswith("### ") for e in entries) else "\n"
+    body = prefix.rstrip() + "\n\n" + sep.join(entries)
     if suffix.strip():
         return body + "\n\n" + suffix.lstrip()
     return body + "\n"
