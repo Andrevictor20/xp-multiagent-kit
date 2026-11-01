@@ -38,7 +38,8 @@ class TestXpFlow(unittest.TestCase):
         self.assertIn("release", wfs)
         self.assertIn("migration", wfs)
         self.assertIn("incident", wfs)
-        self.assertEqual(len(wfs), 8)
+        self.assertIn("design", wfs)
+        self.assertEqual(len(wfs), 9)
 
     def test_freeze_test_files(self) -> None:
         frozen = freeze_test_files()

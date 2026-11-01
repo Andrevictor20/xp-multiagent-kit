@@ -341,6 +341,80 @@ class TestMissionScenarios(unittest.TestCase):
         self.assertIn("step=6", res.stdout)
 
     # ------------------------------------------------------------------
+    # S10: testes *.test.ts congelados na saída de red -> alterar um congelado dá exit 1 step=3; novo teste permitido
+    # ------------------------------------------------------------------
+    def test_s10_frozen_tests_blocking_mutation_and_allowing_new_tests(self):
+        from scripts.xp_flow import freeze_test_files
+
+        repo_dir, runtime_dir = self.make_temp_repo()
+        test_file = repo_dir / "src" / "calc.test.ts"
+        test_file.parent.mkdir(parents=True, exist_ok=True)
+        test_file.write_text("test('add', () => {});\n", encoding="utf-8")
+        subprocess.run(["git", "add", "src/calc.test.ts"], cwd=str(repo_dir), check=True)
+
+        self.run_cmd([
+            sys.executable, str(XP_CONTRACT), "init",
+            "--risk", "L1",
+            "--goal", "TypeScript feature",
+            "--verify", "true",
+            "--refactor",
+        ], repo_dir, runtime_dir)
+
+        # Congela testes no projeto-alvo
+        env = dict(os.environ)
+        env["KIT_RUNTIME_DIR"] = str(runtime_dir)
+        env["KIT_PROJECT_ROOT"] = str(repo_dir)
+        env["PYTHONPATH"] = str(KIT_ROOT)
+        res_freeze = subprocess.run([sys.executable, "-c", "from scripts.xp_flow import freeze_test_files; freeze_test_files()"], cwd=str(repo_dir), env=env, capture_output=True, text=True)
+        self.assertEqual(res_freeze.returncode, 0, f"freeze failed: {res_freeze.stderr}")
+
+        # 1. Modificar teste congelado -> FAIL step=3
+        test_file.write_text("test('add modified', () => {});\n", encoding="utf-8")
+        res1 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res1.returncode, 1, f"Expected step=3 fail on mutated test. Out: {res1.stdout}")
+        self.assertIn("step=3", res1.stdout)
+
+        # 2. Restaurar teste original e adicionar NOVO teste -> PASS
+        test_file.write_text("test('add', () => {});\n", encoding="utf-8")
+        new_test_file = repo_dir / "src" / "other.test.ts"
+        new_test_file.write_text("test('sub', () => {});\n", encoding="utf-8")
+        subprocess.run(["git", "add", "src/other.test.ts"], cwd=str(repo_dir), check=True)
+
+        res2 = self.run_cmd([sys.executable, str(XP_GATE), "check"], repo_dir, runtime_dir)
+        self.assertEqual(res2.returncode, 0, f"Adding a new test must be allowed and PASS. Out: {res2.stdout}")
+
+    # ------------------------------------------------------------------
+    # S12: workflow.yaml entregue -> validate dá exit 0; agente inexistente dá exit ≠ 0; next imprime ≤ 800 B
+    # ------------------------------------------------------------------
+    def test_s12_workflow_yaml_validation_and_next_budget(self):
+        XP_FLOW = KIT_ROOT / "scripts" / "xp_flow.py"
+
+        # 1. Validar workflow.yaml entregue do kit -> exit 0
+        res_val = subprocess.run([sys.executable, str(XP_FLOW), "validate"], cwd=str(KIT_ROOT), capture_output=True, text=True)
+        self.assertEqual(res_val.returncode, 0, f"workflow.yaml validation failed: {res_val.stdout}\n{res_val.stderr}")
+
+        # 2. Fixture com nó apontando para agente inexistente -> exit != 0
+        with tempfile.NamedTemporaryFile("w", suffix=".yaml") as f:
+            f.write(
+                "workflows:\n"
+                "  dummy:\n"
+                "    nodes:\n"
+                "      - {name: 'step1', run: 'ghost-agent', exit_cmd: 'true'}\n"
+                "      - {name: 'gate', run: 'reviewer', exit_cmd: 'python3 scripts/xp_gate.py check'}\n"
+            )
+            f.flush()
+            res_bad = subprocess.run([sys.executable, str(XP_FLOW), "validate", "--file", f.name], cwd=str(KIT_ROOT), capture_output=True, text=True)
+            self.assertNotEqual(res_bad.returncode, 0, "Validation must fail for nonexistent agent")
+
+        # 3. xp flow next imprime <= 800 B
+        repo_dir, runtime_dir = self.make_temp_repo()
+        self.run_cmd([sys.executable, str(XP_CONTRACT), "init", "--risk", "L1", "--goal", "Goal for next test", "--verify", "true"], repo_dir, runtime_dir)
+        self.run_cmd([sys.executable, str(XP_FLOW), "start", "feature"], repo_dir, runtime_dir)
+        res_next = self.run_cmd([sys.executable, str(XP_FLOW), "next"], repo_dir, runtime_dir)
+        self.assertEqual(res_next.returncode, 0, f"xp flow next failed: {res_next.stderr}")
+        self.assertLessEqual(len(res_next.stdout.encode("utf-8")), 800, f"xp flow next output ({len(res_next.stdout.encode('utf-8'))} B) must be <= 800 B")
+
+    # ------------------------------------------------------------------
     # S15: Repositório entregue -> testes de orçamento
     # ------------------------------------------------------------------
     def test_s15_repository_delivered_budget_tests(self):
