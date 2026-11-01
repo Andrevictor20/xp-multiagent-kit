@@ -19,6 +19,7 @@
 
 ## 3. PROGRESSO
 
+- **2026-11-01** [`ad5772a`]: Sincronização global resiliente (install-global.sh), resolução de symlinks/bypass de subcomandos no agy wrapper, atualização do health check e push concluído para o GitHub (main).
 - **2026-11-01** [`d0c2178`]: Atualização do install-global.sh com comandos v4 (xp, gate, flow, evolve) e implantação global em 62 projetos.
 - **2026-11-01** [`1aac1d3`]: Tradução integral do README.md, docs/ e 10 skills nucleares para inglês.
 - **2026-11-01** [`15252c0`]: Remoção de REMOVED.md, pasta contrib/ e VERSION (versão lida de components.yaml).
