@@ -22,7 +22,8 @@
 - **2026-11-01** [`7e64671`]: Conclusão da Fase 2 — cortes seguros, contexto ≤ 8KB, políticas consolidadas (7 arquivos) e fonte única.
 - **2026-11-01** [`c41adb9`]: Conclusão da Fase 3 — grafo mínimo, workflow.yaml, xp flow e congelamento RED.
 - **2026-11-01** [`2155853`]: Conclusão da Fase 4 — 6 agentes nucleares, 2 personas EGM, packs e gancho <=400B.
-- **2026-11-01** [fase 5]: EGM em 3 passes, gatilho de >8 arquivos, hook PreInvocation <=400B e fusão de compressores.
+- **2026-11-01** [`f7c92da`]: Conclusão da Fase 5 — EGM em 3 passes, gatilho >8 arquivos, hook <=400B.
+- **2026-11-01** [fase 6]: Auto-melhoria por evidência (xp_evolve.py), geração de PR-NNN, ablação local e promoção de regras.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias, ou pular (`.skip`) testes para mascarar falhas (Anti-Test-Bypass rígido).
