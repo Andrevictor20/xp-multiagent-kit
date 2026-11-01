@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """scripts/xp — Ponto Único de Entrada CLI do XP Multi-Agent Kit (AC-6)
-Fase 1: Suporte a contract, gate e approve. Os 9 subcomandos completos entram na Fase 2.
+Suporta os 9 subcomandos canônicos: contract, gate, flow, evolve, kit, memory, context, approve, run.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from scripts.hooks.pre_tool_guard import record_approval
 
 def main() -> int:
     if len(sys.argv) < 2:
-        print("Uso: xp <contract|gate|approve|flow|evolve|kit|memory|context|run> [opções]")
+        print("Uso: xp <contract|gate|flow|evolve|kit|memory|context|approve|run> [opções]")
         return 1
 
     subcmd = sys.argv[1]
@@ -39,11 +39,41 @@ def main() -> int:
         record_approval(action_id)
         print(f"Aprovação humana registrada com sucesso: {action_id}")
         return 0
-    elif subcmd in ["flow", "evolve", "kit", "memory", "context", "run"]:
-        print(f"Subcomando '{subcmd}' será ativado na Fase 2 da migração Thin Harness.")
+    elif subcmd == "flow":
+        flow_script = SCRIPTS_DIR / "xp_flow.py"
+        if flow_script.is_file():
+            return subprocess.run([sys.executable, str(flow_script)] + rest).returncode
+        print("Subcomando 'flow' será plenamente ativado na Fase 3 (Grafo Mínimo).")
         return 0
+    elif subcmd == "evolve":
+        evolve_script = SCRIPTS_DIR / "xp_evolve.py"
+        if evolve_script.is_file():
+            return subprocess.run([sys.executable, str(evolve_script)] + rest).returncode
+        print("Subcomando 'evolve' será ativado na Fase 6 (Auto-Melhoria).")
+        return 0
+    elif subcmd == "kit":
+        if rest and rest[0] == "doctor":
+            return subprocess.run([sys.executable, str(SCRIPTS_DIR / "kit_lint.py")] + rest[1:]).returncode
+        kit_script = SCRIPTS_DIR / "kit_installer.py"
+        return subprocess.run([sys.executable, str(kit_script)] + rest).returncode
+    elif subcmd == "memory":
+        if rest and rest[0] == "sync":
+            summary = rest[1] if len(rest) > 1 else "Memory synchronized via xp memory sync"
+            return subprocess.run([sys.executable, str(SCRIPTS_DIR / "xp_gate.py"), "--sync-memory", summary]).returncode
+        mem_script = SCRIPTS_DIR / "memory_archiver.py"
+        return subprocess.run([sys.executable, str(mem_script)] + rest).returncode
+    elif subcmd == "context":
+        ctx_script = SCRIPTS_DIR / "context_retriever.py"
+        if ctx_script.is_file():
+            return subprocess.run([sys.executable, str(ctx_script)] + rest).returncode
+        return subprocess.run([sys.executable, str(SCRIPTS_DIR / "memory_search.py")] + rest).returncode
+    elif subcmd == "run":
+        run_script = SCRIPTS_DIR / "agy-run"
+        if run_script.is_file():
+            return subprocess.run([str(run_script)] + rest).returncode
+        return subprocess.run(rest).returncode
     else:
-        print(f"Subcomando desconhecido: '{subcmd}'")
+        print(f"Subcomando desconhecido: '{subcmd}'. Opções: contract, gate, flow, evolve, kit, memory, context, approve, run.")
         return 1
 
 

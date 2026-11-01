@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 SHIM_COMMANDS: Dict[str, str] = {
+    "xp": "scripts/xp",
     "xp-spec": "scripts/spec_tool.py",
     "xp-kit": "scripts/kit_installer.py",
     "xp-run": "scripts/agy-run",

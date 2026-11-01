@@ -33,6 +33,7 @@ from scripts.host_adapters import (
     get_i18n_messages,
     normalize_targets,
 )
+from scripts.kit_constants import KIT_VERSION
 from scripts.windows_support import (
     SHIM_COMMANDS,
     WindowsPathConfigurator,
@@ -218,6 +219,12 @@ class ProjectInstaller:
             else:
                 actions.append("Memória existente preservada sem sobrescrita")
 
+        for cfg in ("policy.yaml", "components.yaml"):
+            src_cfg, dst_cfg = self.kit_dir / ".agents" / cfg, agents_dir / cfg
+            if not dry_run and src_cfg.exists() and not dst_cfg.exists():
+                shutil.copy(src_cfg, dst_cfg)
+                actions.append(f"Configuração .agents/{cfg} inicializada")
+
         adapters = HostAdapters(kit_dir=self.kit_dir)
         for t_name, fn in (
             ("opencode", adapters.install_opencode_project), ("cursor", adapters.install_cursor_project),
@@ -263,6 +270,16 @@ class GlobalInstaller:
             WindowsPathConfigurator().ensure_path_in_user_env(bin_dir)
         else:
             PathConfigurator(home_dir=self.home_dir).ensure_path_in_rc(bin_dir)
+            src_xp = self.kit_dir / "scripts" / "xp"
+            if src_xp.exists():
+                dst_xp = bin_path / "xp"
+                try:
+                    if dst_xp.is_symlink() or dst_xp.is_file():
+                        dst_xp.unlink()
+                    dst_xp.symlink_to(src_xp)
+                    actions.append(f"Binário xp vinculado em {bin_path}")
+                except Exception:
+                    pass
         McpConfigurator(home_dir=self.home_dir).configure_all()
         for inst_cls in (OpenDesignInstaller, CodeReviewGraphInstaller, RtkInstaller, AletheInstaller):
             inst_cls(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
@@ -427,7 +444,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     targets = normalize_targets(args.target)
 
     if args.command == "version":
-        print("XP Multi-Agent Kit v3.9.0")
+        print(f"XP Multi-Agent Kit v{KIT_VERSION}")
         return 0
     if args.command == "update":
         from scripts.update_manager import main as update_main
@@ -435,59 +452,41 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "doctor":
         KitDoctor(kit_dir=kit_dir).print_report(lang=lang)
         return 0
-    if args.configure_mcp:
-        return 0 if McpConfigurator().configure_all()["ok"] else 1
-    if args.install_opendesign:
-        return 0 if OpenDesignInstaller(kit_dir=kit_dir).install()["ok"] else 1
-    if args.install_graph:
-        return 0 if CodeReviewGraphInstaller(kit_dir=kit_dir).install()["ok"] else 1
-    if args.path and not args.project_path:
-        args.project_path = str(Path(args.path).resolve())
-    if args.command == "init" and not args.project_path:
-        args.project_path = str(Path.cwd())
-    if args.command == "sync" and not args.install_global and not args.project_path:
-        args.install_global = True
+    if args.configure_mcp: return 0 if McpConfigurator().configure_all()["ok"] else 1
+    if args.install_opendesign: return 0 if OpenDesignInstaller(kit_dir=kit_dir).install()["ok"] else 1
+    if args.install_graph: return 0 if CodeReviewGraphInstaller(kit_dir=kit_dir).install()["ok"] else 1
+    if args.path and not args.project_path: args.project_path = str(Path(args.path).resolve())
+    if args.command == "init" and not args.project_path: args.project_path = str(Path.cwd())
+    if args.command == "sync" and not args.install_global and not args.project_path: args.install_global = True
 
     if not args.no_deps and (args.install_global or args.project_path or args.both_path or args.yes):
         if not DependencyChecker().check_all()["can_proceed"]:
             print(m["deps_missing"])
             return 1
 
+    def _report(res: Dict[str, Any], ok_msg: str, fail_msg: str) -> int:
+        if res.get("ok"):
+            print(ok_msg)
+            for a in res.get("actions", []):
+                print(f"  • {a}")
+            return 0
+        print(f"{fail_msg} {res.get('error', '')}")
+        return 1
+
     if args.both_path:
         print(f"\n{m['installing_global']}")
-        g_res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
-        if not g_res["ok"]:
-            print(f"{m['global_fail']} {g_res.get('error', '')}")
+        if _report(GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets), m["global_ok"], m["global_fail"]) != 0:
             return 1
-        print(f"{m['global_ok']}")
-        for a in g_res.get("actions", []):
-            print(f"  • {a}")
         print(f"\n{m['installing_project']} {args.both_path}")
-        p_res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.both_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
-        print(f"{m['project_ok']}: {args.both_path}" if p_res["ok"] else f"{m['project_fail']} {p_res.get('error', '')}")
-        return 0 if p_res["ok"] else 1
+        return _report(ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.both_path), use_symlinks=True, dry_run=args.dry_run, targets=targets), f"{m['project_ok']}: {args.both_path}", m["project_fail"])
 
     if args.install_global or (args.yes and not args.project_path):
         print(f"\n{m['installing_global']}")
-        res = GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets)
-        if res["ok"]:
-            print(f"{m['global_ok']}\n🎯 Hosts configurados: {', '.join(res.get('targets', []))}")
-            for a in res.get("actions", []):
-                print(f"  • {a}")
-            return 0
-        print(f"{m['global_fail']} {res.get('error', '')}")
-        return 1
+        return _report(GlobalInstaller(kit_dir=kit_dir).install_global(dry_run=args.dry_run, targets=targets), f"{m['global_ok']}\n🎯 Hosts configurados: {', '.join(targets)}", m["global_fail"])
 
     if args.project_path:
         print(f"\n{m['installing_project']} {args.project_path}")
-        res = ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets)
-        if res["ok"]:
-            print(f"{m['project_ok']}: {args.project_path}")
-            for a in res.get("actions", []):
-                print(f"  • {a}")
-            return 0
-        print(f"{m['project_fail']} {res.get('error', '')}")
-        return 1
+        return _report(ProjectInstaller(kit_dir=kit_dir).install_project(Path(args.project_path), use_symlinks=True, dry_run=args.dry_run, targets=targets), f"{m['project_ok']}: {args.project_path}", m["project_fail"])
 
     return interactive_wizard(kit_dir=kit_dir, dry_run=args.dry_run, lang=lang)
 

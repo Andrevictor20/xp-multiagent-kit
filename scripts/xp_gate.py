@@ -102,7 +102,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
     if code_paths:
         audit_res = audit_code_completeness(code_paths, max_lines=499)
         if not audit_res.get("compliant", False):
-            findings = audit_res.get("incomplete_findings", [])
+            findings = audit_res.get("findings", audit_res.get("incomplete_findings", []))
             fail = format_failure_block(4, "Stubs ou God-files detectados", "0 TODOs e <500 linhas", "; ".join(findings[:3]), "<500 linhas", tried, "Remova workarounds e fatias de arquivos grandes")
             record_dead_end("stub_god_err", "; ".join(findings[:2]))
             return 1, f"GATE FAIL step=4 findings={len(findings)}", fail
@@ -165,6 +165,7 @@ def sync_memory(summary_line: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="XP Gate CLI")
+    parser.add_argument("action", nargs="?", default="check", help="Ação do gate (padrão: check)")
     parser.add_argument("--receipt", action="store_true", help="Emite recibo de mudança")
     parser.add_argument("--sync-memory", help="Sincroniza memória com resumo")
     args = parser.parse_args()

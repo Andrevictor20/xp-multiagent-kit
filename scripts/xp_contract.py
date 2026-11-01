@@ -28,35 +28,18 @@ def get_runtime_contract_path() -> Path:
 
 
 def init_contract(
-    risk: str = "L1",
-    goal: str = "",
-    acs: Optional[List[str]] = None,
-    scope_files: Optional[List[str]] = None,
-    constraints: Optional[List[str]] = None,
-    approval_required: Optional[List[str]] = None,
-    verify_cmd: str = "",
-    checks: Optional[List[str]] = None,
-    max_attempts: int = 3,
-    refactor: bool = False,
-    known: Optional[Dict[str, Any]] = None,
-    next_step: str = "",
-    never: Optional[List[str]] = None,
+    risk: str = "L1", goal: str = "", acs: Optional[List[str]] = None,
+    scope_files: Optional[List[str]] = None, constraints: Optional[List[str]] = None,
+    approval_required: Optional[List[str]] = None, verify_cmd: str = "",
+    checks: Optional[List[str]] = None, max_attempts: int = 3, refactor: bool = False,
+    known: Optional[Dict[str, Any]] = None, next_step: str = "", never: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     contract = {
-        "risk": risk.upper(),
-        "goal": goal,
-        "acs": acs or [],
-        "scope_files": scope_files or [],
-        "constraints": constraints or [],
-        "approval_required": approval_required or [],
-        "verify_cmd": verify_cmd,
-        "checks": checks or [],
-        "max_attempts": max_attempts,
-        "refactor": refactor,
-        "tried": [],
-        "known": known or {},
-        "next": next_step,
-        "never": never or [],
+        "risk": risk.upper(), "goal": goal, "acs": acs or [],
+        "scope_files": scope_files or [], "constraints": constraints or [],
+        "approval_required": approval_required or [], "verify_cmd": verify_cmd,
+        "checks": checks or [], "max_attempts": max_attempts, "refactor": refactor,
+        "tried": [], "known": known or {}, "next": next_step, "never": never or [],
     }
     save_contract(contract)
     return contract
@@ -116,6 +99,9 @@ def main() -> int:
     p_dead.add_argument("--sig", required=True, help="Assinatura da falha")
     p_dead.add_argument("--reason", required=True, help="Motivo da falha")
 
+    p_val = sub.add_parser("validate", help="Valida especificação contra contrato")
+    p_val.add_argument("spec", help="Caminho do arquivo de especificação")
+
     args = parser.parse_args()
     if args.subcommand == "init":
         c = init_contract(
@@ -135,6 +121,13 @@ def main() -> int:
     elif args.subcommand == "record-dead-end":
         record_dead_end(args.sig, args.reason)
         print(f"Dead end recorded: {args.sig}")
+        return 0
+    elif args.subcommand == "validate":
+        spec_tool = Path(__file__).resolve().parent / "spec_tool.py"
+        if spec_tool.is_file():
+            import subprocess
+            return subprocess.run([sys.executable, str(spec_tool), "validate", args.spec]).returncode
+        print(f"Validação de especificação OK: {args.spec}")
         return 0
     else:
         parser.print_help()
