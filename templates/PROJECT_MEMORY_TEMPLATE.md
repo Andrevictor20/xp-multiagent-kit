@@ -44,12 +44,19 @@
 
 ---
 
-## 6. Gotchas, Hurdles & Learned Playbooks (Procedural Memory)
+## 6. Dead-Ends & Failed Attempts (Negative Memory — O Que NÃO Fazer)
+<!-- REGRA CRÍTICA: Toda abordagem que falhou, causou regressão ou foi descartada DEVE ser anotada aqui. -->
+<!-- NUNCA repita ou sugira uma abordagem listada nesta seção sem justificativa estrutural comprovada. -->
+- Nenhum dead-end registrado até o momento.
+
+---
+
+## 7. Gotchas, Hurdles & Learned Playbooks (Procedural Memory)
 - **[L-001]** (Adicionar lições aprendidas ao longo do projeto)
 
 ---
 
-## 7. Technical Debts & Known Blockers
+## 8. Technical Debts & Known Blockers
 - Nenhum bloqueio ativo no scaffold inicial.
 
 ---

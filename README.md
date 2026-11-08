@@ -53,7 +53,7 @@ The unified CLI interface `xp` consolidates all kit entry points:
 | `xp flow <start|next|advance|reopen>` | Drives workflow graph and manages RED test freezing |
 | `xp evolve <report|propose|apply>` | Evidence-based self-improvement on failures and ablation audit |
 | `xp kit <doctor|pack|eval|install>` | Integrity linter (`kit doctor lint`), packs, eval, and installation |
-| `xp memory <sync|search|archive>` | Synchronizes and searches 4-tier continuous memory |
+| `xp memory <sync|search|archive>` | Synchronizes and searches 5-tier continuous memory (including Dead-Ends) |
 | `xp context <query>` | Low-consumption Just-in-Time (JIT) contextual retrieval |
 | `xp approve <action_id>` | Records explicit human authorization for high-risk actions |
 | `xp run <cmd>` | Protected and monitored execution via harness |
@@ -63,6 +63,8 @@ The unified CLI interface `xp` consolidates all kit entry points:
 ## 4. Engineering Guarantees
 
 - **Base Context ≤ 8,000 B:** `AGENTS.md` (≤ 3,000 B) + `PROJECT_MEMORY.md` (≤ 3,000 B) loaded upfront; remaining loaded on demand.
+- **5-Tier Continuous Memory & Dead-Ends Log:** Negative memory scratchpad prevents repeating previously failed approaches across agent sessions.
+- **Zero Cosmetic Fixes & Empirical Proof:** Strictly prohibits marking tasks or bugs as resolved without running reproduction commands and verifying `exit_code: 0`. Enforces regression tests to prevent regressions.
 - **Strict TDD & Mechanical Anti-Test-Bypass:** RED unit tests frozen via SHA-256 hash; unauthorized modification blocked at gate.
 - **Continuous Audit:** `xp kit doctor lint` validates integrity, token budgets, and compliance with `components.yaml`.
 

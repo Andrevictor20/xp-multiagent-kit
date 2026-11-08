@@ -18,8 +18,8 @@
 - **Skills Catalog JIT (P1):** A métrica de 29.378 B decorre da estimativa min(len, 1200) em `skill_index.py`; no v4 as skills operam sob demanda (JIT) e não no contexto base (fixo ≤ 8 KB).
 
 ## 3. PROGRESSO
-
-- **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer (778→170L) e context_compactor (538→133L) divididos; workflow.yaml movido para .agents/graph/; goldfish-spec-review e deploy-pipeline-conductor removidos (25→24 skills); sections/ em todas as 24 skills; kit_lint 100% verde.
+- **2026-11-07**: Ativação do Negative Memory (Dead-Ends Log) e trava anti-regressão com Step 0 obrigatório.
+- **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer e context_compactor divididos; workflow.yaml movido; kit_lint 100% verde.
 - **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, integridade geral (417 testes PASS).
 - **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
 
@@ -30,3 +30,8 @@
 - `never` adicionar dependências fora da biblioteca padrão Python (Platform-Native).
 - `never` alterar `policy.yaml`, `AGENTS.md` ou `.agents/policies/` sem `xp approve`.
 - `never` deixar placeholders (`TODO`, `TBD`, `{{...}}`) em planos ou especificações.
+- `never` afirmar que um bug foi corrigido sem executar teste nativo comprovando `exit_code: 0`.
+
+## 5. TENTATIVAS QUE FALHARAM (DEAD-ENDS)
+<!-- NUNCA repita ou sugira abordagens listadas nesta seção -->
+- Nenhum dead-end registrado até o momento no kit v4.

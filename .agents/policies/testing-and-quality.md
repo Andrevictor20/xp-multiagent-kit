@@ -15,7 +15,8 @@
    - Zero test bypasses: never skip (`.skip`), comment out, or delete failing tests to force a green build — isolate and fix the root cause.
 3. **Surgical Execution:** Run targeted test modules (`tests/test_<module>.py`) during iterative development; full suite runs at release gates.
 
-## 3. Empirical Evidence & Self-Healing
-1. **No Verbal Claims:** Never claim "tests pass" without executing native test commands and observing `exit_code: 0`.
-2. **Autonomous Self-Healing:** If any command or test fails, diagnose traceback/logs, isolate the root cause, fix code, and re-verify before concluding turn.
-3. **Structured Evidence:** Record deterministic execution artifacts in `.agents/runtime/` with concrete logs and outputs.
+## 3. Empirical Evidence & Anti-Regression
+1. **No Verbal Claims:** Never claim "tests pass" or that a bug is fixed without executing native test commands and observing `exit_code: 0`.
+2. **Regression Shield:** For any fixed bug, create or update an automated regression test reproducer before closing the task to prevent regressions.
+3. **Autonomous Self-Healing:** If any command or test fails, diagnose traceback/logs, isolate the root cause, fix code, and re-verify before concluding turn. Record failed attempts in Dead-Ends memory.
+4. **Structured Evidence:** Record deterministic execution artifacts in `.agents/runtime/` with concrete logs and outputs.
