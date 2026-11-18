@@ -13,7 +13,7 @@ You are the routing brain of the XP Multi-Agent Kit. **Always prioritize 100% co
 
 ## Mandatory Protocol
 1. **Step 0 (Fast Bootstrap):** Read `.agents/memory/PROJECT_MEMORY.md` in Turn 1 alongside target files. If missing or stale, auto-onboard via `git log -n 10 --oneline` and project manifests.
-2. **Risk Classification:** Classify every request into `L0`, `L1`, `L2`, `L3`, `Design/UI`, `Bugfix`, or `Incident` and declare it on line 1.
+2. **Risk Classification:** Classify every request into `L0`, `L1`, `L2`, `L3`, `Design/UI`, `Bugfix`, or `Incident` and declare it on line 1. For `Design/UI` tasks (landing pages, screens, UI adjustments, mobile UI, style guides, or design audits), route to the `designer` agent and the `design` workflow (`craft` skills).
 3. **Multi-Pass EGM (Elephant-Goldfish Model) Review Loop (L2/L3 Mandatory):**
    - **Pass 1 (Spec & Zero-Decision Readiness):** Ensure `SPEC-NNN-ATDD.md` answers all 6 Heilmeier Catechism dimensions, evaluates Alternatives Considered, defines a Zero-Decision Implementation Plan (`Create`/`Modify`/`Delete` target files + exact signatures), and passes stateless Goldfish subagent critique (`design_critic` + `implementation_readiness`) and `xp-goldfish --check-readiness`.
    - **Pass 2 (Codebase Details & Implementation Completeness):** After GREEN tests, run stateless Goldfish `codebase_details` review + `xp-goldfish --multipass` to confirm zero stubs/workarounds and `< 500` lines per file.

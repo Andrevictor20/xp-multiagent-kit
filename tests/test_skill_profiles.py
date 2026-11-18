@@ -50,9 +50,9 @@ class TestSkillProfilesDefinitions(unittest.TestCase):
         core = PROFILES["core"]
         for s in core:
             self.assertIn(s, frontend)
-        self.assertIn("frontend-taste-engineering", frontend)
-        self.assertIn("design-tokens", frontend)
-        self.assertIn("component-architecture", frontend)
+        self.assertIn("craft", frontend)
+        self.assertIn("craft-setup", frontend)
+        self.assertIn("craft-critique", frontend)
 
     def test_get_profile_skills_all(self):
         all_skills = ["skill-a", "skill-b", "skill-c"]

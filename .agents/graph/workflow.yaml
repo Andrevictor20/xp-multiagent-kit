@@ -69,7 +69,9 @@ workflows:
       - {name: "gate", run: "reviewer", kind: "code", skills: [], soft_turns: 2, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
 
   design:
-    description: "Design de interfaces, tokens visuais e acessibilidade"
+    description: "Fluxo Craft de design de interfaces, landing pages, apps mobile e design system"
     nodes:
-      - {name: "mockup", run: "designer", kind: "model", skills: ["frontend-taste-engineering", "design-system"], soft_turns: 5, exit_cmd: "python3 scripts/xp contract validate", on_fail: "retry", timeout: 15}
-      - {name: "gate", run: "reviewer", kind: "code", skills: ["ui-quality-gate"], soft_turns: 2, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
+      - {name: "setup_brief", run: "designer", kind: "model", skills: ["craft-setup", "craft-sync"], soft_turns: 5, exit_cmd: "python3 scripts/xp contract validate", on_fail: "retry", timeout: 15}
+      - {name: "states_explore", run: "designer", kind: "model", skills: ["craft-states", "craft-explore"], soft_turns: 5, exit_cmd: "python3 scripts/xp contract validate", on_fail: "retry", timeout: 15}
+      - {name: "craft_build", run: "designer", kind: "model", skills: ["craft", "craft-system"], soft_turns: 8, exit_cmd: "python3 scripts/xp contract validate", on_fail: "retry", timeout: 20}
+      - {name: "gate", run: "reviewer", kind: "code", skills: ["craft-critique"], soft_turns: 3, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}

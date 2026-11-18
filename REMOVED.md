@@ -38,3 +38,13 @@ As 14 skills de segurança legadas (14.234 B) foram consolidadas nas 3 skills nu
 - `threat-modeling`: absorveu modelagem STRIDE, matriz de risco e derivação de testes de segurança.
 - **Regras únicas retidas:** Algoritmos de hash (Argon2id/bcrypt), JWT assimétrico RS256/ES256 com validação de claims, RBAC/ABAC multi-tenant (`tenant_id`), schemas estritos (Pydantic/Zod), rate-limiting/timeouts, AES-GCM-256 com IV único, KMS/Secret Manager obrigatório, pre-commit secret scanning, containers distroless/non-root, auditoria de lockfiles (SCA), testes negativos (401/403/404), governança PII/LGPD/GDPR e logging estruturado append-only.
 - **Descartes:** Explicações prolixas, tutoriais conceituais genéricos de segurança teórica, matrizes de pontuação duplicadas e payloads de exemplo estáticos que inflam o contexto sem valor de verificação automática.
+
+## 5. Substituição das Skills de Design pelo Fluxo `craft` (2026-11-17)
+
+As 7 skills de design anteriores (`design-intelligence`, `design-system`, `frontend-taste-engineering`, `image-to-code`, `mobile-app-design`, `ui-accessibility-responsive`, `ui-quality-gate`) foram substituídas pela suíte `craft` (`craft`, `craft-setup`, `craft-states`, `craft-explore`, `craft-system`, `craft-sync`, `craft-critique`):
+
+| Componente | Destino | Justificativa | Substituição Canônica |
+|---|---|---|---|
+| `scripts/design_search.py` | `contrib/scripts/design_search.py` | Catálogo CSV offline acoplado à antiga skill `design-intelligence` | `craft-setup` (`DESIGN.md`) + `craft-system` |
+| `tests/test_design_search.py` | `contrib/tests/test_design_search.py` | Suíte de testes do `design_search.py` movida junto ao módulo | — |
+| `design-intelligence/assets/*.csv` | `contrib/skills/design-intelligence/assets/` | Preservação dos catálogos CSV fora do núcleo ativo | — |

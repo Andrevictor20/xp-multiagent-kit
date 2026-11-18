@@ -16,8 +16,10 @@
 - **EGM (9 → 2 Personas):** `spec_reviewer` e `code_reviewer` com Pass 3 Conformance determinístico.
 - **Limpeza de Duplicações:** Remoção de `REPO_MAP.md` e `COMPLETENESS_OVER_SPEED` (fonte única).
 - **Skills Catalog JIT (P1):** A métrica de 29.378 B decorre da estimativa min(len, 1200) em `skill_index.py`; no v4 as skills operam sob demanda (JIT) e não no contexto base (fixo ≤ 8 KB).
+- **Fluxo Craft (2026-11-17):** Design usa 7 skills `craft*` via `designer/agent.md` e `workflow.yaml` (base ≤ 8 KB).
 
 ## 3. PROGRESSO
+- **2026-11-17**: Skills de design substituídas pelo fluxo `craft` (`design_search.py` -> `contrib/`).
 - **2026-11-07**: Ativação do Negative Memory (Dead-Ends Log) e trava anti-regressão com Step 0 obrigatório.
 - **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer e context_compactor divididos; workflow.yaml movido; kit_lint 100% verde.
 - **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, integridade geral (417 testes PASS).
