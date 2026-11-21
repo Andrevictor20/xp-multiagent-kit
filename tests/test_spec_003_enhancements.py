@@ -3,7 +3,7 @@
 tests/test_spec_003_enhancements.py
 Acceptance and unit tests for XP Multi-Agent Kit v3.1 enhancements:
 - Codex host support (IDE & CLI)
-- Bundled toolchain installer (RTK, OpenDesign, CodeReviewGraph)
+- Bundled toolchain installer (RTK, Alethe)
 - Reinforced ATDD & BDD CLI (xp-spec)
 - Complete scrub of hardcoded personal paths
 - Host-adaptive model catalog & telemetry
@@ -48,10 +48,10 @@ class TestSpec003Enhancements(unittest.TestCase):
             self.assertTrue((proj / ".codex" / "mcp.json").is_file())
             self.assertTrue((proj / ".codexignore").is_file())
 
-            # Check mcp.json contains open-design and code-review-graph
+            # Check mcp.json is generated
             mcp_data = json.loads((proj / ".codex" / "mcp.json").read_text(encoding="utf-8"))
             self.assertIn("mcpServers", mcp_data)
-            self.assertIn("code-review-graph", mcp_data["mcpServers"])
+            self.assertNotIn("code-review-graph", mcp_data["mcpServers"])
 
     def test_granular_targets_isolation(self):
         """Installing for a specific subset of targets (e.g. cursor,codex) does not generate unrelated host configs."""
@@ -72,7 +72,7 @@ class TestSpec003Enhancements(unittest.TestCase):
             self.assertFalse((proj / ".qoder").exists())
 
     # ------------------------------------------------------------------
-    # 2. Bundled Toolchain Installer (RTK, OpenDesign, CodeReviewGraph)
+    # 2. Bundled Toolchain Installer (RTK, Alethe)
     # ------------------------------------------------------------------
     def test_rtk_installer_interface(self):
         """RtkInstaller checks PATH, cargo, or downloads prebuilt binary gracefully."""

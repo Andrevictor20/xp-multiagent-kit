@@ -78,7 +78,7 @@ class DependencyChecker:
 
     def check_all(self) -> Dict[str, Any]:
         py_check, git_check = self.check_python(), self.check_command("git", required=True)
-        checks = {k: self.check_command(k, required=False) for k in ("gh", "cargo", "rtk", "od")}
+        checks = {k: self.check_command(k, required=False) for k in ("gh", "cargo", "rtk")}
         checks.update({"python": py_check, "git": git_check})
         return {"can_proceed": py_check["ok"] and git_check["ok"], "checks": checks}
 
@@ -238,7 +238,7 @@ class ProjectInstaller:
 
 
 from scripts.mcp_installers import (  # noqa: E402, F401
-    AletheInstaller, CodeReviewGraphInstaller, McpConfigurator, OpenDesignInstaller, RtkInstaller,
+    AletheInstaller, McpConfigurator, RtkInstaller,
 )
 
 
@@ -281,7 +281,7 @@ class GlobalInstaller:
                 except Exception:
                     pass
         McpConfigurator(home_dir=self.home_dir).configure_all()
-        for inst_cls in (CodeReviewGraphInstaller, RtkInstaller, AletheInstaller):
+        for inst_cls in (RtkInstaller, AletheInstaller):
             inst_cls(kit_dir=self.kit_dir, home_dir=self.home_dir).install()
         adapters = HostAdapters(kit_dir=self.kit_dir, home_dir=self.home_dir)
         actions.extend(adapters.install_global_hosts(resolved_targets, dry_run=dry_run))
@@ -321,8 +321,7 @@ class KitDoctor:
         }
         essential_bins = [
             "agy-run", "xp-run", "agy-spec", "xp-spec", "agy-debt", "agy-health",
-            "agy-kit", "xp-kit", "od", "agy-design", "code-review-graph", "agy-graph",
-            "agy-crg", "agy-pack", "xp-pack", "agy-orchestrate", "xp-orchestrate",
+            "agy-kit", "xp-kit", "agy-pack", "xp-pack", "agy-orchestrate", "xp-orchestrate",
             "alethe", "xp-alethe", "agy-goldfish", "xp-goldfish",
         ]
         hosts_status = {
@@ -434,8 +433,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--no-deps", action="store_true", help="Skip OS dependency checks")
     parser.add_argument("--dry-run", action="store_true", help="Simulate without writing to disk")
     parser.add_argument("--configure-mcp", action="store_true", help="Configure MCP servers and auto-approval")
-    parser.add_argument("--install-opendesign", action="store_true", help="Install OpenDesign (od)")
-    parser.add_argument("--install-graph", action="store_true", help="Install CodeReviewGraph (crg)")
 
     args = parser.parse_args(argv)
     kit_dir = Path(__file__).resolve().parent.parent
@@ -453,8 +450,6 @@ def main(argv: Optional[List[str]] = None) -> int:
         KitDoctor(kit_dir=kit_dir).print_report(lang=lang)
         return 0
     if args.configure_mcp: return 0 if McpConfigurator().configure_all()["ok"] else 1
-    if args.install_opendesign: return 0 if OpenDesignInstaller(kit_dir=kit_dir).install()["ok"] else 1
-    if args.install_graph: return 0 if CodeReviewGraphInstaller(kit_dir=kit_dir).install()["ok"] else 1
     if args.path and not args.project_path: args.project_path = str(Path(args.path).resolve())
     if args.command == "init" and not args.project_path: args.project_path = str(Path.cwd())
     if args.command == "sync" and not args.install_global and not args.project_path: args.install_global = True

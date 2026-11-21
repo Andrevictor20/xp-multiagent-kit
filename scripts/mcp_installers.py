@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 scripts/mcp_installers.py
-MCP Server & Auxiliary Tool Installers (OpenDesign, CodeReviewGraph, McpConfigurator)
+MCP Server & Auxiliary Tool Installers (McpConfigurator)
 for XP Multi-Agent Kit v3.0.
 """
 
@@ -21,135 +21,6 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from scripts.host_adapters import build_mcp_servers_dict
-
-
-class OpenDesignInstaller:
-    """Installs and links OpenDesign (od) into ~/.local/share/open-design and ~/.local/bin/od."""
-
-    REPO_URL = "https://github.com/opendesign/open-design.git"
-
-    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
-        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
-        self.home_dir = home_dir or Path.home()
-        self.od_dir = self.home_dir / ".local" / "share" / "open-design"
-        self.bin_dir = self.home_dir / ".local" / "bin"
-
-    def _run_clone_or_copy(self) -> Any:
-        self.od_dir.parent.mkdir(parents=True, exist_ok=True)
-        git_cmd = shutil.which("git")
-        if not git_cmd:
-            return None
-        env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
-        return subprocess.run(
-            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.od_dir)],
-            env=env,
-            capture_output=True,
-            text=True,
-        )
-
-    def install(self) -> Dict[str, Any]:
-        self.bin_dir.mkdir(parents=True, exist_ok=True)
-        daemon_script = self.od_dir / "apps" / "daemon" / "bin" / "od.mjs"
-        if not daemon_script.exists():
-            self._run_clone_or_copy()
-        if daemon_script.exists():
-            try:
-                daemon_script.chmod(daemon_script.stat().st_mode | 0o111)
-            except Exception:
-                pass
-            target_link = self.bin_dir / "od"
-            if target_link.exists() or target_link.is_symlink():
-                try:
-                    target_link.unlink()
-                except Exception:
-                    pass
-            try:
-                target_link.symlink_to(daemon_script)
-            except Exception:
-                target_link.write_text(f'#!/usr/bin/env bash\nexec node "{daemon_script}" "$@"\n', encoding="utf-8")
-                target_link.chmod(target_link.stat().st_mode | 0o111)
-            for alias_name in ("agy-design", "xp-design"):
-                alias_link = self.bin_dir / alias_name
-                if not alias_link.exists() and not alias_link.is_symlink():
-                    try:
-                        alias_link.symlink_to(target_link)
-                    except Exception:
-                        pass
-            return {"ok": True, "path": str(target_link), "message": f"OpenDesign instalado em {target_link}"}
-        return {"ok": False, "path": None, "message": "Falha ao instalar OpenDesign: od.mjs não encontrado."}
-
-
-class CodeReviewGraphInstaller:
-    """Installs and links CodeReviewGraph into ~/.local/share/code-review-graph and ~/.local/bin."""
-
-    REPO_URL = "https://github.com/tirth8205/code-review-graph.git"
-
-    def __init__(self, kit_dir: Optional[Path] = None, home_dir: Optional[Path] = None):
-        self.kit_dir = kit_dir or Path(__file__).resolve().parent.parent
-        self.home_dir = home_dir or Path.home()
-        self.crg_dir = self.home_dir / ".local" / "share" / "code-review-graph"
-        self.bin_dir = self.home_dir / ".local" / "bin"
-
-    def _run_clone_or_copy(self) -> Any:
-        self.crg_dir.parent.mkdir(parents=True, exist_ok=True)
-        staging_dir = self.kit_dir / "code-review-graph-staging"
-        if staging_dir.exists() and (staging_dir / "pyproject.toml").exists():
-            if not self.crg_dir.exists():
-                shutil.copytree(str(staging_dir), str(self.crg_dir), dirs_exist_ok=True)
-            return True
-        git_cmd = shutil.which("git")
-        if not git_cmd:
-            return None
-        env = dict(os.environ, GIT_TERMINAL_PROMPT="0")
-        return subprocess.run(
-            [git_cmd, "clone", "--depth", "1", self.REPO_URL, str(self.crg_dir)],
-            env=env,
-            capture_output=True,
-            text=True,
-        )
-
-    def _setup_venv_and_install(self) -> bool:
-        venv_dir = self.crg_dir / ".venv"
-        real_uv = shutil.which("uv") or str(self.home_dir / ".local" / "bin" / "uv")
-        if Path(real_uv).exists() or shutil.which("uv"):
-            res = subprocess.run([real_uv, "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
-            if res.returncode == 0:
-                subprocess.run([real_uv, "pip", "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
-                return True
-        py_cmd = shutil.which("python3") or sys.executable
-        res = subprocess.run([py_cmd, "-m", "venv", str(venv_dir)], cwd=str(self.crg_dir), capture_output=True, text=True)
-        if res.returncode == 0:
-            subprocess.run([str(venv_dir / "bin" / "pip"), "install", "-e", "."], cwd=str(self.crg_dir), capture_output=True, text=True)
-            return True
-        return False
-
-    def install(self) -> Dict[str, Any]:
-        self.bin_dir.mkdir(parents=True, exist_ok=True)
-        venv_bin = self.crg_dir / ".venv" / "bin" / "code-review-graph"
-        if not venv_bin.exists():
-            self._run_clone_or_copy()
-            self._setup_venv_and_install()
-        if venv_bin.exists():
-            try:
-                venv_bin.chmod(venv_bin.stat().st_mode | 0o111)
-            except Exception:
-                pass
-            created_links = []
-            for link_name in ["code-review-graph", "agy-graph", "agy-crg", "xp-graph"]:
-                target_link = self.bin_dir / link_name
-                if target_link.exists() or target_link.is_symlink():
-                    try:
-                        target_link.unlink()
-                    except Exception:
-                        pass
-                try:
-                    target_link.symlink_to(venv_bin)
-                except Exception:
-                    target_link.write_text(f'#!/usr/bin/env bash\nexec "{venv_bin}" "$@"\n', encoding="utf-8")
-                    target_link.chmod(target_link.stat().st_mode | 0o111)
-                created_links.append(str(target_link))
-            return {"ok": True, "path": str(self.bin_dir / "code-review-graph"), "aliases": created_links, "message": "CodeReviewGraph instalado"}
-        return {"ok": False, "path": None, "message": "Falha ao instalar CodeReviewGraph."}
 
 
 class McpConfigurator:

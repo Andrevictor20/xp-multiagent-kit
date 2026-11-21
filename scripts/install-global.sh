@@ -35,7 +35,6 @@ Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qo
 2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.
 3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.
 4. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
-5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks. If unavailable, fall back to textual search (grep/ripgrep) without blocking.
 EOF
 
 # 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
@@ -193,8 +192,6 @@ ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/agy-debt"
 ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/xp-debt"
 ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/agy-kit"
 ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/xp-kit"
-ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/agy-design"
-ln -sf "$KIT_DIR/scripts/agy-design" "$HOME/.local/bin/xp-design"
 ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/xp-run"
 ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/xp-sanitize"
 ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$HOME/.local/bin/xp-turn"
@@ -213,7 +210,7 @@ ln -sf "$KIT_DIR/scripts/xp_contract.py" "$HOME/.local/bin/xp-contract"
 ln -sf "$KIT_DIR/scripts/xp_flow.py" "$HOME/.local/bin/xp-flow"
 ln -sf "$KIT_DIR/scripts/xp_evolve.py" "$HOME/.local/bin/xp-evolve"
 
-echo "   ✅ xp-spec, agy-spec, xp, xp-gate, xp-contract, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-debt, agy-kit, agy-design disponíveis no PATH!"
+echo "   ✅ xp-spec, agy-spec, xp, xp-gate, xp-contract, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-debt, agy-kit disponíveis no PATH!"
 
 
 # 5.1. Instalação e verificação do RTK (Rust Token Killer)
@@ -233,52 +230,20 @@ if command -v rtk >/dev/null 2>&1; then
   echo "   ✅ RTK ativo: $(rtk --version 2>/dev/null || echo 'instalado')"
 fi
 
-# 5.2. OpenDesign (od) — opt-in via pack 'xp kit pack enable design'
-OPEN_DESIGN_PERSISTENT="$HOME/.local/share/open-design"
-if [ -f "$OPEN_DESIGN_PERSISTENT/apps/daemon/bin/od.mjs" ]; then
-  echo "🎨 Vinculando OpenDesign CLI (od) em $HOME/.local/bin/od..."
-  ln -sf "$OPEN_DESIGN_PERSISTENT/apps/daemon/bin/od.mjs" "$HOME/.local/bin/od"
-  chmod +x "$HOME/.local/bin/od"
-  if command -v od >/dev/null 2>&1; then
-    echo "   ✅ OpenDesign ativo: $(od --version 2>/dev/null || echo 'instalado')"
-  fi
-fi
-
-# 5.3. Instalação e verificação do CodeReviewGraph (crg / agy-graph)
-CRG_PERSISTENT="$HOME/.local/share/code-review-graph"
-if [ ! -f "$CRG_PERSISTENT/.venv/bin/code-review-graph" ]; then
-  echo "🗺️ Instalando CodeReviewGraph via kit_installer..."
-  python3 "$KIT_DIR/scripts/kit_installer.py" --install-graph || true
-fi
-
-if [ -f "$CRG_PERSISTENT/.venv/bin/code-review-graph" ]; then
-  echo "🗺️ Vinculando CodeReviewGraph em $HOME/.local/bin/code-review-graph..."
-  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/code-review-graph"
-  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/agy-graph"
-  ln -sf "$CRG_PERSISTENT/.venv/bin/code-review-graph" "$HOME/.local/bin/agy-crg"
-  chmod +x "$HOME/.local/bin/code-review-graph" "$HOME/.local/bin/agy-graph" "$HOME/.local/bin/agy-crg"
-fi
-
-if command -v code-review-graph >/dev/null 2>&1; then
-  echo "   ✅ CodeReviewGraph ativo: $(code-review-graph --version 2>/dev/null || echo 'instalado')"
-fi
-
-# 6. Configurar Git Hooks globais para o CI/CD Auto-Healer e CRG Auto-Update
-echo "🔗 Configurando Git Hooks globais (post-push watcher & CRG auto-update)..."
+# 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
+echo "🔗 Configurando Git Hooks globais (post-push watcher)..."
 GLOBAL_GIT_HOOKS="$HOME/.config/git/hooks"
 mkdir -p "$GLOBAL_GIT_HOOKS"
 ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/pre-push"
 ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/post-push"
-ln -sf "$KIT_DIR/scripts/hooks/crg-auto-update.sh" "$GLOBAL_GIT_HOOKS/post-commit"
-chmod +x "$GLOBAL_GIT_HOOKS/pre-push" "$GLOBAL_GIT_HOOKS/post-push" "$GLOBAL_GIT_HOOKS/post-commit"
+chmod +x "$GLOBAL_GIT_HOOKS/pre-push" "$GLOBAL_GIT_HOOKS/post-push"
 git config --global core.hooksPath "$GLOBAL_GIT_HOOKS"
 
 # Hook local do repositório
 if [ -d "$KIT_DIR/.git/hooks" ]; then
   ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/pre-push"
   ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/post-push"
-  ln -sf "$KIT_DIR/scripts/hooks/crg-auto-update.sh" "$KIT_DIR/.git/hooks/post-commit"
-  chmod +x "$KIT_DIR/.git/hooks/pre-push" "$KIT_DIR/.git/hooks/post-push" "$KIT_DIR/.git/hooks/post-commit"
+    chmod +x "$KIT_DIR/.git/hooks/pre-push" "$KIT_DIR/.git/hooks/post-push"
 fi
 echo "   ✅ Git Hooks configurados (Global + Local)!"
 

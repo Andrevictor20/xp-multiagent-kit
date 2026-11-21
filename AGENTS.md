@@ -10,7 +10,7 @@ Contexto base fixo restrito (≤ 8 KB total). Consultar memória sob demanda via
 **Step 0 Obrigatório:** Inspecione SEMPRE `.agents/memory/PROJECT_MEMORY.md` antes de propor ou alterar código. Leia a seção de Dead-Ends para NUNCA repetir abordagens que já falharam.
 
 ## 3. FERRAMENTAS
-Uso prioritário de ferramentas determinísticas locais (`xp`) e AST graph (`code-review-graph` / `agy-graph`) para impacto e chamadas em arquivos > 800 linhas (com fallback textual se ausente). Sem spam de chamadas.
+Uso prioritário de ferramentas determinísticas locais (`xp`) e busca textual (grep/ripgrep) para impacto e chamadas. Sem spam de chamadas.
 
 ## 4. ESTADO
 Estado transiente de execução mantido em `.agents/runtime/` (`run.json`, `events.jsonl`, `flow_state.json`). Não versionado em Git.
@@ -29,7 +29,7 @@ Auto-cura determinística em falhas de ferramenta/testes: isolar causa raiz, cor
 Eventos de execução emitidos de forma estruturada via `kit_events.py` para `.agents/runtime/events.jsonl`. Recibo operacional emitido a cada invocação.
 
 ## Invariantes & Regras Transitórias
-- **Stop Gate Humano:** Ações de risco L2/L3 e aprovação de specs exigem confirmação explícita ou pré-autorização documentada.
+- **Stop Gate Humano:** Ações de risco L2/L3 e aprovação de specs exigem confirmação explícita.
 - **Orçamentos:** Limites de turnos e tokens regidos por `workflow.yaml` / `kit_constants.py`.
-- **Memória Contínua:** Atualizar `.agents/memory/PROJECT_MEMORY.md` ao final de cada fase/entrega, registrando progresso, decisões e dead-ends.
-- **Qualidade de Código:** Sem God Files (> 500 linhas), sem `TODO`/`TBD`, sem contornos (`as any`, `@ts-ignore`).
+- **Memória Contínua:** Atualizar `.agents/memory/PROJECT_MEMORY.md` ao final de cada fase/entrega.
+- **Qualidade de Código (passo 4 do gate, mecânico):** Sem God Files (> 500 linhas), sem `TODO`/`TBD`/`FIXME`, sem contornos (`as any`, `@ts-ignore`, `# type: ignore`, `# noqa`), sem teste desativado (`@unittest.skip`, `.skipTest`, `pytest.mark.skip`), sem segredo hardcoded (`sk_live_`, `AKIA…`, `ghp_…`, `api_key='…'`).

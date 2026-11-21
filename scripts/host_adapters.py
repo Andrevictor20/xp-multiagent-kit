@@ -124,24 +124,7 @@ def normalize_targets(targets: Optional[Any]) -> List[str]:
 def build_mcp_servers_dict(home_dir: Optional[Path] = None) -> Dict[str, Any]:
     """Builds standard MCP server dictionary compatible with Cursor, OpenCode, Qoder, and Antigravity."""
     home = home_dir or Path.home()
-    crg_bin = home / ".local" / "share" / "code-review-graph" / ".venv" / "bin" / "code-review-graph"
-    crg_cmd = str(crg_bin) if crg_bin.exists() else "code-review-graph"
-    crg_tools = (
-        "detect_changes_tool,get_minimal_context_tool,get_impact_radius_tool,"
-        "query_graph_tool,get_review_context_tool,get_architecture_overview_tool,"
-        "find_large_functions_tool,refactor_tool,list_flows_tool,get_affected_flows_tool"
-    )
-    return {
-        "open-design": {
-            "command": "od",
-            "args": ["mcp", "--daemon-url", "http://127.0.0.1:7456"],
-        },
-        "code-review-graph": {
-            "command": crg_cmd,
-            "args": ["serve"],
-            "env": {"CRG_TOOLS": crg_tools},
-        },
-    }
+    return {}
 
 
 class HostAdapters:
@@ -361,13 +344,8 @@ class HostAdapters:
             # 4. config.toml
             cfg_file = codex_dir / "config.toml"
             if not cfg_file.exists():
-                crg_cmd = mcp_data["mcpServers"]["code-review-graph"]["command"]
                 cfg_file.write_text(
-                    'model = "gpt-5.6-luna"\nmodel_reasoning_effort = "low"\n\n'
-                    '[mcp_servers.code_review_graph]\n'
-                    f'command = "{crg_cmd}"\nargs = ["serve"]\n\n'
-                    '[mcp_servers.open_design]\n'
-                    'command = "od"\nargs = ["mcp", "--daemon-url", "http://127.0.0.1:7456"]\n',
+                    'model = "gpt-5.6-luna"\nmodel_reasoning_effort = "low"\n',
                     encoding="utf-8",
                 )
 
@@ -444,7 +422,6 @@ class HostAdapters:
                 "2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.\n"
                 "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
                 "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
-                "5. **AST Graph Enforcement:** Mandatorily use `code-review-graph` (MCP or `agy-graph`) for code impact analysis and caller lookup in L1+ tasks. If unavailable, fall back to textual search (grep/ripgrep) without blocking.\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
             for sub in ("skills", "agents", "workflows", "policies", "rules", "templates"):

@@ -6,6 +6,12 @@ version: "4.0.0"
 
 components:
   # Scripts nucleares
+  - id: "policy_index"
+    kind: "script"
+    prevents: "Contexto base saturado pelas 7 políticas injetadas integralmente; índice JIT reduz custo fixo"
+    added: "2026-11-21"
+    review_by: "2027-05-01"
+
   - id: "xp_contract"
     kind: "script"
     prevents: "Ambiguous task scope, lost constraints across iterations, and loop amnesia"
@@ -271,12 +277,6 @@ components:
   - id: "code-hygiene-review"
     kind: "skill"
     prevents: "Codebase rot, god files, hacky workarounds, and messy pull requests"
-    added: "2026-11-01"
-    review_by: "2027-02-01"
-
-  - id: "codebase-cartography"
-    kind: "skill"
-    prevents: "Unknown blast radius, blind edits, and untested circular dependencies"
     added: "2026-11-01"
     review_by: "2027-02-01"
 

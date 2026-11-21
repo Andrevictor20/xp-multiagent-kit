@@ -19,14 +19,14 @@ Deterministic governance Thin Harness for AI agent pair-programming (**Antigravi
 ├────────────────────────────────────────────────────────────────────────┤
 │ 3. GRAPH: workflow.yaml (9 flows) + xp flow (RED SHA-256 test freeze)  │
 ├────────────────────────────────────────────────────────────────────────┤
-│ 4. CORE: 6 core agents + 24 skills + packs (.agents/packs/)            │
+│ 4. CORE: 6 core agents + 23 skills + packs (.agents/packs/)            │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 1. **Harness (Outer Layer):** Deterministic interception via hooks (`pre_tool_guard`), permission tiers in `policy.yaml` (`auto|review|human`), and structured telemetry in `.agents/runtime/events.jsonl`.
 2. **Loop (Focused Execution):** Structured contract in `run.json` (`xp contract`), 10-step delivery gate (`xp gate`), and EGM audit with 2 personas (`spec_reviewer`, `code_reviewer`).
 3. **Graph (Transitions):** State machine driven by `workflow.yaml`, verified progression, and RED test freezing (`xp flow`).
-4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 24 skills in the main catalog, with optional bundles in `.agents/packs/`.
+4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 23 skills in the main catalog, with optional bundles in `.agents/packs/`.
 
 ---
 
@@ -67,6 +67,8 @@ The unified CLI interface `xp` consolidates all kit entry points:
 - **Zero Cosmetic Fixes & Empirical Proof:** Strictly prohibits marking tasks or bugs as resolved without running reproduction commands and verifying `exit_code: 0`. Enforces regression tests to prevent regressions.
 - **Strict TDD & Mechanical Anti-Test-Bypass:** RED unit tests frozen via SHA-256 hash; unauthorized modification blocked at gate.
 - **Continuous Audit:** `xp kit doctor lint` validates integrity, token budgets, and compliance with `components.yaml`.
+- **Gate Detection (passo 4, zero trust + anti-bypass):** bloqueia `TODO`/`TBD`/`FIXME`, `NotImplementedError`, `as any` / `@ts-ignore` / `# type: ignore` / `# noqa`, `@unittest.skip` / `.skipTest` / `pytest.mark.skip` e segredos hardcoded (`sk_live_*`, `AKIA…`, `ghp_…`, `api_key='…'`).
+- **Policy JIT (índice compacto):** `scripts/policy_index.py` indexa as 7 políticas em `INDEX.md`; o corpo integral só é carregado via `xp context <query>` ou `xp policy show <id>`.
 
 ---
 

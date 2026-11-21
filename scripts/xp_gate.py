@@ -16,17 +16,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from scripts.evidence_recorder import load_entries, parse_test_summary, record
 from scripts.goldfish_review import audit_code_completeness
-from scripts.hooks.pre_tool_guard import (
-    calculate_effective_tier,
-    compute_action_id,
-    evaluate_policy_for_files_and_commands,
-    has_approval,
-    load_reviews,
-    record_review,
-)
 from scripts.kit_events import classify_failure, emit
 from scripts.memory_archiver import check_memory_budget
-from scripts.xp_contract import load_contract, record_dead_end
 
 def git(args: List[str]) -> subprocess.CompletedProcess:
     return subprocess.run(["git"] + args, capture_output=True, text=True)
@@ -91,6 +82,15 @@ def _fail(step, failed, expected, saw, fence, tried, hint):
     return format_failure_block(step, failed, expected, saw, fence, tried, hint)
 
 def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, receipt_mode: bool = False) -> Tuple[int, str, str]:
+    from scripts.hooks.pre_tool_guard import (
+        calculate_effective_tier,
+        compute_action_id,
+        evaluate_policy_for_files_and_commands,
+        has_approval,
+        load_reviews,
+    )
+    from scripts.xp_contract import load_contract, record_dead_end
+
     contract = load_contract()
     if changed_files is not None:
         files = changed_files
@@ -258,6 +258,7 @@ def sync_memory(summary_line: str, root_dir: Optional[Path] = None) -> bool:
     return True
 
 def record_execution(command: str) -> int:
+    from scripts.xp_contract import load_contract
     contract = load_contract()
     risk = contract.get("risk", "L1") if contract else "L1"
     proc = subprocess.run(command, shell=True, capture_output=True, text=True)
@@ -280,6 +281,7 @@ def main() -> int:
             return 0
         return 1
     if args.action == "review":
+        from scripts.hooks.pre_tool_guard import record_review
         rev = all_cmd[all_cmd.index("--reviewer") + 1] if "--reviewer" in all_cmd else "reviewer"
         verd = all_cmd[all_cmd.index("--verdict") + 1] if "--verdict" in all_cmd else "approve"
         record_review(rev, verd, get_git_diff_hash())

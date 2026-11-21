@@ -15,7 +15,7 @@ Audits local diffs and code security using CodeRabbit CLI as an optional externa
 
 ## 1. Core Principle: Non-Blocking & Zero Hard-Dependency
 
-- **Never block the pipeline due to missing CodeRabbit:** The XP Kit is self-contained and operates offline with `code-review-graph`, local linters, and the 3-step EGM model (`xp-goldfish`).
+- **Never block the pipeline due to missing CodeRabbit:** The XP Kit is self-contained and operates offline with local linters, and the 3-step EGM model (`xp-goldfish`).
 - **Optional/Additive Usage:** CodeRabbit acts as an external second opinion specializing in diffs, regression bugs, and code security.
 - If the CLI is unavailable or unauthenticated, emit `[CODERABBIT_SKIPPED]` and proceed normally without failing the gate.
 
@@ -36,7 +36,7 @@ Before executing any review command:
    - **Unavailable / Unauthenticated:** Log status and proceed with native governance:
      ```text
      ℹ️ [CODERABBIT_SKIPPED]: CodeRabbit CLI not installed or not authenticated.
-     Proceeding with local linters, AST graph (code-review-graph), and native EGM Pass 2.
+     Proceeding with local linters and native EGM Pass 2.
      ```
 
 ## 3. Local Execution Commands (`--agent`)

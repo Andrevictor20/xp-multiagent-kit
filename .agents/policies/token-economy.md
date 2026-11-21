@@ -7,7 +7,7 @@
 2. **Batch Operations:** Group independent file reads and checks in the same turn to preserve execution turns for deep engineering.
 3. **Lean Context:** Fixed base context is strictly budgeted (`AGENTS.md` ≤ 3000 bytes, `PROJECT_MEMORY.md` ≤ 3000 bytes, total base ≤ 8000 bytes).
 4. **Tool Discipline:** Avoid polling loops on long tasks. Do not re-read files immediately after editing.
-5. **AST Symbol Mapping:** For files > 800 lines or complex call hierarchies, locate symbols via `code-review-graph` rather than blind text grep.
+5. **AST Symbol Mapping:** For files > 800 lines or complex call hierarchies, locate symbols with targeted `grep`/`ripgrep` and read only the relevant line ranges.
 
 ## 2. 7-Step Simplification Ladder
 1. YAGNI → 2. Internal Reuse → 3. Standard Library → 4. Platform-Native → 5. Installed Dependency → 6. Idiomatic One-Liner → 7. Minimal Code.
