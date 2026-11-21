@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from kit_constants import (  # noqa: E402
     AGENTS_MD_MAX_BYTES,
     MEMORY_INDEX_MAX_BYTES,
+    POLICY_JIT_THRESHOLD_BYTES,
     SKILL_BODY_MAX_BYTES,
     SKILL_INDEX_LINE_MAX_CHARS,
     kit_root,
@@ -189,6 +190,35 @@ def audit_context_budget(root: Optional[Path] = None) -> Dict[str, Any]:
             "over": max(0, size - MEMORY_INDEX_MAX_BYTES),
             "status": "OVER" if size > MEMORY_INDEX_MAX_BYTES else "OK",
         })
+
+    policies_dir = base / ".agents" / "policies"
+    if policies_dir.is_dir():
+        from scripts.policy_index import collect_policies  # noqa: WPS433
+        idx_path = policies_dir / "INDEX.md"
+        if idx_path.is_file():
+            size = idx_path.stat().st_size
+            all_policies = collect_policies(policies_dir)
+            jitted = [p for p in all_policies if p["bytes"] > POLICY_JIT_THRESHOLD_BYTES]
+            findings.append({
+                "artifact": ".agents/policies/INDEX.md (injetado por turno)",
+                "bytes": size,
+                "budget": POLICY_JIT_THRESHOLD_BYTES,
+                "over": max(0, size - POLICY_JIT_THRESHOLD_BYTES),
+                "status": "OVER" if size > POLICY_JIT_THRESHOLD_BYTES else "OK",
+                "jit": True,
+                "jitted_count": len(jitted),
+                "jitted_bytes": sum(p["bytes"] for p in jitted),
+            })
+        else:
+            size = sum(p.stat().st_size for p in policies_dir.glob("*.md"))
+            findings.append({
+                "artifact": ".agents/policies/*.md (injetado por turno)",
+                "bytes": size,
+                "budget": POLICY_JIT_THRESHOLD_BYTES * 7,
+                "over": max(0, size - POLICY_JIT_THRESHOLD_BYTES * 7),
+                "status": "OVER" if size > POLICY_JIT_THRESHOLD_BYTES * 7 else "OK",
+                "jit": False,
+            })
 
     skills_dir = base / ".agents" / "skills"
     oversized = []

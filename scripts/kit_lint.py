@@ -69,6 +69,8 @@ def discover_disk_components(base: Path) -> List[Dict[str, str]]:
     policies_dir = base / ".agents" / "policies"
     if policies_dir.is_dir():
         for child in sorted(policies_dir.glob("*.md")):
+            if child.name == "INDEX.md":
+                continue
             found.append({"id": child.stem, "kind": "policy"})
 
     # 4. Hooks

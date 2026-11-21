@@ -71,6 +71,13 @@ SANITIZE_TAIL_LINES = 20
 BASE_CONTEXT_MAX_BYTES = 8000
 """Teto total combinado de contexto base fixo (AGENTS.md + PROJECT_MEMORY.md)."""
 
+POLICY_JIT_THRESHOLD_BYTES = 1500
+"""
+Teto por arquivo de política para injeção estática no contexto base.
+Arquivos acima passam a ser carregados por gatilho via `xp context` (JIT)
+— reduz o contexto fixo por sessão e mantém as regras disponíveis.
+"""
+
 EGM_LLM_REVIEW = {"L2": "on_warning", "L3": "single"}
 """Configuração canônica de ativação de LLM no EGM."""
 

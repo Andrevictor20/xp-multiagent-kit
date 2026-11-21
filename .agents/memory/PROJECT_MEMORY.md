@@ -19,12 +19,8 @@
 - **Fluxo Craft (2026-11-17):** Design usa 7 skills `craft*` via `designer/agent.md` e `workflow.yaml` (base ≤ 8 KB).
 
 ## 3. PROGRESSO
-- **2026-11-20**: Contexto >200k em repos kit: `PROJECT_MEMORY.md` inlinado sem teto no opencode. Archiver sintetiza `## 3.` ausente e sai 3 acima do orçamento; `instructions` sem `pre_tool_guard.py`.
-- **2026-11-17**: Skills de design substituídas pelo fluxo `craft` (`design_search.py` -> `contrib/`).
-- **2026-11-07**: Ativação do Negative Memory (Dead-Ends Log) e trava anti-regressão com Step 0 obrigatório.
-- **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer e context_compactor divididos; workflow.yaml movido; kit_lint 100% verde.
-- **2026-11-01** [`5363c08`]: Fase 7 — eval benchmark, integridade geral (417 testes PASS).
-- **2026-11-01** [`0fccb72`]: Fase 6 — auto-melhoria (xp evolve) e ablação.
+- **2026-11-21**: Benchmark v2 + 4 mudanças no kit: gate passo 4 detecta skip/segredos/`# type: ignore`/`# noqa`; `xp kit eval` reporta `defect_escape_rate`; índice JIT de políticas (586 B vs 9.2 KB inteiras, −94%); orçamento EGM registra o índice. Recall 10%→100% em 10 defeitos, FPR 0, contexto fixo 3.753→1.548 tok/turno.
+- **2026-11-17**: Fluxo `craft` substitui skills de design; Negative Memory e trava anti-regressão ativados; Fase 3 SPEC-006 fechada; Fases 6/7 entregues.
 
 ## 4. LIÇÕES & REGRAS 'NEVER'
 - `never` usar mocks cegos, asserções vazias ou pular (`.skip`) testes (Anti-Test-Bypass).

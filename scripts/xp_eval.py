@@ -41,6 +41,7 @@ def calculate_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             "unverified_l1_plus_sessions": 0,
             "avg_turns": 0.0,
             "avg_duration_seconds": 0.0,
+            "defect_escape_rate": 0.0,
         }
 
     passed = 0
@@ -51,6 +52,8 @@ def calculate_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     unverified_l1 = 0
     total_turns = 0
     total_duration = 0.0
+    defects = 0
+    escaped = 0
 
     for r in records:
         is_pass = bool(r.get("gate_pass", False))
@@ -67,8 +70,13 @@ def calculate_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             unverified_l1 += 1
         total_turns += int(r.get("turns", 1))
         total_duration += float(r.get("duration_seconds", 0.0))
+        if r.get("defect_expected", False):
+            defects += 1
+            if is_pass:
+                escaped += 1
 
     tokens_per_pass = (total_tokens / passed) if passed > 0 else float("inf")
+    escape_rate = (escaped / defects) if defects > 0 else 0.0
 
     return {
         "total_tasks": total,
@@ -81,6 +89,9 @@ def calculate_metrics(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "unverified_l1_plus_sessions": unverified_l1,
         "avg_turns": round(total_turns / total, 2),
         "avg_duration_seconds": round(total_duration / total, 2),
+        "defect_escape_rate": round(escape_rate, 4),
+        "defects_observed": defects,
+        "defects_escaped": escaped,
     }
 
 
@@ -125,6 +136,13 @@ def compare_metrics(m_a: Dict[str, Any], m_b: Dict[str, Any]) -> Dict[str, Any]:
             "a": m_a["avg_duration_seconds"],
             "b": m_b["avg_duration_seconds"],
             "diff_pct": pct_diff(m_a["avg_duration_seconds"], m_b["avg_duration_seconds"]),
+        },
+        "defect_escape_rate": {
+            "a": m_a["defect_escape_rate"],
+            "b": m_b["defect_escape_rate"],
+            "diff_pp": round((m_b["defect_escape_rate"] - m_a["defect_escape_rate"]) * 100, 1),
+            "a_observed": m_a.get("defects_observed", 0),
+            "b_observed": m_b.get("defects_observed", 0),
         },
     }
 
@@ -172,6 +190,12 @@ def format_table(comp: Dict[str, Any], label_a: str, label_b: str) -> str:
     ad_a = f"{ad['a']}s"
     ad_b = f"{ad['b']}s"
     lines.append(f"{'Duração Média (s)':<35} | {ad_a:<15} | {ad_b:<15} | {str(ad['diff_pct'])+'%':<12}")
+
+    de = comp["defect_escape_rate"]
+    de_a = f"{de['a']*100:.1f}% ({de['a_observed']})"
+    de_b = f"{de['b']*100:.1f}% ({de['b_observed']})"
+    de_diff = f"{de['diff_pp']:+.1f} p.p."
+    lines.append(f"{'Defeitos Escapados (Recall Neg.)':<35} | {de_a:<15} | {de_b:<15} | {de_diff:<12}")
 
     lines.append("═══════════════════════════════════════════════════════════════════════════════")
     return "\n".join(lines)

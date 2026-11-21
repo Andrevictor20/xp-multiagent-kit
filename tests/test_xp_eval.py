@@ -53,6 +53,8 @@ class TestXpEval(unittest.TestCase):
         self.assertEqual(metrics_a["total_tokens"], 115000)
         self.assertEqual(metrics_a["tokens_per_pass"], 57500.0)
         self.assertEqual(metrics_a["unverified_l1_plus_sessions"], 1)
+        self.assertEqual(metrics_a["defect_escape_rate"], 0.0)
+        self.assertEqual(metrics_a["defects_observed"], 0)
 
         metrics_b = calculate_metrics(parse_eval_file(self.file_b))
         self.assertEqual(metrics_b["total_tasks"], 3)
@@ -60,6 +62,27 @@ class TestXpEval(unittest.TestCase):
         self.assertEqual(metrics_b["total_tokens"], 45000)
         self.assertEqual(metrics_b["tokens_per_pass"], 15000.0)
         self.assertEqual(metrics_b["unverified_l1_plus_sessions"], 0)
+        self.assertEqual(metrics_b["defect_escape_rate"], 0.0)
+
+    def test_defect_escape_rate_metric(self):
+        """Recomendação nº 1: o motor agora mede defeito que escapou (não só tokens)."""
+        records = [
+            {"task_id": "d1", "risk": "L1", "gate_pass": False, "defect_expected": True, "total_tokens": 1000, "turns": 2, "duration_seconds": 5.0},
+            {"task_id": "d2", "risk": "L1", "gate_pass": True, "defect_expected": True, "total_tokens": 2000, "turns": 2, "duration_seconds": 5.0},
+            {"task_id": "b1", "risk": "L0", "gate_pass": True, "defect_expected": False, "total_tokens": 500, "turns": 1, "duration_seconds": 2.0},
+        ]
+        metrics = calculate_metrics(records)
+        self.assertEqual(metrics["defects_observed"], 2)
+        self.assertEqual(metrics["defects_escaped"], 1)
+        self.assertAlmostEqual(metrics["defect_escape_rate"], 0.5)
+
+        clean_records = [
+            {"task_id": "d1", "risk": "L1", "gate_pass": False, "defect_expected": True, "total_tokens": 1000, "turns": 2, "duration_seconds": 5.0},
+            {"task_id": "d2", "risk": "L1", "gate_pass": False, "defect_expected": True, "total_tokens": 2000, "turns": 2, "duration_seconds": 5.0},
+        ]
+        clean_metrics = calculate_metrics(clean_records)
+        self.assertEqual(clean_metrics["defect_escape_rate"], 0.0)
+        self.assertEqual(clean_metrics["defects_escaped"], 0)
 
     def test_compare_metrics(self):
         m_a = calculate_metrics(parse_eval_file(self.file_a))

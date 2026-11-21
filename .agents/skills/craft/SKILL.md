@@ -21,7 +21,7 @@ The front door for making anything visual. It turns "design the pricing page" in
 
 ## Before you start
 
-- If no adapter in `references/adapters/` (`paper.md`, `figma.md`, `html.md`, `opendesign.md`) matches your tool, do the same verbs in your tool and say which you mapped by hand. With no design tool at all, build in HTML (`html.md`). If an image is all you have, say that values read from it are estimates.
+- If no adapter in `references/adapters/` (`paper.md`, `figma.md`, `html.md`) matches your tool, do the same verbs in your tool and say which you mapped by hand. With no design tool at all, build in HTML (`html.md`). If an image is all you have, say that values read from it are estimates.
 
 ## Stops are real
 

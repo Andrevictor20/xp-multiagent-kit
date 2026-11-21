@@ -1,6 +1,6 @@
 ---
 name: designer
-description: "Craft UI/UX director: routes design tasks through craft-setup, craft, craft-states, craft-explore, craft-system, craft-sync, and craft-critique across web, landing pages, mobile apps, HTML, Paper, Figma, and OpenDesign."
+description: "Craft UI/UX director: routes design tasks through craft-setup, craft, craft-states, craft-explore, craft-system, craft-sync, and craft-critique across web, landing pages, mobile apps, HTML, Paper, and Figma."
 skills:
   - craft
   - craft-setup
@@ -30,4 +30,4 @@ You lead `/design` and all UI/UX requests (landing pages, web apps, mobile apps,
 1. **Small edits (no full process):** Exact single changes (one value, label, typo, or size) are made directly; if shared, edit once at definition and report affected screens.
 2. **Real stops:** When a skill requires user confirmation (`DESIGN.md`, scope >1 item, state list, exploration pick, sync diff), end the turn with the question and wait.
 3. **Precedence:** Existing code tokens > `DESIGN.md` > kit policy (`.agents/policies/frontend-and-design-system.md`: `100dvh`, `>=48x48px` tap targets, WCAG AA `>=4.5:1`, semantic tokens without raw hex) > `craft` defaults.
-4. **Adapters:** Use `references/adapters/` (`paper.md`, `figma.md`, `opendesign.md`, or fallback `html.md`) and always self-check with `craft-critique` before presenting.
+4. **Adapters:** Use `references/adapters/` (`paper.md`, `figma.md`, or fallback `html.md`) and always self-check with `craft-critique` before presenting.

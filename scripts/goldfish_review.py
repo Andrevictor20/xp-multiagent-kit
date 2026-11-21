@@ -183,6 +183,17 @@ def audit_code_completeness(code_paths: List[Path], max_lines: int = 500) -> Dic
                 incomplete_findings.append(f"{path_obj.name}:{idx}: Stub NotImplementedError deixado na implementação.")
             if re.search(r"(?:@ts-ignore|@ts-expect-error|\bas\s+any\b)", cleaned):
                 incomplete_findings.append(f"{path_obj.name}:{idx}: Workaround de supressão de tipo detectado.")
+            if re.search(r"#\s*type:\s*ignore\b", cleaned, re.I):
+                incomplete_findings.append(f"{path_obj.name}:{idx}: Supressão de tipo Python ('# type: ignore').")
+            if re.search(r"#\s*noqa\b(?![\s:]*$)", cleaned, re.I):
+                incomplete_findings.append(f"{path_obj.name}:{idx}: Supressão de linter ('# noqa').")
+            if re.search(r"(?:@unittest\.skip\b|\.skipTest\(|pytest\.mark\.skip)", cleaned):
+                incomplete_findings.append(f"{path_obj.name}:{idx}: Teste desativado (skip) detectado (Anti-Test-Bypass).")
+            if re.search(
+                r"(?:sk_live_[0-9a-zA-Z]{8,}|AKIA[0-9A-Z]{16}|ghp_[0-9a-zA-Z]{20,}|[Aa][Pp][Ii][_-]?[Kk][Ee][Yy]\s*=\s*['\"][0-9a-zA-Z\-_]{16,}['\"])",
+                line,
+            ):
+                incomplete_findings.append(f"{path_obj.name}:{idx}: Segredo/credential hardcoded detectado (Zero Trust).")
 
     compliant = len(missing_files) == 0 and len(incomplete_findings) == 0
     return {

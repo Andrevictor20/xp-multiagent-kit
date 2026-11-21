@@ -21,7 +21,6 @@ SHIM_COMMANDS: Dict[str, str] = {
     "xp-evidence": "scripts/evidence_recorder.py",
     "xp-handoff": "scripts/context_compactor.py",
     "xp-debt": "scripts/debt_tracker.py",
-    "xp-design": "scripts/agy_design.py",
     "xp-turn": "scripts/turn_telemetry.py",
     "xp-skill-index": "scripts/skill_index.py",
     "xp-health": "scripts/agy_health.py",
