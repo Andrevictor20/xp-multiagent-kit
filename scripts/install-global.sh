@@ -44,7 +44,9 @@ mkdir -p "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
 
 # 4. Sincronizar Skills e ativos v4
 for existing_link in "$GLOBAL_SKILLS_DIR"/*; do
-  [ -L "$existing_link" ] && rm -f "$existing_link"
+  if [ -L "$existing_link" ]; then
+    rm -f "$existing_link"
+  fi
 done
 skill_count=0
 for skill_path in "$KIT_DIR/.agents/skills"/*; do
@@ -56,9 +58,15 @@ done
 echo "   ✅ $skill_count skills sincronizadas em $GLOBAL_SKILLS_DIR"
 
 for sub in agents policies templates memory graph packs; do
-  [ -d "$KIT_DIR/.agents/$sub" ] && ln -sfn "$KIT_DIR/.agents/$sub" "$GLOBAL_CONFIG_DIR/$sub"
+  if [ -d "$KIT_DIR/.agents/$sub" ]; then
+    ln -sfn "$KIT_DIR/.agents/$sub" "$GLOBAL_CONFIG_DIR/$sub"
+  fi
 done
-rm -f "$GLOBAL_CONFIG_DIR/workflows" "$GLOBAL_CONFIG_DIR/rules"
+for stale in workflows rules; do
+  if [ -L "$GLOBAL_CONFIG_DIR/$stale" ]; then
+    rm -f "$GLOBAL_CONFIG_DIR/$stale"
+  fi
+done
 
 # 5. Renderizar hooks.json com caminhos absolutos
 HOOKS_SRC="$GLOBAL_CONFIG_DIR/hooks.json"
@@ -75,12 +83,21 @@ fi
 for TARGET_DIR in "$HOME/.gemini/antigravity-cli" "$HOME/.gemini/antigravity-ide"; do
   if [ -d "$TARGET_DIR" ]; then
     for sub in agents skills policies templates memory; do
-      [ -e "$GLOBAL_CONFIG_DIR/$sub" ] && ln -sfn "$GLOBAL_CONFIG_DIR/$sub" "$TARGET_DIR/$sub"
+      if [ -e "$GLOBAL_CONFIG_DIR/$sub" ]; then
+        ln -sfn "$GLOBAL_CONFIG_DIR/$sub" "$TARGET_DIR/$sub"
+      fi
     done
-    rm -f "$TARGET_DIR/workflows" "$TARGET_DIR/rules" "$TARGET_DIR/GEMINI.md"
+    for stale in workflows rules; do
+      if [ -L "$TARGET_DIR/$stale" ]; then
+        rm -f "$TARGET_DIR/$stale"
+      fi
+    done
+    rm -f "$TARGET_DIR/GEMINI.md"
     ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$TARGET_DIR/AGENTS.md"
     ln -sf "$HOOKS_SRC" "$TARGET_DIR/hooks.json"
-    [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$TARGET_DIR/mcp_config.json"
+    if [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ]; then
+      ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$TARGET_DIR/mcp_config.json"
+    fi
   fi
 done
 
