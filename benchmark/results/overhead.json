@@ -1,29 +1,29 @@
 {
   "governance": {
-    "agents_md_bytes": 2950,
-    "memory_bytes": 2654,
-    "policies_index_bytes": 586,
-    "policies_full_bytes": 9236,
-    "fixed_context_bytes": 6190,
-    "approx_tokens": 1548
+    "agents_md_bytes": 2378,
+    "memory_bytes": 2627,
+    "policies_index_bytes": 1053,
+    "policies_full_bytes": 9254,
+    "fixed_context_bytes": 6058,
+    "approx_tokens": 1514
   },
   "hook": {
     "calls": 72,
-    "median_ms": 78.0,
-    "p95_ms": 104.8,
-    "min_ms": 69.3,
-    "max_ms": 137.8,
+    "median_ms": 67.7,
+    "p95_ms": 74.3,
+    "min_ms": 56.5,
+    "max_ms": 90.7,
     "benign_allowed": 40,
     "benign_total": 40,
     "dangerous_blocked": 8,
     "dangerous_total": 8,
-    "projected_ms_per_50_calls": 3900.0
+    "projected_ms_per_50_calls": 3383.0
   },
   "gate_kit": {
     "rounds": 3,
-    "median_s": 0.26,
-    "min_s": 0.26,
-    "max_s": 0.262,
+    "median_s": 0.225,
+    "min_s": 0.221,
+    "max_s": 0.236,
     "exit_codes": [
       0,
       0,
@@ -32,9 +32,9 @@
   },
   "suite_baseline": {
     "rounds": 3,
-    "median_s": 0.102,
-    "min_s": 0.097,
-    "max_s": 0.112,
+    "median_s": 0.093,
+    "min_s": 0.092,
+    "max_s": 0.093,
     "exit_codes": [
       0,
       0,
@@ -42,59 +42,80 @@
     ]
   },
   "jit": {
-    "corpus_bytes": 15426,
+    "corpus_bytes": 15312,
     "samples": [
       {
         "query": "policy approval destructive command",
-        "bytes": 1544,
-        "items": 2,
-        "ms": 103.0,
-        "empty": false,
-        "exit": 0
-      },
-      {
-        "query": "tdd red green evidence",
-        "bytes": 1530,
-        "items": 1,
-        "ms": 101.0,
-        "empty": false,
-        "exit": 0
-      },
-      {
-        "query": "token budget base context",
-        "bytes": 972,
-        "items": 1,
+        "bytes": 1818,
+        "items": 4,
         "ms": 102.0,
         "empty": false,
         "exit": 0
       },
       {
-        "query": "god file 500 lines",
-        "bytes": 1101,
+        "query": "tdd red green evidence",
+        "bytes": 1608,
+        "items": 2,
+        "ms": 84.0,
+        "empty": false,
+        "exit": 0
+      },
+      {
+        "query": "token budget base context",
+        "bytes": 995,
         "items": 1,
-        "ms": 107.0,
+        "ms": 97.0,
+        "empty": false,
+        "exit": 0
+      },
+      {
+        "query": "god file 500 lines",
+        "bytes": 1662,
+        "items": 3,
+        "ms": 91.0,
         "empty": false,
         "exit": 0
       },
       {
         "query": "dead ends failed attempts",
-        "bytes": 1595,
+        "bytes": 1605,
         "items": 2,
-        "ms": 116.0,
+        "ms": 98.0,
         "empty": false,
         "exit": 0
       },
       {
         "query": "zero downtime rollback",
-        "bytes": 1783,
-        "items": 3,
-        "ms": 105.0,
+        "bytes": 1215,
+        "items": 2,
+        "ms": 92.0,
         "empty": false,
         "exit": 0
       }
     ],
-    "median_bytes": 1537.0,
-    "max_bytes": 1783,
-    "reduction_pct": 90.0
+    "median_bytes": 1606.0,
+    "max_bytes": 1818,
+    "reduction_pct": 89.5
+  },
+  "token_optimizers": {
+    "context_compactor": {
+      "raw_bytes": 13379,
+      "compacted_bytes": 5101,
+      "reduction_pct": 61.9
+    },
+    "repo_map": {
+      "full_tree_bytes": 6981,
+      "map_bytes": 1164,
+      "reduction_pct": 83.3
+    },
+    "smart_tool_optimizer": {
+      "verbose_rewrites": 3,
+      "reread_blocked": true,
+      "loop_blocked": true
+    },
+    "context_base_lean": {
+      "fixed_bytes": 6058,
+      "approx_tokens": 1514
+    }
   }
 }

@@ -56,3 +56,6 @@ Remoção definitiva de legado morto, wrappers redundantes e stubs órfãos (69 
 - **Wrappers bash depreciados (12 arquivos):** `agy-{compact,context,debt,effort,health,kit,memory-archive,memory-search,repo-map,skills-profile,worktree}` e `xp-context` consolidados na CLI única `scripts/xp`.
 - **Scripts legados obsoletos (4 arquivos):** `prune_skills.py` (77 skills v2 mortas), `agy-init-memory` (coberto por `kit_installer.py`), `agy-audit-config` (absorvido por `kit_lint.py`), `agy_health.py` (substituído por `xp kit doctor`).
 - **Stubs, templates e packs órfãos (24 arquivos):** 15× `.agents/skills/*/sections/0-resumo.md`, `.agents/mission-report.md`, `.agents/templates/{MEMORY.template.md,PROJECT_MEMORY_TEMPLATE.md,active-mission.template.json}`, e 3 packs quebrados (`.agents/packs/{brutalist,marketing,roadmapping}`).
+
+## 7. Limpeza Pós-Benchmark Híbrido (2026-11-21)
+- **`tests/evals/` (5 arquivos):** `tasks.jsonl`, `task_l0_typo.json`, `task_l1_bugfix.json`, `task_l2_feature.json` e `task_l3_auth.json` (guias legados da v3.9) substituídos pela suíte reproduzível em `benchmark/` (`scenarios.py` + `llm_tasks.py`).

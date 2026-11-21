@@ -56,7 +56,11 @@ def fixed_context_bytes(repo: Path) -> int:
 
 
 def _ignore(_dir: str, names: List[str]) -> List[str]:
-    return [n for n in names if n in ("__pycache__", ".git", "global-token-optimizer")]
+    return [
+        n
+        for n in names
+        if n in ("__pycache__", ".git", "global-token-optimizer", ".memory_index.db", "details", "archive")
+    ]
 
 
 def build_sandbox(dest: Path, with_kit: bool) -> Path:

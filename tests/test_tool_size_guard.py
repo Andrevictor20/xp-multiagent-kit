@@ -101,6 +101,31 @@ class TestToolSizeGuard(unittest.TestCase):
         self.assertTrue(backup_file.exists())
         self.assertEqual(backup_file.read_text(encoding="utf-8"), big_text)
 
+    def test_auto_records_test_command_without_exact_verify_match(self):
+        import os
+        from scripts.evidence_recorder import load_entries
+        from scripts.xp_contract import init_contract
+
+        prev_rt = os.environ.get("KIT_RUNTIME_DIR")
+        os.environ["KIT_RUNTIME_DIR"] = str(self.scratch_dir)
+        try:
+            init_contract(risk="L1", goal="Test auto record", verify_cmd="python3 -m unittest discover tests")
+            data = {
+                "tool_name": "run_command",
+                "tool_input": {"CommandLine": "python3 -m unittest tests/test_parser.py"},
+                "exit_code": 1,
+                "output": "Command exited with code 1\nFAIL: test_rejects_feb_30\nAssertionError: ValueError not raised\n",
+            }
+            process_tool_payload(data, scratch_dir=self.scratch_dir)
+            entries = load_entries()
+            self.assertEqual(len(entries), 1)
+            self.assertEqual(entries[0]["status"], "FAIL")
+        finally:
+            if prev_rt is None:
+                os.environ.pop("KIT_RUNTIME_DIR", None)
+            else:
+                os.environ["KIT_RUNTIME_DIR"] = prev_rt
+
 
 if __name__ == "__main__":
     unittest.main()

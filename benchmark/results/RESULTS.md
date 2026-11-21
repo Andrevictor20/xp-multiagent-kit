@@ -10,8 +10,8 @@ Relatório gerado por `benchmark/aggregate.py`. Dados brutos em
 | Defeitos reais capturados (de 10) | 1 | 10 | **+9** |
 | Recall de defeitos | 10.0% | 100.0% | +90.0 p.p. |
 | Falsos positivos em 6 mudanças legítimas | 0 | 0 | 0 |
-| Tokens de contexto por tarefa (proxy) | 508 | 2610 | 414% |
-| Tempo médio por tarefa | 0.402 s | 1.369 s | 241% |
+| Tokens de contexto por tarefa (proxy) | 508 | 2568 | 406% |
+| Tempo médio por tarefa | 0.174 s | 0.67 s | 285% |
 | Comandos por tarefa | 2.0 | 4.1 | — |
 | Passos humanos por tarefa | 0.0 | 0.12 | — |
 
@@ -40,36 +40,44 @@ Relatório gerado por `benchmark/aggregate.py`. Dados brutos em
 
 | Item | Bytes | Tokens (B/4) |
 |---|---:|---:|
-| `AGENTS.md` | 2950 | 738 |
-| `PROJECT_MEMORY.md` | 2654 | 664 |
-| `.agents/policies/INDEX.md` (índice JIT) | 586 | 146 |
-| **Total fixo por turno** | **6190** | **~1548** |
-| 7 políticas inteiras (JIT, sob gatilho) | 9236 | 2309 |
+| `AGENTS.md` | 2378 | 594 |
+| `PROJECT_MEMORY.md` | 2627 | 657 |
+| `.agents/policies/INDEX.md` (índice JIT) | 1053 | 263 |
+| **Total fixo por turno** | **6058** | **~1514** |
+| 7 políticas inteiras (JIT, sob gatilho) | 9254 | 2314 |
 
 O índice compacto substitui a injeção integral das 7 políticas. O ganho por turno é
-de 9236 B para 586 B (~94% de redução).
+de 9254 B para 1053 B (~89% de redução).
 
 ## 4. Custo de execução
 
 | Medida | Valor |
 |---|---:|
-| Hook por chamada de ferramenta (mediana) | 78.0 ms |
-| Hook p95 | 104.8 ms |
-| Overhead projetado em 50 chamadas | 3900 ms |
-| Gate `check` (caminho PASS) | 0.26 s |
-| Suíte `unittest` do projeto | 0.102 s |
+| Hook por chamada de ferramenta (mediana) | 67.7 ms |
+| Hook p95 | 74.3 ms |
+| Overhead projetado em 50 chamadas | 3383 ms |
+| Gate `check` (caminho PASS) | 0.225 s |
+| Suíte `unittest` do projeto | 0.093 s |
 | Comandos benignos permitidos pelo hook | 40/40 |
 | Comandos perigosos bloqueados pelo hook | 8/8 |
 
 ## 5. Recuperação de contexto JIT
 
-- Corpus de governança disponível: **15426 B**
-- Mediana devolvida por `xp context <query>`: **1537 B**
-- Redução de contexto: **90.0%**
-- Latência mediana: **106 ms**
+- Corpus de governança disponível: **15312 B**
+- Mediana devolvida por `xp context <query>`: **1606 B**
+- Redução de contexto: **89.5%**
+- Latência mediana: **94 ms**
 - Consultas testadas: `policy approval destructive command`, `tdd red green evidence`, `token budget base context`, `god file 500 lines`, `dead ends failed attempts`, `zero downtime rollback`
 
-## 6. Ganhos e perdas
+## 6. Otimizadores de Token (Lean v4)
+
+| Mecanismo | Medida antes | Medida com kit | Redução / Efeito |
+|---|---:|---:|---:|
+| `context_compactor` (CI/diff/git/logs) | 13379 B | 5101 B | **61.9%** |
+| `repo_map` (AST vs árvore completa) | 6981 B | 1164 B | **83.3%** |
+| `smart_tool_optimizer` (rewrites/anti-loop/releitura) | — | 3 rewrites | reread=True, loop=True |
+
+## 7. Ganhos e perdas
 
 ### Ganhos medidos
 1. **Contenção de entrega incompleta**: `TODO`/stub e God-file (>499 linhas) bloqueados no passo 4.
@@ -82,51 +90,51 @@ de 9236 B para 586 B (~94% de redução).
 8. **JIT**: ~90% menos contexto do que ler o corpus de governança inteiro.
 
 ### Perdas e lacunas medidas
-1. **Custo fixo de contexto**: +1548 tokens por turno (com o índice JIT já ativo).
-   Antes da otimização era +3710 tokens.
-2. **Latência de hook**: 78.0 ms por chamada de ferramenta (~3.9 s em 50 chamadas).
+1. **Custo fixo de contexto**: +1514 tokens por turno (com o índice JIT já ativo).
+   Antes da otimização era +3565 tokens.
+2. **Latência de hook**: 67.7 ms por chamada de ferramenta (~3.4 s em 50 chamadas).
 3. **Cerimônia**: 4.1 comandos por tarefa contra 2.0; 2 passos humanos no total (revisão/aprovação).
 4. **Lacuna — testes desativados**: o passo 4 do gate agora detecta `@unittest.skip`/`skipTest`/`pytest.mark.skip` (D07).
 5. **Lacuna — segredos hardcoded**: o passo 4 do gate agora detecta `sk_live_*`, `AKIA…`, `ghp_…` e `api_key='…'` (D08).
 6. **Melhoria aplicada**: a regra de supressão de tipo cobre `as any`, `@ts-ignore`, `@ts-expect-error`, `# type: ignore` e `# noqa`.
 
-## 7. O que mudou nesta iteração
+## 8. O que mudou nesta iteração
 
 1. `goldfish_review.audit_code_completeness` detecta skip, segredos e `# type: ignore`.
-2. `scripts/policy_index.py` gera `.agents/policies/INDEX.md` (586 B) que substitui a injeção
-   integral das 7 políticas (9.2 KB) — **redução de ~94% no custo fixo de contexto**.
+2. `scripts/policy_index.py` gera `.agents/policies/INDEX.md` que substitui a injeção
+   integral das 7 políticas (9254 B → 1053 B, **−89%**).
 3. `xp kit eval compare` agora reporta `defect_escape_rate` (recalculado em todos os cenários).
-4. `AGENTS.md` atualizado com as novas regras mecânicas do passo 4.
+4. `AGENTS.md`, `xp_contract.py`, `xp_gate.py`, `tool-size-guard.py` e `dynamic_effort_hook.py` otimizados para eliminar retrabalho e preservar KV-cache em L0/L1.
 
-## 7. Ameaças à validade
+## 9. Ameaças à validade
 
-- **Sem LLM no loop**: tokens são um proxy (`bytes/4`), não telemetria de provedor.
-  O benchmark mede o *arnês* (gates, hooks, contexto), não a inteligência do agente.
-- **Substrato sintético**: 24 testes, 3 módulos. Repositórios grandes têm custo de gate maior.
-- **Linha de base**: sem kit = `compileall` + `unittest`, pois não há `ruff`/`mypy`/`pytest`
-  instalados. Uma equipe com SAST/linters teria linha de base mais forte.
-- **Autor do benchmark = autor do kit**: mitigado por oráculos independentes do gate,
-  cenários com lacunas esperadas e FPR medido em mudanças legítimas.
-- **Uma execução por cenário**: determinístico, mas sem intervalo de confiança estatístico.
+- **Trilha determinística sem LLM:** tokens são proxy (`bytes/4`); consulte `LLM_RESULTS.md` para telemetria real de provedor.
+- **Substrato sintético:** 24 testes, 3 módulos. Repositórios grandes têm custo de gate maior.
+- **Linha de base:** sem kit = `compileall` + `unittest`, pois não há `ruff`/`mypy`/`pytest` instalados.
+- **Autor do benchmark = autor do kit:** mitigado por oráculos independentes do gate e FPR medido em mudanças legítimas.
+- **Uma execução por cenário:** determinístico; para ICs estatísticos, use `--runs N` no `llm_runner.py`.
 
-## 8. Recomendações
+## 10. Recomendações
 
-1. **Implementado nesta iteração**: `defect_escape_rate` no `xp kit eval`; detecção mecânica de
-   skip/segredos/`# type: ignore` no passo 4; índice JIT de políticas substituindo injeção integral.
-2. **Carregar o índice JIT por gatilho** (não só por consulta explícita): injetar automaticamente
-   quando o diff tocar `auth/`, `migrations/`, `tests/` — reduz o custo de consulta JIT de ~100 ms por query.
-3. **Cachear o hook** como processo residente: 74 ms por chamada é aceitável, mas 5× melhorável.
-4. **Medir em repositórios reais**: adicionar um benchmark de regressão em um repo grande (≥10k linhas,
-   ≥200 testes) para validar o custo do gate e do EGM multipass em escala.
-5. **Adotar `defect_escape_rate` como métrica canônica de regressão**: o kit agora reporta
-   `defects_escaped / defects_observed` em cada `xp kit eval compare`.
+1. **Implementado:** `defect_escape_rate` no `xp kit eval`; detecção mecânica de skip/segredos/`# type: ignore`; índice JIT de políticas; remoção de `ephemeralMessage` em L0/L1 (KV-cache).
+2. **Carregar o índice JIT por gatilho** quando o diff tocar `auth/`, `migrations/`, `tests/`.
+3. **Medir em repositórios reais (≥10k linhas, ≥200 testes)** para validar o custo do gate e do EGM multipass em escala.
 
-## 9. Como reproduzir
+## 11. Como reproduzir
 
 ```bash
 python3 scripts/policy_index.py generate   # atualiza .agents/policies/INDEX.md
 python3 benchmark/runner.py              # 16 cenários pareados -> results/raw.jsonl
-python3 benchmark/overhead.py          # custo mecânico -> results/overhead.json
-python3 benchmark/aggregate.py        # KPIs + eval JSONL + RESULTS.md
+python3 benchmark/overhead.py          # custo mecânico + otimizadores -> results/overhead.json
+python3 benchmark/aggregate.py           # KPIs + eval JSONL + RESULTS.md + polyglot
+python3 benchmark/llm_runner.py --runner agy --runs 1 && python3 benchmark/llm_aggregate.py
 python3 scripts/xp kit eval compare benchmark/results/baseline.jsonl benchmark/results/kit.jsonl
 ```
+
+## 12. Export para benchmark off-the-shelf
+
+`benchmark/polyglot_adapter.py` exporta os 16 cenários no formato Aider
+Polyglot (`polyglot_tasks.jsonl`) e SWE-bench (`polyglot_predictions.jsonl`).
+Assim, o resultado do kit pode ser publicado em leaderboards de agente de código
+sem reescrever a metodologia. O `score` por arm mostra recall/FPR/tokens/tempo
+no mesmo contrato de dados.

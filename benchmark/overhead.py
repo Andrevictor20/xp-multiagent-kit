@@ -174,6 +174,107 @@ def measure_suite(repo: Path, rounds: int = 3) -> Dict[str, object]:
     }
 
 
+def measure_token_optimizers(kit_root_path: Path | None = None) -> Dict[str, object]:
+    """Measure deterministic token reduction from Lean v4 optimizers."""
+    import os
+    import tempfile
+
+    root = (kit_root_path or BENCH.parent).resolve()
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+
+    from scripts.context_compactor import compress_ci_output, compress_diff, compress_git_output, compress_logs
+    from scripts.hooks.smart_tool_optimizer import optimize_tool_call, reset_tool_loop_history
+    from scripts.hooks.smart_tool_optimizer_state import record_file_edit
+    from scripts.repo_map import generate_repo_map
+
+    # 1. Context compactor reduction across realistic noisy outputs
+    sample_ci = "\n".join(
+        [f"PASS tests/test_mod_{i}.py::test_case_{j} (0.01s)" for i in range(40) for j in range(3)]
+        + ["FAIL tests/test_auth.py::test_rejects_expired_token", "AssertionError: expected 401 got 200"]
+    )
+    sample_diff = "\n".join(
+        ["diff --git a/app/service.py b/app/service.py", "--- a/app/service.py", "+++ b/app/service.py", "@@ -1,50 +1,52 @@"]
+        + [f" unchanged line {i}" for i in range(60)]
+        + ["+    cleaned = clean_title(title)", "-    cleaned = title.strip()"]
+        + [f" trailing line {i}" for i in range(40)]
+    )
+    sample_git = "\n".join([f"{i:07x} feat: commit message number {i} touching module" for i in range(80)])
+    sample_logs = "\n".join(
+        ["INFO starting worker"] * 30 + ["ERROR connection refused on port 5432"] * 12 + ["INFO done"] * 20
+    )
+    raw_samples = [sample_ci, sample_diff, sample_git, sample_logs]
+    comp_samples = [
+        compress_ci_output(sample_ci),
+        compress_diff(sample_diff),
+        compress_git_output(sample_git),
+        compress_logs(sample_logs),
+    ]
+    raw_bytes = sum(len(s.encode("utf-8")) for s in raw_samples)
+    comp_bytes = sum(len(s.encode("utf-8")) for s in comp_samples)
+
+    # 2. Repo map vs full source tree read
+    substrate_dir = BENCH / "substrate"
+    full_tree_bytes = sum(
+        p.stat().st_size
+        for p in substrate_dir.rglob("*.py")
+        if "__pycache__" not in str(p)
+    )
+    map_text = generate_repo_map(substrate_dir)
+    map_bytes = len(map_text.encode("utf-8"))
+
+    # 3. Smart tool optimizer checks (in isolated temp runtime dir)
+    prev_rt = os.environ.get("KIT_RUNTIME_DIR")
+    with tempfile.TemporaryDirectory() as tmp_rt:
+        os.environ["KIT_RUNTIME_DIR"] = tmp_rt
+        try:
+            reset_tool_loop_history()
+            rewrites = 0
+            for cmd in ("pytest -v", "git log", "find . -name '*.py'"):
+                res = optimize_tool_call({"toolCall": {"name": "run_command", "args": {"CommandLine": cmd}}})
+                if res.get("overwrite"):
+                    rewrites += 1
+
+            target_py = str(substrate_dir / "app" / "service.py")
+            record_file_edit(target_py)
+            reread_res = optimize_tool_call({"toolCall": {"name": "view_file", "args": {"AbsolutePath": target_py}}})
+
+            loop_blocked = False
+            for _ in range(5):
+                loop_res = optimize_tool_call({"toolCall": {"name": "grep_search", "args": {"Query": "foo", "SearchPath": str(substrate_dir)}}})
+                if loop_res.get("decision") == "deny":
+                    loop_blocked = True
+                    break
+        finally:
+            if prev_rt is None:
+                os.environ.pop("KIT_RUNTIME_DIR", None)
+            else:
+                os.environ["KIT_RUNTIME_DIR"] = prev_rt
+
+    fixed_bytes = runner.fixed_context_bytes(root)
+    return {
+        "context_compactor": {
+            "raw_bytes": raw_bytes,
+            "compacted_bytes": comp_bytes,
+            "reduction_pct": round((1 - comp_bytes / raw_bytes) * 100, 1) if raw_bytes else 0.0,
+        },
+        "repo_map": {
+            "full_tree_bytes": full_tree_bytes,
+            "map_bytes": map_bytes,
+            "reduction_pct": round((1 - map_bytes / full_tree_bytes) * 100, 1) if full_tree_bytes else 0.0,
+        },
+        "smart_tool_optimizer": {
+            "verbose_rewrites": rewrites,
+            "reread_blocked": reread_res.get("decision") == "deny",
+            "loop_blocked": loop_blocked,
+        },
+        "context_base_lean": {
+            "fixed_bytes": fixed_bytes,
+            "approx_tokens": round(fixed_bytes / 4),
+        },
+    }
+
+
 def main() -> int:
     workdir = Path("/tmp/opencode/xp-overhead")
     kit_repo = runner.build_sandbox(workdir / "kit", with_kit=True)
@@ -199,6 +300,7 @@ def main() -> int:
         "gate_kit": measure_gate(kit_repo),
         "suite_baseline": measure_suite(base_repo),
         "jit": measure_jit(kit_repo),
+        "token_optimizers": measure_token_optimizers(runner.KIT_ROOT),
     }
     out_path = BENCH / "results" / "overhead.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)

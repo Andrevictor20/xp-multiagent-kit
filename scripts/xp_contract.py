@@ -5,12 +5,11 @@ Limite estrito: <= 150 linhas.
 """
 from __future__ import annotations
 
-import argparse
-import json
-import os
-import sys
+import argparse, json, os, re, sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+AC_ID_RE = re.compile(r"\bAC-\d+\b", re.IGNORECASE)
 
 
 def get_runtime_dir() -> Path:
@@ -103,7 +102,7 @@ def main() -> int:
     p_init.add_argument("--verify", default="", help="Comando de verificação")
     p_init.add_argument("--refactor", action="store_true", help="Modo refactor")
 
-    p_get = sub.add_parser("get", help="Exibe o contrato ativo")
+    p_get = sub.add_parser("get", aliases=["show"], help="Exibe o contrato ativo")
     p_get.add_argument("--json", action="store_true", help="Saída em JSON")
 
     p_dead = sub.add_parser("record-dead-end", help="Registra beco sem saída")
@@ -115,17 +114,14 @@ def main() -> int:
 
     args = parser.parse_args()
     if args.subcommand == "init":
-        c = init_contract(
-            risk=args.risk,
-            goal=args.goal,
-            acs=args.acs,
-            scope_files=args.scope,
-            verify_cmd=args.verify,
-            refactor=args.refactor,
-        )
+        bad_acs = [a for a in args.acs if not AC_ID_RE.search(a)]
+        if bad_acs:
+            print(f"Erro: --acs exige IDs AC-01, AC-02... nos testes (ex: def test_ac_01_...). Recebido: {bad_acs}. Em L0/L1 simples, omita --acs.", file=sys.stderr)
+            return 2
+        c = init_contract(risk=args.risk, goal=args.goal, acs=args.acs, scope_files=args.scope, verify_cmd=args.verify, refactor=args.refactor)
         print(f"Contract initialized: {c['risk']} - {c['goal']}")
         return 0
-    elif args.subcommand == "get":
+    elif args.subcommand in ("get", "show"):
         c = load_contract()
         print(json.dumps(c, indent=2, ensure_ascii=False) if getattr(args, "json", False) else c)
         return 0

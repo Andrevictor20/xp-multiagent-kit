@@ -207,7 +207,7 @@ def optimize_run_command(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[
         return "allow", "", None
 
     # Sanitização ativa com preservação de exit code via pipefail
-    sanitizer_bin = "agy-sanitize"
+    sanitizer_bin = "XP_QUIET_DEPRECATION=1 agy-sanitize"
     if re.search(r"&&|\|\||;", cmd):
         new_cmd = f"set -o pipefail; ({cmd}) | {sanitizer_bin}"
     else:

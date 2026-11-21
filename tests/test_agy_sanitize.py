@@ -100,6 +100,18 @@ class TestAgySanitize(unittest.TestCase):
         )
         self.assertIn("omitidas", proc_custom.stdout)
 
+    def test_quiet_deprecation_suppresses_banner(self):
+        env = dict(os.environ, XP_QUIET_DEPRECATION="1")
+        proc = subprocess.run(
+            [str(SANITIZE_BIN)],
+            input="ok\n",
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+        self.assertEqual(proc.returncode, 0)
+        self.assertNotIn("DEPRECAÇÃO", proc.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

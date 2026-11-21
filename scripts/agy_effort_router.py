@@ -25,24 +25,12 @@ def fetch_live_antigravity_quota(force_refresh: bool = False): return type("Dumm
 def _local_preflight(*a, **k): return {"alerts": [], "turns": 0}
 def get_cli_settings_path() -> Path: return Path.home() / ".gemini" / "antigravity-cli" / "settings.json"
 def get_token_budget_status() -> Dict[str, float]: return {"rolling_5h_percent": 0.0, "weekly_percent": 0.0}
+def _read_settings() -> List[Dict[str, Any]]:
+    return [json.loads(p.read_text(encoding="utf-8")) for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json") if p.is_file() and p.read_text(encoding="utf-8").strip()]
 def get_current_settings_effort() -> Optional[str]:
-    for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json"):
-        if p.is_file():
-            try:
-                data = json.loads(p.read_text(encoding="utf-8"))
-                ef = data.get("reasoningEffort") or ("high" if "high" in data.get("model", "").lower() else None)
-                if ef: return str(ef).lower()
-            except Exception: pass
-    return None
+    return next((str(d.get("reasoningEffort") or ("high" if "high" in d.get("model", "").lower() else "")).lower() for d in _read_settings() if d.get("reasoningEffort") or "high" in d.get("model", "").lower()), None)
 def get_current_settings_model() -> Optional[str]:
-    for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json"):
-        if p.is_file():
-            try:
-                data = json.loads(p.read_text(encoding="utf-8"))
-                m = data.get("model")
-                if m and str(m).strip(): return str(m).strip()
-            except Exception: pass
-    return None
+    return next((str(d["model"]).strip() for d in _read_settings() if d.get("model") and str(d["model"]).strip()), None)
 
 def detect_git_context(repo_path: Optional[Path] = None) -> Dict[str, Any]:
     cwd, ctx = repo_path or Path.cwd(), {"branch": "", "changed_files": []}
@@ -69,10 +57,8 @@ def classify_task_effort(prompt: str = "", git_context: Optional[Dict[str, Any]]
         if act_risk in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE): return EffortDecision(effort=EFFORT_HIGH, risk_level=act_risk, reason=f"Continuação de tarefa {act_risk} confirmada pelo usuário")
     cum = conv_ctx.get("cumulative_text", "").lower()
     raw_effort, risk, reason, savings = EFFORT_LOW, LEVEL_L0_TRIVIAL, "Tarefa padrão de complexidade básica (baseline low)", 0
-    if L3_RE.search(p_low): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L3_CRITICAL, f"Detectado risco L3 por palavras-chave críticas: {L3_RE.search(p_low).group(0)}"
-    elif cum and L3_RE.search(cum): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L3_CRITICAL, "Detectado risco L3 pelo histórico acumulado"
-    elif L2_RE.search(p_low): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L2_FEATURE, f"Detectado risco L2 por termos de feature/construção: {L2_RE.search(p_low).group(0)}"
-    elif cum and L2_RE.search(cum): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L2_FEATURE, "Detectado risco L2 pelo histórico acumulado"
+    if L3_RE.search(p_low) or (cum and L3_RE.search(cum)): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L3_CRITICAL, f"Detectado risco L3 por palavras-chave críticas: {(L3_RE.search(p_low) or L3_RE.search(cum)).group(0)}"
+    elif L2_RE.search(p_low) or (cum and L2_RE.search(cum)): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L2_FEATURE, f"Detectado risco L2 por termos de feature/construção: {(L2_RE.search(p_low) or L2_RE.search(cum)).group(0)}"
     elif L0_RE.search(p_low): raw_effort, risk, savings, reason = EFFORT_LOW, LEVEL_L0_TRIVIAL, 5000, f"Detectado risco L0 (Trivial/Docs/CSS) por: {L0_RE.search(p_low).group(0)}"
     elif L1_RE.search(p_low): raw_effort, risk, reason = EFFORT_MEDIUM, LEVEL_L1_SMALL, f"Detectado risco L1 por: {L1_RE.search(p_low).group(0)}"
     elif not p_low:
@@ -92,8 +78,7 @@ def classify_task_effort(prompt: str = "", git_context: Optional[Dict[str, Any]]
     return EffortDecision(effort=raw_effort, risk_level=risk, reason=reason, estimated_token_savings=savings, throttled=throttled, override=False)
 
 def get_canonical_model_for_task(risk_level: str, is_planning: bool = False) -> Tuple[str, str]:
-    if is_planning and risk_level in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE): return "Gemini Pro", EFFORT_HIGH
-    return ("Gemini 3.8 Flash", EFFORT_HIGH) if risk_level in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE) else (("Gemini 3.8 Flash", EFFORT_MEDIUM) if risk_level == LEVEL_L1_SMALL else ("Gemini 3.8 Flash", EFFORT_LOW))
+    return ("Gemini Pro", EFFORT_HIGH) if is_planning and risk_level in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE) else (("Gemini 3.8 Flash", EFFORT_HIGH) if risk_level in (LEVEL_L3_CRITICAL, LEVEL_L2_FEATURE) else (("Gemini 3.8 Flash", EFFORT_MEDIUM) if risk_level == LEVEL_L1_SMALL else ("Gemini 3.8 Flash", EFFORT_LOW)))
 def map_model_to_effort(current_model: str, target_effort: str) -> str:
     ec, el = target_effort.capitalize(), target_effort.lower()
     if "pro" in current_model.lower() and "gemini" in current_model.lower(): return f"Gemini 3.8 Flash ({ec})"
@@ -145,9 +130,7 @@ def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], Optiona
     return " ".join(prompt_parts).strip(), explicit_effort, explicit_model, pass_through
 
 def locate_native_agy() -> Optional[str]:
-    for b in ("agy-native", "agy-bin", "antigravity-native", "agy.real"):
-        if shutil.which(b): return shutil.which(b)
-    return None
+    return next((shutil.which(b) for b in ("agy-native", "agy-bin", "antigravity-native", "agy.real") if shutil.which(b)), None)
 def run_cli_session(argv: List[str]) -> int:
     p_text, ef, model, passthru = parse_cli_session_args(argv); d = classify_task_effort(prompt=p_text, git_context=detect_git_context(), explicit_effort=ef)
     sys.stderr.write(format_badge(d) + "\n"); cur_m = get_current_settings_model()

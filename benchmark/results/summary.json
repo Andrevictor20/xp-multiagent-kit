@@ -10,8 +10,8 @@
       "fpr_pct": 0.0,
       "total_tokens_proxy": 8122,
       "tokens_per_task": 508,
-      "total_duration_s": 6.37,
-      "median_duration_s": 0.402,
+      "total_duration_s": 2.85,
+      "median_duration_s": 0.174,
       "total_commands": 32,
       "human_steps": 0,
       "ceremony_bytes": 0
@@ -24,40 +24,40 @@
       "benign": 6,
       "false_positives": 0,
       "fpr_pct": 0.0,
-      "total_tokens_proxy": 41765,
-      "tokens_per_task": 2610,
-      "total_duration_s": 23.72,
-      "median_duration_s": 1.369,
+      "total_tokens_proxy": 41089,
+      "tokens_per_task": 2568,
+      "total_duration_s": 11.21,
+      "median_duration_s": 0.67,
       "total_commands": 65,
       "human_steps": 2,
-      "ceremony_bytes": 30920
+      "ceremony_bytes": 30915
     }
   },
   "governance": {
-    "agents_md_bytes": 2950,
-    "memory_bytes": 2654,
-    "policies_index_bytes": 586,
-    "policies_full_bytes": 9236,
-    "fixed_context_bytes": 6190,
-    "approx_tokens": 1548
+    "agents_md_bytes": 2378,
+    "memory_bytes": 2627,
+    "policies_index_bytes": 1053,
+    "policies_full_bytes": 9254,
+    "fixed_context_bytes": 6058,
+    "approx_tokens": 1514
   },
   "hook": {
     "calls": 72,
-    "median_ms": 78.0,
-    "p95_ms": 104.8,
-    "min_ms": 69.3,
-    "max_ms": 137.8,
+    "median_ms": 67.7,
+    "p95_ms": 74.3,
+    "min_ms": 56.5,
+    "max_ms": 90.7,
     "benign_allowed": 40,
     "benign_total": 40,
     "dangerous_blocked": 8,
     "dangerous_total": 8,
-    "projected_ms_per_50_calls": 3900.0
+    "projected_ms_per_50_calls": 3383.0
   },
   "gate": {
     "rounds": 3,
-    "median_s": 0.26,
-    "min_s": 0.26,
-    "max_s": 0.262,
+    "median_s": 0.225,
+    "min_s": 0.221,
+    "max_s": 0.236,
     "exit_codes": [
       0,
       0,
@@ -66,9 +66,9 @@
   },
   "suite": {
     "rounds": 3,
-    "median_s": 0.102,
-    "min_s": 0.097,
-    "max_s": 0.112,
+    "median_s": 0.093,
+    "min_s": 0.092,
+    "max_s": 0.093,
     "exit_codes": [
       0,
       0,
@@ -76,8 +76,53 @@
     ]
   },
   "jit": {
-    "corpus_bytes": 15426,
-    "median_bytes": 1537.0,
-    "reduction_pct": 90.0
+    "corpus_bytes": 15312,
+    "median_bytes": 1606.0,
+    "reduction_pct": 89.5
+  },
+  "token_optimizers": {
+    "context_compactor": {
+      "raw_bytes": 13379,
+      "compacted_bytes": 5101,
+      "reduction_pct": 61.9
+    },
+    "repo_map": {
+      "full_tree_bytes": 6981,
+      "map_bytes": 1164,
+      "reduction_pct": 83.3
+    },
+    "smart_tool_optimizer": {
+      "verbose_rewrites": 3,
+      "reread_blocked": true,
+      "loop_blocked": true
+    },
+    "context_base_lean": {
+      "fixed_bytes": 6058,
+      "approx_tokens": 1514
+    }
+  },
+  "polyglot": {
+    "baseline": {
+      "total": 16,
+      "defects_observed": 10,
+      "defects_caught": 1,
+      "recall_pct": 10.0,
+      "false_positives": 0,
+      "fpr_pct": 0.0,
+      "avg_tokens_proxy": 507,
+      "avg_duration_s": 0.178,
+      "total_human_steps": 0
+    },
+    "kit": {
+      "total": 16,
+      "defects_observed": 10,
+      "defects_caught": 10,
+      "recall_pct": 100.0,
+      "false_positives": 0,
+      "fpr_pct": 0.0,
+      "avg_tokens_proxy": 2568,
+      "avg_duration_s": 0.7,
+      "total_human_steps": 2
+    }
   }
 }

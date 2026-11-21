@@ -393,6 +393,66 @@ class TestAgyEffortRouter(unittest.TestCase):
         self.assertEqual(model, "gemini-3.8-flash-high")
         self.assertIsNone(failover_reason)
 
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_preserves_neon_model_when_healthy(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.90
+        mock_q.claude_5h.remaining_fraction = 0.90
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(
+            effort="high",
+            current_model="Gemini 4 Neon (High)"
+        )
+        self.assertEqual(model, "Gemini 4 Neon (High)")
+        self.assertIsNone(failover_reason)
+
+    @patch("scripts.agy_effort_router.fetch_live_antigravity_quota")
+    def test_resolve_model_preserves_claude_model_when_healthy(self, mock_quota):
+        from scripts.agy_effort_router import resolve_model_with_failover
+        mock_q = MagicMock()
+        mock_q.is_live = True
+        mock_q.gemini_5h.remaining_fraction = 0.90
+        mock_q.claude_5h.remaining_fraction = 0.90
+        mock_quota.return_value = mock_q
+
+        model, failover_reason = resolve_model_with_failover(
+            effort="high",
+            current_model="Claude Sonnet 5.5 (High)"
+        )
+        self.assertEqual(model, "Claude Sonnet 5.5 (High)")
+        self.assertIsNone(failover_reason)
+
+    @patch("os.execvp")
+    @patch("scripts.agy_effort_router.locate_native_agy", return_value="/bin/agy-native")
+    @patch("scripts.agy_effort_router.sync_global_settings")
+    @patch("scripts.agy_effort_router.get_current_settings_model", return_value="Gemini 4 Neon (High)")
+    def test_run_cli_session_uses_last_saved_model_from_settings(self, mock_get_model, mock_sync, mock_locate, mock_exec):
+        from scripts.agy_effort_router import run_cli_session
+        run_cli_session([])
+        self.assertTrue(mock_exec.called)
+        called_args = mock_exec.call_args[0][1]
+        self.assertIn("--model", called_args)
+        model_idx = called_args.index("--model")
+        self.assertEqual(called_args[model_idx + 1], "Gemini 4 Neon (High)")
+        self.assertNotIn("gemini-3.8-flash", called_args)
+
+    @patch("os.execvp")
+    @patch("scripts.agy_effort_router.locate_native_agy", return_value="/bin/agy-native")
+    @patch("scripts.agy_effort_router.sync_global_settings")
+    @patch("scripts.agy_effort_router.get_current_settings_model", return_value="Claude Sonnet 5.5 (High)")
+    def test_run_cli_session_uses_last_saved_claude_model_from_settings(self, mock_get_model, mock_sync, mock_locate, mock_exec):
+        from scripts.agy_effort_router import run_cli_session
+        run_cli_session([])
+        self.assertTrue(mock_exec.called)
+        called_args = mock_exec.call_args[0][1]
+        self.assertIn("--model", called_args)
+        model_idx = called_args.index("--model")
+        self.assertEqual(called_args[model_idx + 1], "Claude Sonnet 5.5 (High)")
+        self.assertNotIn("gemini-3.8-flash", called_args)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -88,6 +88,28 @@ class TestXpContract(unittest.TestCase):
         contract = load_contract()
         self.assertIn("never delete failing tests", contract["never"])
 
+    def test_cli_show_alias_and_free_text_acs_rejected(self):
+        import subprocess
+        import sys
+        script = str(Path(__file__).resolve().parent.parent / "scripts" / "xp_contract.py")
+        # Free-text AC without AC-NN ID should fail fast with clear format instruction
+        bad = subprocess.run(
+            [sys.executable, script, "init", "--risk", "L1", "--goal", "Fix bug", "--acs", "Validate dates"],
+            capture_output=True, text=True,
+        )
+        self.assertNotEqual(bad.returncode, 0)
+        self.assertIn("AC-01", bad.stderr + bad.stdout)
+
+        # Valid init + 'show' alias for 'get'
+        ok = subprocess.run(
+            [sys.executable, script, "init", "--risk", "L1", "--goal", "Fix bug", "--acs", "AC-01"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(ok.returncode, 0)
+        show = subprocess.run([sys.executable, script, "show"], capture_output=True, text=True)
+        self.assertEqual(show.returncode, 0)
+        self.assertIn("Fix bug", show.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

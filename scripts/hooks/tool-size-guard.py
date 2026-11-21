@@ -18,6 +18,10 @@ from collections import Counter
 import re
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+_KIT_DIR = Path(__file__).resolve().parent.parent.parent
+if str(_KIT_DIR) not in sys.path:
+    sys.path.insert(0, str(_KIT_DIR))
+
 try:
     from scripts.kit_constants import (
         ASCII_ART_LETTER_DOMINANCE,
@@ -42,6 +46,24 @@ except ImportError:
     )
 
 _NOISE_RE = tuple(re.compile(p, re.IGNORECASE) for p in SHELL_NOISE_LINE_PATTERNS)
+_TEST_CMD_RE = re.compile(
+    r"\b(?:python3?\s+-m\s+(?:unittest|pytest)|pytest|npm\s+test|pnpm\s+test|yarn\s+test|cargo\s+test|go\s+test)\b",
+    re.IGNORECASE,
+)
+_EXIT_CODE_RE = re.compile(r"command exited with code\s+(\d+)", re.IGNORECASE)
+
+
+def _is_test_command(cmd: str) -> bool:
+    return bool(cmd and _TEST_CMD_RE.search(cmd) and "xp_gate" not in cmd and "xp gate" not in cmd)
+
+
+def _infer_exit_code(data: Dict[str, Any], denoised: str, failure_detected: bool) -> int:
+    if "exit_code" in data and data["exit_code"] is not None:
+        return int(data["exit_code"])
+    m = _EXIT_CODE_RE.search(denoised)
+    if m:
+        return int(m.group(1))
+    return 1 if failure_detected else 0
 _REPEAT_RUN_RE = re.compile(r"(.)\1{3,}")
 
 
@@ -204,7 +226,7 @@ def process_tool_payload(
 
     # AC-5: Autonomous Self-Correction & Error Reflexion Trigger
     failure_detected = False
-    if tool_name in ("run_command", "RUN_COMMAND", "unknown") and denoised:
+    if tool_name in ("run_command", "RUN_COMMAND", "Bash", "bash", "unknown") and denoised:
         lower_out = denoised.lower()
         if (
             "the command exited with code " in lower_out and "exited with code 0" not in lower_out
@@ -245,7 +267,8 @@ def process_tool_payload(
             except Exception:
                 pass
 
-        # B15: Chama xp gate record automaticamente se comando equivaler a verify_cmd
+    # B15: Registra evidência TDD automaticamente para comandos de teste ou verify_cmd
+    if tool_name in ("run_command", "RUN_COMMAND", "Bash", "bash", "unknown"):
         try:
             cmd = ""
             if isinstance(data, dict):
@@ -261,11 +284,13 @@ def process_tool_payload(
                 from scripts.xp_contract import load_contract
                 contract = load_contract()
                 verify_cmd = contract.get("verify_cmd", "").strip()
-                if verify_cmd and (cmd.strip() == verify_cmd or verify_cmd in cmd):
-                    from scripts.evidence_recorder import compute_diff_hash, record
-                    ret_code = int(data.get("exit_code", 1 if failure_detected else 0))
-                    diff_h = compute_diff_hash()
-                    risk = contract.get("risk_level", "L1")
+                matches_verify = bool(verify_cmd and (cmd.strip() == verify_cmd or verify_cmd in cmd))
+                if contract and (matches_verify or _is_test_command(cmd)):
+                    from scripts.evidence_recorder import record
+                    from scripts.xp_gate import get_git_diff_hash
+                    ret_code = _infer_exit_code(data, denoised, failure_detected)
+                    diff_h = get_git_diff_hash()
+                    risk = contract.get("risk_level") or contract.get("risk", "L1")
                     record(cmd, ret_code, output=denoised, risk_level=risk, diff_hash=diff_h)
         except Exception:
             pass

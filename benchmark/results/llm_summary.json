@@ -1,0 +1,48 @@
+{
+  "arms": {
+    "baseline": {
+      "tasks": 6,
+      "resolved": 6,
+      "resolve_rate_pct": 100.0,
+      "base_suite_ok": 6,
+      "defect_escapes": 0,
+      "defect_escape_rate_pct": 0.0,
+      "input_tokens": 169322,
+      "output_tokens": 7737,
+      "cache_read_tokens": 455759,
+      "thinking_tokens": 0,
+      "total_tokens": 177059,
+      "avg_tokens_per_task": 29510,
+      "median_tokens_per_task": 31234,
+      "tokens_per_resolved_task": 29510,
+      "total_cost_usd": 0.0,
+      "avg_turns": 1.0,
+      "avg_duration_s": 29.89,
+      "avg_tool_calls": 0.0,
+      "kit_gate_pass": 0,
+      "kit_tdd_evidence": 0
+    },
+    "kit": {
+      "tasks": 6,
+      "resolved": 6,
+      "resolve_rate_pct": 100.0,
+      "base_suite_ok": 6,
+      "defect_escapes": 0,
+      "defect_escape_rate_pct": 0.0,
+      "input_tokens": 162666,
+      "output_tokens": 7976,
+      "cache_read_tokens": 392413,
+      "thinking_tokens": 0,
+      "total_tokens": 170642,
+      "avg_tokens_per_task": 28440,
+      "median_tokens_per_task": 24403,
+      "tokens_per_resolved_task": 28440,
+      "total_cost_usd": 0.0,
+      "avg_turns": 1.0,
+      "avg_duration_s": 29.2,
+      "avg_tool_calls": 0.0,
+      "kit_gate_pass": 5,
+      "kit_tdd_evidence": 5
+    }
+  }
+}

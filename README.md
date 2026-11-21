@@ -111,3 +111,15 @@ The unified CLI entrypoint `xp` consolidates all kit tools:
 - **Atomic Commits:** Structured Conventional Commits (`feat`, `fix`, `refactor`, `test`, `chore`, `docs`).
 - **Zero Plans in Git:** Transient plans, prompts, and `.agents/runtime/` logs are excluded via `.gitignore`.
 - **Blocking Gates:** Every release requires `python3 -m unittest discover tests`, `python3 scripts/kit_lint.py`, and `python3 scripts/goldfish_review.py --check-code` passing with zero errors.
+
+---
+
+## 7. Empirical Benchmark (With Kit vs Without Kit)
+
+The [benchmark/](benchmark/README.md) suite measures both **deterministic governance** and **real LLM-in-the-loop token consumption** across paired Git sandboxes:
+
+- **Deterministic Harness (`16` paired scenarios):** `10/10` defects blocked (`100%` recall vs `10%` baseline, `0%` false positives), `context_compactor` (`−61.9%`), `repo_map` (`−83.3%`), and JIT context retrieval (`−89.4%`).
+- **Real LLM-in-the-Loop (`T01`–`T06`, `agy` / `gemini-3.8-flash-low`):** `6/6` tasks resolved (`100%`), **−3.6% total tokens** (`170,642` vs `177,059`), **−21.9% median tokens/task**, **−2.3% duration**, and `0` unverified `L1+` sessions (`5/5` RED→GREEN + `GATE PASS`).
+- **Real Multi-File Feature A/B (`Coupon` + `CouponRegistry` + `pricing.py`, `gemini-3.8-flash-medium`):** **−20.9% total tokens** (`63,521` vs `80,259`), **−66.2% thinking tokens**, and **−44.5% execution time** (`119.2s` vs `214.8s`).
+
+See [docs/BENCHMARK.md](docs/BENCHMARK.md), [benchmark/results/RESULTS.md](benchmark/results/RESULTS.md), and [benchmark/results/LLM_RESULTS.md](benchmark/results/LLM_RESULTS.md).

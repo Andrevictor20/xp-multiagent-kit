@@ -80,23 +80,33 @@ KPIs agregadas:
 - **Tokens por tarefa** — compara o custo de contexto
 - **Tempo por tarefa** — compara a latência do fluxo
 
-### 2.5 O que o benchmark **não** mede
-
-- **Não há LLM no loop**. Não há custo real de token de um provedor,
-  nem taxa de sucesso real de um agente escrevendo código. O "agente"
-  aqui é um *harness determinístico* que executa a cerimônia do kit
-  (ou a ausência dela). Isso é uma limitação explícita documentada.
-- **Uma execução por cenário**. Determinístico, sem ICs. Para ter
-  confiança estatística, `runner.py` pode ser repetido N vezes e
-  agregado (todo o resultado já é JSONL).
+### 2.5 Limitações e Trilha LLM Real
+- A trilha determinística (`runner.py`) usa proxy `bytes/4` e mede apenas o arnês sem LLM.
+- Para medir **consumo real de tokens do provedor** e taxa de resolução real, use a trilha pareada em `llm_runner.py` (com isolamento de `HOME`/hooks no braço `baseline`, testes ocultos e oráculos independentes).
+- Na bateria `T01`–`T06` (`agy` / `gemini-3.8-flash-low`), o kit alcançou `6/6` resolvidas, **−3,6% de tokens totais** (`170.642` vs `177.059`), **−21,9% na mediana/tarefa** e `5/5` `L1+` com RED→GREEN + `GATE PASS`. Em uma implementação real multi-arquivo (`Coupon` + `pricing.py`, `gemini-3.8-flash-medium`), reduziu **20,9% dos tokens** (`63.521` vs `80.259`) e **44,5% do tempo**.
 
 ## 3. Como executar
 
+### Trilha Determinística (sem LLM, ~25 s)
 ```bash
 python3 benchmark/runner.py       # 16 cenários pareados -> results/raw.jsonl
-python3 benchmark/overhead.py     # custos mecânicos -> results/overhead.json
-python3 benchmark/aggregate.py    # KPIs + resultados.md + baseline/kit.jsonl
+python3 benchmark/overhead.py     # custos mecânicos + otimizadores -> results/overhead.json
+python3 benchmark/aggregate.py    # KPIs + RESULTS.md + baseline/kit.jsonl
 python3 scripts/xp kit eval compare benchmark/results/baseline.jsonl benchmark/results/kit.jsonl
+```
+
+### Trilha LLM-in-the-loop (tokens reais de provedor + qualidade real)
+```bash
+# Dry-run rápido para validar o pipeline sem gastar tokens
+python3 benchmark/llm_runner.py --dry-run
+
+# Smoke test real pareado (1 tarefa, runner padrão agy)
+python3 benchmark/llm_runner.py --runner agy --only T02_l1_bugfix_tdd
+
+# Bateria completa (6 tarefas L0-L3, suporta agy|claude|codex|gemini)
+python3 benchmark/llm_runner.py --runner agy --runs 1
+python3 benchmark/llm_aggregate.py
+python3 scripts/xp kit eval compare benchmark/results/llm_baseline.jsonl benchmark/results/llm_kit.jsonl
 ```
 
 ## 4. Arquivos
@@ -104,7 +114,11 @@ python3 scripts/xp kit eval compare benchmark/results/baseline.jsonl benchmark/r
 - `substrate/` — repositório controlado (3 módulos + 24 testes)
 - `scenarios.py` — os 16 cenários declarativos (dados, não código)
 - `oracles.py` — verdades fundamentais independentes do kit
-- `runner.py` — construção de sandboxes + execução dos dois braços
-- `overhead.py` — custo fixo, latência do hook, JIT context retrieval
+- `runner.py` — construção de sandboxes + execução determinística dos dois braços
+- `overhead.py` — custo fixo, latência do hook, JIT context retrieval e otimizadores de token
 - `aggregate.py` — KPIs, eval-JSONL compatível com `xp kit eval` e `RESULTS.md`
-- `results/` — artefatos gerados (`raw.jsonl`, `overhead.json`, `summary.json`, `baseline.jsonl`, `kit.jsonl`, `RESULTS.md`)
+- `llm_adapters.py` — adaptadores multi-CLI (`agy`, `claude`, `codex`, `gemini`) e isolamento de baseline
+- `llm_tasks.py` — 6 tarefas pareadas L0–L3 com testes ocultos e oráculos independentes
+- `llm_runner.py` — execução A/B real com LLM em sandboxes pareadas
+- `llm_aggregate.py` — consolidação de tokens reais, taxa de resolução e `LLM_RESULTS.md`
+- `results/` — artefatos gerados (`raw.jsonl`, `overhead.json`, `summary.json`, `RESULTS.md`, `llm_raw.jsonl`, `llm_summary.json`, `LLM_RESULTS.md`)

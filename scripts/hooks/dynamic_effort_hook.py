@@ -207,7 +207,10 @@ def should_skip_duplicate_injection(
     return False
 
 
-def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
+def handle_pre_invocation(
+    payload: Dict[str, Any],
+    skip_trivial_ephemeral: bool = False,
+) -> Dict[str, Any]:
     """Processa o evento PreInvocation do Antigravity CLI."""
     transcript_path = payload.get("transcriptPath", "")
     conv_ctx = extract_conversation_context(transcript_path)
@@ -259,6 +262,10 @@ def handle_pre_invocation(payload: Dict[str, Any]) -> Dict[str, Any]:
         except Exception:
             pass
 
+    # Para L0/L1 sem contexto JIT crítico, evitar ephemeralMessage preserva o KV-cache do prefixo entre turnos.
+    if skip_trivial_ephemeral and decision.risk_level in (LEVEL_L0_TRIVIAL, LEVEL_L1_SMALL) and not jit_summary:
+        return {"injectSteps": []}
+
     # Mensagem efêmera compacta <= 400 bytes (AC-9, B09)
     eff_tier = "n/a"
     try:
@@ -301,7 +308,7 @@ def main() -> int:
         raw_input = sys.stdin.read() if not sys.stdin.isatty() else ""
         if raw_input.strip():
             payload = json.loads(raw_input)
-            result = handle_pre_invocation(payload)
+            result = handle_pre_invocation(payload, skip_trivial_ephemeral=True)
         else:
             result = {"injectSteps": []}
     except Exception:

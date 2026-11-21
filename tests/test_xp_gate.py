@@ -91,6 +91,29 @@ class TestXpGate(unittest.TestCase):
         self.assertIn("APROVAÇÃO NECESSÁRIA:", receipt)
         self.assertLessEqual(len(receipt.splitlines()), 15)
 
+    def test_gate_self_sufficient_hints_for_step1_step7_step9(self):
+        # Step 1: no contract -> hint must include exact xp contract init command
+        code1, line1, fail1 = run_gate(dry_run=True, changed_files=[])
+        self.assertEqual(code1, 1)
+        self.assertIn("step=1", line1)
+        self.assertIn("--risk", fail1)
+        self.assertIn("--verify", fail1)
+
+        # Step 9: untraced AC -> hint must explain AC-01 / test_ac_01 format explicitly
+        untraced_ac = "AC-" + "9876"
+        init_contract(
+            risk="L1",
+            goal="Export CSV",
+            acs=[untraced_ac],
+            scope_files=["README.md"],
+            verify_cmd="python3 -m unittest discover -s tests -q",
+        )
+        code9, line9, fail9 = run_gate(dry_run=True, changed_files=["README.md"])
+        self.assertEqual(code9, 1)
+        self.assertIn("step=9", line9)
+        self.assertIn("test_ac_", fail9)
+        self.assertIn(untraced_ac, fail9)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -55,7 +55,7 @@ class TestDynamicEffortHook(unittest.TestCase):
         self.assertIn("HIGH", msg.upper())
         self.assertIn("L3", msg.upper())
 
-    def test_handle_pre_invocation_trivial_prompt_injects_low(self):
+    def test_handle_pre_invocation_trivial_prompt_skips_ephemeral_injection(self):
         low_transcript = self.temp_path / "transcript_low.jsonl"
         steps = [
             {"step_index": 1, "type": "USER_INPUT", "content": "qual a diferenca entre cli e ide?"},
@@ -68,10 +68,10 @@ class TestDynamicEffortHook(unittest.TestCase):
             "invocationNum": 1,
             "transcriptPath": str(low_transcript),
         }
-        res = handle_pre_invocation(payload)
-        self.assertIn("injectSteps", res)
-        msg = res["injectSteps"][0]["ephemeralMessage"]
-        self.assertIn("LOW", msg.upper())
+        res_default = handle_pre_invocation(payload)
+        self.assertIn("LOW", res_default["injectSteps"][0]["ephemeralMessage"].upper())
+        res_hook = handle_pre_invocation(payload, skip_trivial_ephemeral=True)
+        self.assertEqual(res_hook.get("injectSteps"), [])
 
     def test_handle_pre_invocation_missing_transcript_fallback(self):
         payload = {

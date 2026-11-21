@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys; sys.stderr.write("⚠️ [DEPRECAÇÃO] 'agy-sanitize' está depreciado no v4. Use 'xp' em seu lugar.\n")
 """
 agy-sanitize: Universal tool output sanitizer to prevent terminal flood and token waste.
 Can be used as a command wrapper or in pipes:
@@ -11,27 +10,30 @@ Ordem de processamento (B4 antes do truncamento):
     2. truncamento head/tail apenas se ainda exceder o orçamento de linhas
 """
 
+import importlib.util
 import os
 import subprocess
 import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+if os.environ.get("XP_QUIET_DEPRECATION") != "1":
+    sys.stderr.write("⚠️ [DEPRECAÇÃO] 'agy-sanitize' está depreciado no v4. Use 'xp' em seu lugar.\n")
 
-from kit_constants import (  # noqa: E402
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from kit_constants import (
     SANITIZE_HEAD_LINES,
     SANITIZE_TAIL_LINES,
     TOOL_OUTPUT_MAX_LINES,
 )
-try:
-    from contrib.scripts.output_noise import clean_output, noise_stats  # noqa: E402
-except ImportError:
-    import importlib.util
-    _guard_path = Path(__file__).resolve().parent / "hooks" / "tool-size-guard.py"
-    _spec = importlib.util.spec_from_file_location("tsg", _guard_path)
-    _tsg = importlib.util.module_from_spec(_spec)
-    _spec.loader.exec_module(_tsg)
-    clean_output, noise_stats = _tsg.clean_output, _tsg.noise_stats
+
+_guard_path = _SCRIPTS_DIR / "hooks" / "tool-size-guard.py"
+_spec = importlib.util.spec_from_file_location("tsg", _guard_path)
+_tsg = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_tsg)
+clean_output, noise_stats = _tsg.clean_output, _tsg.noise_stats
 
 
 def sanitize_lines(lines, max_lines, head_count, tail_count):

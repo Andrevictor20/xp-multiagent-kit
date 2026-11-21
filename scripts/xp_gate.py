@@ -99,7 +99,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
     tried = contract.get("tried", []) if contract else []
     ev_id = f"EV-{int(time.time())}"
     if not contract or not contract.get("goal"):
-        fail = _fail(1, "Contrato inválido", "goal e risk preenchidos", "Contrato vazio ou sem meta", "run.json", tried, "Execute 'xp contract init'")
+        fail = _fail(1, "Contrato inválido", "goal e risk preenchidos", "Contrato vazio ou sem meta", "run.json", tried, "Execute: xp contract init --risk L1 --goal \"<meta>\" --scope <arqs> --verify \"<cmd>\"")
         return 1, "GATE FAIL step=1 reason=invalid_contract", fail
     risk = contract.get("risk", "L1")
     verify_cmd = contract.get("verify_cmd", "")
@@ -110,7 +110,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
     ac_tracked = 0
     scope_files = contract.get("scope_files", [])
     if scope_files and files:
-        norm_scope = {str(Path(s)).replace("\\", "/") for s in scope_files}
+        norm_scope = {str(Path(s)).replace("\\", "/") for s in scope_files} | {".agents/memory", ".agents/runtime"}
         outside = [f for f in files if str(Path(f)).replace("\\", "/") not in norm_scope and not any(str(Path(f)).replace("\\", "/").startswith(ns + "/") for ns in norm_scope)]
         if outside:
             fail = _fail(2, "Diff fora do scope_files", f"Arquivos dentro de {scope_files}", f"Arquivos fora: {outside}", str(scope_files), tried, "Adicione arquivos ao contrato ou reverta alterações")
@@ -170,11 +170,11 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
                 green_ok = False
             elif is_pass:
                 if not red_seen:
-                    fail = _fail(7, "GREEN antes de RED", "RED registrado antes de GREEN", "Execução GREEN sem RED anterior", "RED->GREEN cycle", tried, "Registre o teste falhando com 'xp gate record -- <cmd>' antes de fazê-lo passar")
+                    fail = _fail(7, "GREEN antes de RED", "RED registrado antes de GREEN", "Execução GREEN sem RED anterior", "RED->GREEN cycle", tried, "Execute 'xp gate record -- <cmd_teste>' na fase RED (falhando) antes de corrigir")
                     return 1, "GATE FAIL step=7 reason=green_before_red", fail
                 green_ok = True
         if not green_ok:
-            fail = _fail(7, "Ciclo RED->GREEN não comprovado", "Execução RED registrada antes de GREEN", "Nenhuma execução RED->GREEN válida", "RED->GREEN cycle", tried, "Execute o teste falhando com 'xp gate record -- <cmd>' antes de fazê-lo passar")
+            fail = _fail(7, "Ciclo RED->GREEN não comprovado", "Execução RED registrada antes de GREEN", "Nenhuma execução RED->GREEN válida", "RED->GREEN cycle", tried, "Execute 'xp gate record -- <cmd_teste>' na fase RED (falhando) e depois na fase GREEN (passando)")
             return 1, "GATE FAIL step=7 reason=missing_red_evidence", fail
 
     if risk in ("L1", "L2", "L3") and not verify_cmd and not dry_run:
@@ -207,7 +207,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
         missing_acs = [ac for ac in acs if not mapping.get(ac)]
         ac_tracked = ac_declared - len(missing_acs)
         if missing_acs:
-            fail = _fail(9, f"ACs sem testes: {', '.join(missing_acs)}", "Todos os ACs referenciados em testes", f"Critérios não rastreados: {missing_acs}", "conformance_report", tried, "Adicione testes referenciando os ACs")
+            fail = _fail(9, f"ACs sem testes: {', '.join(missing_acs)}", "Todos os ACs referenciados em testes", f"Critérios não rastreados: {missing_acs}", "conformance_report", tried, f"Cite '{missing_acs[0]}' em docstring/corpo ou nomeie def test_ac_01_... em tests/*.py (ou omita --acs em L1 simples)")
             return 1, f"GATE FAIL step=9 missing_acs={len(missing_acs)}", fail
 
     if effective_tier == "human":
