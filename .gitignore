@@ -9,6 +9,8 @@ __pycache__/
 .agents/hooks.rendered.json
 .agents/runtime/*
 !.agents/runtime/evidence/
+.agents/runtime/evidence/*.log
+.agents/runtime/evidence/*.jsonl
 .agents/memory/details/
 .agents/skills_disabled/
 ponytail*/

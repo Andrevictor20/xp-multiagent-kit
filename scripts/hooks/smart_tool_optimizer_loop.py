@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from scripts.kit_constants import (  # noqa: E402
+from scripts.kit_constants import (
     CONTIGUOUS_READ_TTL_SECONDS,
     LOOP_HISTORY_SIZE,
     LOOP_MAX_REPEATS,

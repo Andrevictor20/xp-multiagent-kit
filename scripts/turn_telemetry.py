@@ -45,7 +45,7 @@ try:
         runtime_dir,
     )
 except ImportError:  # pragma: no cover - execução direta
-    from kit_constants import (  # type: ignore
+    from kit_constants import (
         CHARS_PER_TOKEN,
         MIN_TURNS_FOR_RESEND_ALERT,
         PREFLIGHT_CONTEXT_PCT,

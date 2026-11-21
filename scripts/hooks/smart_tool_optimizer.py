@@ -25,7 +25,7 @@ if str(kit_dir) not in sys.path:
 if not os.environ.get("KIT_ROOT"):
     os.environ["KIT_ROOT"] = str(kit_dir)
 
-from scripts.hooks.smart_tool_optimizer_state import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_state import (
     check_atdd_discipline,
     check_post_edit_reread,
     count_file_lines,
@@ -33,10 +33,10 @@ from scripts.hooks.smart_tool_optimizer_state import (  # noqa: E402
     record_command_run,
     record_file_edit,
 )
-from scripts.hooks.smart_tool_optimizer_view import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_view import (
     optimize_view_file,
 )
-from scripts.hooks.smart_tool_optimizer_command import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_command import (
     COMPILED_VERBOSE_PATTERNS,
     VERBOSE_CMD_PATTERNS,
     has_output_limiter,
@@ -46,13 +46,13 @@ from scripts.hooks.smart_tool_optimizer_command import (  # noqa: E402
     strip_env_vars,
     try_rtk_rewrite,
 )
-from scripts.hooks.smart_tool_optimizer_loop import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_loop import (
     DEFAULT_GREP_NOISE_FILTERS,
     check_tool_loop,
     get_tool_call_hash,
     reset_tool_loop_history,
 )
-from scripts.hooks.smart_tool_optimizer_dir_grep_write import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_dir_grep_write import (
     optimize_grep_search,
     optimize_list_dir,
     optimize_manage_task,

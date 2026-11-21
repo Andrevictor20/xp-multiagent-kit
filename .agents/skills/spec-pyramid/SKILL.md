@@ -1,6 +1,6 @@
 ---
 name: spec-pyramid
-description: Specification Pyramid combining ATDD/BDD, Spec-Driven Development (SDD), Specification by Example (SbE), and pair navigation.
+description: "ATDD/BDD, Spec-Driven Development, Specification by Example, and pair navigation."
 ---
 
 # Specification Pyramid (`spec-pyramid`)

@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from scripts.context_compactor_core import (  # noqa: E402
+from scripts.context_compactor_core import (
     compress_logs,
     compress_whitespace,
     strip_ansi_codes,
@@ -126,7 +126,7 @@ def compact_payload(
     cleaned = compress_logs(cleaned)
 
     if cleaned.startswith("diff --git") or "\n@@ " in cleaned:
-        from scripts.context_compactor_core import compress_diff  # noqa: E402
+        from scripts.context_compactor_core import compress_diff
 
         cleaned = compress_diff(cleaned)
 

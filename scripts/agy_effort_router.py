@@ -34,6 +34,15 @@ def get_current_settings_effort() -> Optional[str]:
                 if ef: return str(ef).lower()
             except Exception: pass
     return None
+def get_current_settings_model() -> Optional[str]:
+    for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json"):
+        if p.is_file():
+            try:
+                data = json.loads(p.read_text(encoding="utf-8"))
+                m = data.get("model")
+                if m and str(m).strip(): return str(m).strip()
+            except Exception: pass
+    return None
 
 def detect_git_context(repo_path: Optional[Path] = None) -> Dict[str, Any]:
     cwd, ctx = repo_path or Path.cwd(), {"branch": "", "changed_files": []}
@@ -73,6 +82,7 @@ def classify_task_effort(prompt: str = "", git_context: Optional[Dict[str, Any]]
         elif any(br.startswith(p) for p in ("docs/", "chore/")): raw_effort, risk, savings, reason = EFFORT_LOW, LEVEL_L0_TRIVIAL, 5000, f"Branch docs ({br})"
         elif files and any(f.endswith((".py", ".ts", ".tsx", ".js")) for f in files): raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L2_FEATURE, "Alterações ativas em arquivos de código de produção detectadas"
         elif get_current_settings_effort() == EFFORT_HIGH: raw_effort, risk, reason = EFFORT_HIGH, LEVEL_L2_FEATURE, "Preservada configuração ativa em settings.json (modo HIGH)"
+        elif get_current_settings_effort(): raw_effort, risk, reason = get_current_settings_effort(), LEVEL_L1_SMALL, f"Preservada configuração ativa em settings.json (modo {get_current_settings_effort().upper()})"
     throttled, b = False, token_budget or {}
     q = max(b.get("rolling_5h_percent", 0.0), b.get("weekly_percent", 0.0))
     if q > 80.0:
@@ -90,17 +100,17 @@ def map_model_to_effort(current_model: str, target_effort: str) -> str:
     if re.search(r"\((High|Medium|Low)\)$", current_model, re.I): return re.sub(r"\((High|Medium|Low)\)$", f"({ec})", current_model, flags=re.I)
     if re.search(r"-(high|medium|low)$", current_model, re.I): return re.sub(r"-(high|medium|low)$", f"-{el}", current_model, flags=re.I)
     return f"{current_model} ({ec})" if "flash" in current_model.lower() or "gemini" in current_model.lower() else current_model
-def update_settings_effort(settings_path: Path, target_effort: str) -> Tuple[bool, str, str]:
+def update_settings_effort(settings_path: Path, target_effort: str, target_model: Optional[str] = None) -> Tuple[bool, str, str]:
     if not settings_path.is_file(): return False, "", ""
     try:
         data = json.loads(settings_path.read_text(encoding="utf-8")) if settings_path.read_text(encoding="utf-8").strip() else {}
-        old_m = data.get("model", ""); new_m = map_model_to_effort(old_m or "Gemini 3.8 Flash", target_effort)
+        old_m = data.get("model", ""); base_m = target_model or old_m or "Gemini 3.8 Flash"; new_m = map_model_to_effort(base_m, target_effort)
         data["model"], data["reasoningEffort"] = new_m, target_effort.lower()
         settings_path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         return True, old_m, new_m
     except Exception: return False, "", ""
-def sync_global_settings(target_effort: str, force_ide: bool = True) -> List[str]:
-    return [str(p.name) for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json") if p.is_file() and update_settings_effort(p, target_effort)[0]]
+def sync_global_settings(target_effort: str, target_model: Optional[str] = None, force_ide: bool = True) -> List[str]:
+    return [str(p.name) for p in (get_cli_settings_path(), Path.home() / ".gemini" / "settings.json") if p.is_file() and update_settings_effort(p, target_effort, target_model)[0]]
 def format_badge(d: EffortDecision) -> str:
     ico = {"low": "⚡", "medium": "⚖️", "high": "🧠"}.get(d.effort, "🎯"); sav = f" | Economia estimada: ~{d.estimated_token_savings:,} tokens" if d.estimated_token_savings > 0 else ""
     return f"------------------------------------------------------------------\n{ico} [AGY-EFFORT] Modo de Raciocínio: {d.effort.upper()}{' [THROTTLED]' if d.throttled else ''}\n   📌 Classificação: {d.risk_level}\n   💡 Motivo: {d.reason}{sav}\n------------------------------------------------------------------"
@@ -111,14 +121,16 @@ def evaluate_provider_quota_health() -> Dict[str, Any]:
         g5, c5 = getattr(getattr(q, "gemini_5h", None), "remaining_fraction", 1.0), getattr(getattr(q, "claude_5h", None), "remaining_fraction", 1.0)
         return {"is_live": True, "google_exhausted": g5 <= 0.02, "third_party_exhausted": c5 <= 0.02, "google_5h_pct": round(g5*100, 1), "third_party_5h_pct": round(c5*100, 1)}
     except Exception: return {"is_live": False, "google_exhausted": False, "third_party_exhausted": False, "google_5h_pct": 100.0, "third_party_5h_pct": 100.0}
-def resolve_model_with_failover(preferred_provider: str = "google", effort: str = "medium", force_model: Optional[str] = None) -> Tuple[str, Optional[str]]:
+def resolve_model_with_failover(preferred_provider: str = "google", effort: str = "medium", force_model: Optional[str] = None, current_model: Optional[str] = None) -> Tuple[str, Optional[str]]:
     if force_model: return force_model.strip(), None
-    ef = effort.lower() if effort in ("low", "medium", "high") else "medium"; h = evaluate_provider_quota_health()
-    if "google" in preferred_provider.lower():
+    ef, h = (effort.lower() if effort in ("low", "medium", "high") else "medium"), evaluate_provider_quota_health()
+    base_m = current_model or force_model
+    prov = "claude" if base_m and any(k in base_m.lower() for k in ("claude", "sonnet", "opus", "haiku", "gpt")) else preferred_provider
+    if "google" in prov.lower():
         if h["google_exhausted"] and not h["third_party_exhausted"]: return "claude-sonnet-4-6", f"🔄 Failover Automático para Claude Sonnet 4.6 (3P: {h['third_party_5h_pct']}% livre)."
-        return f"gemini-3.8-flash-{ef}", None
+        return (map_model_to_effort(base_m, ef) if base_m else f"gemini-3.8-flash-{ef}"), None
     if h["third_party_exhausted"] and not h["google_exhausted"]: return f"gemini-3.8-flash-{ef}", f"🔄 Failover Automático para Gemini 3.8 Flash ({ef.capitalize()})."
-    return "claude-sonnet-4-6", None
+    return (map_model_to_effort(base_m, ef) if base_m else "claude-sonnet-4-6"), None
 
 def parse_cli_session_args(argv: List[str]) -> Tuple[str, Optional[str], Optional[str], List[str]]:
     prompt_parts, pass_through, explicit_effort, explicit_model, skip_next = [], [], None, None, False
@@ -138,10 +150,14 @@ def locate_native_agy() -> Optional[str]:
     return None
 def run_cli_session(argv: List[str]) -> int:
     p_text, ef, model, passthru = parse_cli_session_args(argv); d = classify_task_effort(prompt=p_text, git_context=detect_git_context(), explicit_effort=ef)
-    sys.stderr.write(format_badge(d) + "\n"); resolved_model, _ = resolve_model_with_failover(preferred_provider="google", effort=d.effort, force_model=model)
-    sync_global_settings(d.effort); real_bin = locate_native_agy() or shutil.which("agy")
+    sys.stderr.write(format_badge(d) + "\n"); cur_m = get_current_settings_model()
+    target_base = model or cur_m; pref = "claude" if target_base and any(k in target_base.lower() for k in ("claude", "sonnet", "opus", "haiku", "gpt")) else "google"
+    resolved_model, failover = resolve_model_with_failover(preferred_provider=pref, effort=d.effort, force_model=model, current_model=cur_m)
+    if failover: sys.stderr.write(failover + "\n")
+    sync_global_settings(d.effort, target_model=resolved_model); real_bin = locate_native_agy() or shutil.which("agy")
     if not real_bin: return 1
-    os.execvp(real_bin, [real_bin, "--dangerously-skip-permissions", "--mode", "accept-edits"] + (["--model", resolved_model] if resolved_model else []) + passthru)
+    m_flag = ["--model", resolved_model] if (failover or (resolved_model and not any(a in ("--model", "-m") for a in passthru))) else []
+    os.execvp(real_bin, [real_bin, "--dangerously-skip-permissions", "--mode", "accept-edits"] + m_flag + passthru)
     return 0
 def main() -> int:
     subs = {"models", "agent", "agents", "changelog", "help", "install", "mcp", "mic-serve", "plugin", "plugins", "remote-control", "update", "--version", "-v"}

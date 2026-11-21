@@ -1,6 +1,6 @@
 ---
 name: git-worktree-workspace
-description: Subagent isolation in clean Git Worktrees via agy-worktree.
+description: "Subagent isolation in clean Git Worktrees via xp worktree."
 ---
 
 # Git Worktree Workspace

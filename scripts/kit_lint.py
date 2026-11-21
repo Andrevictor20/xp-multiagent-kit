@@ -202,7 +202,7 @@ def lint_agents_md_sections(content: Optional[str] = None, root_dir: Optional[Pa
 def lint_concept_duplications(root_dir: Optional[Path] = None) -> Dict[str, Any]:
     base = root_dir or ROOT_DIR
     policies_dir = base / ".agents" / "policies"
-    policy_files = list(policies_dir.glob("*.md")) if policies_dir.is_dir() else []
+    policy_files = [p for p in policies_dir.glob("*.md") if p.name != "INDEX.md"] if policies_dir.is_dir() else []
     all_files = [base / "AGENTS.md"] + policy_files
 
     concepts: Dict[str, str] = {
@@ -321,6 +321,80 @@ def lint_readme_accuracy(root_dir: Optional[Path] = None) -> Dict[str, Any]:
     }
 
 
+def lint_agent_skill_refs(root_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Garante que toda skill declarada em .agents/agents/*/agent.md existe em .agents/skills/."""
+    base = root_dir or ROOT_DIR
+    skills_dir = base / ".agents" / "skills"
+    agents_dir = base / ".agents" / "agents"
+    if not agents_dir.is_dir():
+        return {"valid": True, "errors": []}
+    existing = {p.parent.name for p in skills_dir.glob("*/SKILL.md")} if skills_dir.is_dir() else set()
+    errors: List[str] = []
+    for ag_file in sorted(agents_dir.glob("*/agent.md")):
+        txt = ag_file.read_text(encoding="utf-8", errors="ignore")
+        m = re.match(r"^---\s*\n(.*?)\n---", txt, re.DOTALL)
+        if not m:
+            continue
+        in_skills = False
+        for line in m.group(1).splitlines():
+            s = line.strip()
+            if s.startswith("skills:"):
+                in_skills = True
+                continue
+            if in_skills:
+                if s.startswith("- "):
+                    sname = s[2:].strip().strip("'\"")
+                    if sname and sname not in existing:
+                        errors.append(f"agent/{ag_file.parent.name}: skill inexistente '{sname}'")
+                elif ":" in s:
+                    in_skills = False
+    return {"valid": len(errors) == 0, "errors": errors}
+
+
+def lint_frontmatter_descriptions(root_dir: Optional[Path] = None, max_chars: int = 110) -> Dict[str, Any]:
+    """Impede regressão de tokens no catálogo <skills> e <subagents> (description <= max_chars)."""
+    base = root_dir or ROOT_DIR
+    errors: List[str] = []
+    targets = list((base / ".agents" / "skills").glob("*/SKILL.md")) if (base / ".agents" / "skills").is_dir() else []
+    targets += list((base / ".agents" / "agents").glob("*/agent.md")) if (base / ".agents" / "agents").is_dir() else []
+    for path in sorted(targets):
+        txt = path.read_text(encoding="utf-8", errors="ignore")
+        m = re.match(r"^---\s*\n(.*?)\n---", txt, re.DOTALL)
+        if not m:
+            continue
+        dm = re.search(r"^description:\s*(.+)$", m.group(1), re.MULTILINE)
+        if not dm:
+            continue
+        desc = dm.group(1).strip().strip("'\"")
+        if len(desc) > max_chars:
+            rel = path.relative_to(base)
+            errors.append(f"{rel}: description com {len(desc)} chars (teto: {max_chars})")
+    return {"valid": len(errors) == 0, "errors": errors, "max_chars": max_chars}
+
+
+def audit_global_config(config_dir: Optional[Path] = None) -> Dict[str, Any]:
+    """Audita inchaço de regras globais e MCPs eager em ~/.gemini/config (absorve agy-audit-config)."""
+    cfg = config_dir or (Path.home() / ".gemini" / "config")
+    warnings: List[str] = []
+    if not cfg.is_dir():
+        return {"status": "HEALTHY", "warnings": warnings}
+    if cfg.name == "config":
+        dups = [n for n in ("AGENTS.md", "GEMINI.md") if (cfg.parent / n).exists() or (cfg.parent / n).is_symlink()]
+        if dups:
+            warnings.append(f"Regras duplicadas em {cfg.parent}: {', '.join(dups)}")
+    mcp_json = cfg / "mcp_config.json"
+    if mcp_json.is_file():
+        try:
+            import json
+            servers = json.loads(mcp_json.read_text(encoding="utf-8")).get("mcpServers", {})
+            for sname, scfg in servers.items():
+                if isinstance(scfg, dict) and scfg.get("eager") is True:
+                    warnings.append(f"MCP '{sname}' configurado como eager")
+        except Exception:
+            pass
+    return {"status": "HEALTHY" if not warnings else "WARNING", "warnings": warnings}
+
+
 def run_all_lints(root_dir: Optional[Path] = None) -> int:
     base = root_dir or ROOT_DIR
     v_res = lint_version(base)
@@ -328,6 +402,8 @@ def run_all_lints(root_dir: Optional[Path] = None) -> int:
     a_res = lint_agents_md_sections(root_dir=base)
     b_res = lint_context_budget(base)
     r_res = lint_readme_accuracy(base)
+    s_res = lint_agent_skill_refs(base)
+    desc_res = lint_frontmatter_descriptions(base)
 
     errors = 0
     if not v_res["valid"]:
@@ -352,6 +428,18 @@ def run_all_lints(root_dir: Optional[Path] = None) -> int:
         errors += 1
     else:
         print(f"✅ [README] Contagens auditadas ({r_res['real_agents']} agentes, {r_res['real_skills']} skills, {r_res['real_flows']} workflows, {r_res['real_steps']} passos)")
+
+    if not s_res["valid"]:
+        print(f"❌ [AGENTS->SKILLS] Referências quebradas: {s_res['errors']}")
+        errors += 1
+    else:
+        print("✅ [AGENTS->SKILLS] Todas as skills referenciadas nos agentes existem")
+
+    if not desc_res["valid"]:
+        print(f"❌ [DESCRIPTIONS] Descrições acima do teto ({desc_res['max_chars']} chars): {desc_res['errors']}")
+        errors += 1
+    else:
+        print(f"✅ [DESCRIPTIONS] Todas as descrições de skills/agentes <= {desc_res['max_chars']} chars")
 
     d_res = lint_concept_duplications(base)
     if not d_res["valid"]:

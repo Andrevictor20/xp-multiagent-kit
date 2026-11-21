@@ -1,6 +1,6 @@
 ---
 name: api-contracts
-description: OpenAPI contract design, versioning, DTO schemas, and error modeling.
+description: "OpenAPI contract design, versioning, DTO schemas, and error modeling."
 ---
 
 # API Contracts

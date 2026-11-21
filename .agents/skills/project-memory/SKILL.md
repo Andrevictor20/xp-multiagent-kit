@@ -1,6 +1,6 @@
 ---
 name: project-memory
-description: 4-Tier continuous project memory, Fast Context Bootstrap, and auto-onboarding.
+description: "5-Tier continuous project memory, Step 0 bootstrap, and Dead-Ends log."
 ---
 
 # Project Memory, Auto-Onboarding & Zero-Prompt Lifecycle

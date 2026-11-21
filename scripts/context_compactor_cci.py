@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from typing import List, Optional
 
-from scripts.context_compactor_core import (  # noqa: E402
+from scripts.context_compactor_core import (
     compress_whitespace,
     strip_ansi_codes,
 )

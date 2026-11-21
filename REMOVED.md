@@ -48,3 +48,11 @@ As 7 skills de design anteriores (`design-intelligence`, `design-system`, `front
 | `scripts/design_search.py` | `contrib/scripts/design_search.py` | Catálogo CSV offline acoplado à antiga skill `design-intelligence` | `craft-setup` (`DESIGN.md`) + `craft-system` |
 | `tests/test_design_search.py` | `contrib/tests/test_design_search.py` | Suíte de testes do `design_search.py` movida junto ao módulo | — |
 | `design-intelligence/assets/*.csv` | `contrib/skills/design-intelligence/assets/` | Preservação dos catálogos CSV fora do núcleo ativo | — |
+
+## 6. Enxugamento Lean v4 (2026-11-21)
+
+Remoção definitiva de legado morto, wrappers redundantes e stubs órfãos (69 arquivos removidos):
+- **`contrib/` (29 arquivos, 125 KB):** removidos scripts/testes/CSVs v2/v3 já substituídos no núcleo v4 (`agy_daemon`, `agy_dashboard`, `design_search`, `output_noise`, `session_compactor`, `session_resumer`, `skill_packer`, shims `agy-*`).
+- **Wrappers bash depreciados (12 arquivos):** `agy-{compact,context,debt,effort,health,kit,memory-archive,memory-search,repo-map,skills-profile,worktree}` e `xp-context` consolidados na CLI única `scripts/xp`.
+- **Scripts legados obsoletos (4 arquivos):** `prune_skills.py` (77 skills v2 mortas), `agy-init-memory` (coberto por `kit_installer.py`), `agy-audit-config` (absorvido por `kit_lint.py`), `agy_health.py` (substituído por `xp kit doctor`).
+- **Stubs, templates e packs órfãos (24 arquivos):** 15× `.agents/skills/*/sections/0-resumo.md`, `.agents/mission-report.md`, `.agents/templates/{MEMORY.template.md,PROJECT_MEMORY_TEMPLATE.md,active-mission.template.json}`, e 3 packs quebrados (`.agents/packs/{brutalist,marketing,roadmapping}`).

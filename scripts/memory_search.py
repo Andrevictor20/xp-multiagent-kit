@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 scripts/memory_search.py
-Motor de Busca Rápida de Memória & Contexto via SQLite FTS5 para o XP Multi-Agent Kit.
-Permite consultas ultrarrápidas (<2ms) com resposta concisa (<100 tokens) para evitar leituras
-completas de arquivos markdown na recuperação de contexto procedural, episódico e semântico.
+Motor de Busca Rápida de Memória & Contexto via SQLite FTS5 para o XP Multi-Agent Kit v4.
+Suporta escopos `repo:` (isolado por projeto) e `user:` (cross-repo em ~/.xp-kit/memory/),
+indexando todas as 5 camadas (fatos, decisões, histórico, lições/never e Dead-Ends).
 """
 from __future__ import annotations
 
@@ -17,15 +17,23 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 DB_FILENAME = ".memory_index.db"
+USER_DB_FILENAME = ".user_index.db"
 
 
 def get_db_path(workspace: Path) -> Path:
-    """Retorna o caminho do banco SQLite de índice de memória."""
     return workspace.resolve() / ".agents" / "memory" / DB_FILENAME
 
 
+def resolve_user_memory_dir(user_dir: Optional[Path] = None) -> Path:
+    if user_dir is not None:
+        return Path(user_dir).expanduser().resolve()
+    env_dir = os.environ.get("XP_USER_MEMORY_DIR")
+    if env_dir:
+        return Path(env_dir).expanduser().resolve()
+    return (Path.home() / ".xp-kit" / "memory").resolve()
+
+
 def get_file_meta(file_path: Path) -> Tuple[float, int, str]:
-    """Retorna mtime, size e hash sha256 simplificado de um arquivo."""
     stat = file_path.stat()
     content = file_path.read_bytes()
     h = hashlib.sha256(content).hexdigest()
@@ -33,7 +41,6 @@ def get_file_meta(file_path: Path) -> Tuple[float, int, str]:
 
 
 def init_db(db_path: Path) -> sqlite3.Connection:
-    """Inicializa o banco de dados com suporte a FTS5 se ainda não existir."""
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(db_path))
     conn.execute("PRAGMA journal_mode=WAL;")
@@ -64,8 +71,19 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+def _section_kind(h2: str) -> str:
+    low = h2.lower()
+    if "dead-end" in low or "dead end" in low or "falharam" in low or "negative memory" in low:
+        return "dead_end"
+    if "never" in low or "lições" in low or "licoes" in low or "procedural" in low or "gotcha" in low:
+        return "never_or_lesson"
+    if "decis" in low or "architectural" in low or "preferências" in low or "preferencias" in low:
+        return "decision"
+    return ""
+
+
 def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, Any]]:
-    """Extrai lições, decisões, políticas, critérios de aceitação e histórico para indexação."""
+    """Extrai lições, regras never, Dead-Ends, decisões, políticas, ACs e histórico."""
     entries: List[Dict[str, Any]] = []
     if not file_path.is_file():
         return entries
@@ -76,6 +94,7 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
     is_policy_file = "policies" in rel_path
     is_spec_file = "specs" in rel_path
     is_decision_file = "5-architectural" in rel_path or "/adr/" in rel_path or rel_path.startswith("adr/")
+    is_dead_ends_file = "dead_ends" in rel_path.lower() or "dead-ends" in rel_path.lower()
 
     current_h2 = ""
     current_h3 = ""
@@ -105,10 +124,9 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
 
     for idx, line in enumerate(lines, 1):
         s_line = line.strip()
-        if not s_line:
+        if not s_line or s_line.startswith("<!--"):
             continue
 
-        # Header tracking para chunking contextual
         if s_line.startswith("## "):
             if is_policy_file or is_spec_file:
                 flush_section()
@@ -130,6 +148,8 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
             section_title = s_line[2:].strip()
             section_start_line = idx
             continue
+
+        sec_kind = _section_kind(current_h2)
 
         # 1. Lições aprendidas [L-NNN]
         lesson_match = re.search(r"\[(L-\d+)\]\s*(?:\*\*(.*?)\*\*)?[:\s-]*(.*)", s_line)
@@ -163,9 +183,38 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
                 })
                 continue
 
-        # 3. Decisões arquiteturais (- **YYYY-MM-DD - Title:** Body ou - **Title:** Body)
+        # 3. Dead-Ends (Negative Memory)
+        if (sec_kind == "dead_end" or is_dead_ends_file) and s_line.startswith(("- ", "* ")):
+            if "nenhum dead-end registrado" in s_line.lower():
+                continue
+            entries.append({
+                "category": "dead_end",
+                "identifier": f"DEAD-END-L{idx}",
+                "title": f"Dead-End ({Path(rel_path).name})",
+                "content": f"[Arquivo: {rel_path} | Dead-End] {s_line}",
+                "source_file": rel_path,
+                "line_number": idx,
+            })
+            continue
+
+        # 4. Regras 'never' e lições em bullet da seção 4
+        if sec_kind == "never_or_lesson" and s_line.startswith(("- ", "* ")):
+            is_never = bool(re.match(r"^[-*]\s+`?never`?\b", s_line, re.IGNORECASE))
+            cat = "never" if is_never else "lesson"
+            label = "Never" if is_never else "Lição"
+            entries.append({
+                "category": cat,
+                "identifier": f"{cat.upper()}-L{idx}",
+                "title": f"{label} ({Path(rel_path).name})",
+                "content": f"[Arquivo: {rel_path} | {label}] {s_line}",
+                "source_file": rel_path,
+                "line_number": idx,
+            })
+            continue
+
+        # 5. Decisões arquiteturais e preferências globais
         dec_match = re.search(r"^[-*]\s*\*\*(?:(\d{4}-\d{2}-\d{2})\s*[-–:]\s*)?(.*?)\*\*[:\s-]*(.*)", s_line)
-        if dec_match and (is_decision_file or "decis" in s_line.lower()):
+        if dec_match and (is_decision_file or sec_kind == "decision" or "decis" in s_line.lower()):
             dt = dec_match.group(1) or ""
             title = dec_match.group(2).strip()
             ident = f"{dt}-{title[:20]}" if dt else title[:30]
@@ -179,8 +228,18 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
                 "line_number": idx,
             })
             continue
+        if sec_kind == "decision" and s_line.startswith(("- ", "* ")):
+            entries.append({
+                "category": "decision",
+                "identifier": f"DEC-L{idx}",
+                "title": f"Decisão ({Path(rel_path).name})",
+                "content": f"[Arquivo: {rel_path} | Decisão] {s_line}",
+                "source_file": rel_path,
+                "line_number": idx,
+            })
+            continue
 
-        # 4. Critérios de aceitação de Specs (AC-N: ...)
+        # 6. Critérios de aceitação de Specs (AC-N: ...)
         ac_match = re.search(r"^[-*]?\s*[`'\"]?(AC-\d+)[`'\"]?[:\s-]*(.*)", s_line)
         if ac_match:
             ac_id = ac_match.group(1)
@@ -195,7 +254,6 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
             })
             continue
 
-        # Se for política ou especificação, acumula na seção
         if is_policy_file or is_spec_file:
             section_lines.append(s_line)
 
@@ -206,7 +264,6 @@ def extract_entries_from_file(file_path: Path, rel_path: str) -> List[Dict[str, 
 
 
 def find_candidate_files(workspace: Path) -> List[Path]:
-    """Localiza todos os arquivos de memória, políticas, specs e ADRs do projeto."""
     workspace = workspace.resolve()
     candidate_files: List[Path] = []
     agents_dir = workspace / ".agents"
@@ -216,122 +273,82 @@ def find_candidate_files(workspace: Path) -> List[Path]:
         proj_mem = memory_dir / "PROJECT_MEMORY.md"
         if proj_mem.is_file():
             candidate_files.append(proj_mem)
+        for sub in ("archive", "details", "adr"):
+            sub_dir = memory_dir / sub
+            if sub_dir.is_dir():
+                candidate_files.extend(sorted(sub_dir.glob("*.md")))
 
-        arch_dir = memory_dir / "archive"
-        if arch_dir.is_dir():
-            for f in sorted(arch_dir.glob("*.md")):
-                candidate_files.append(f)
-
-        det_dir = memory_dir / "details"
-        if det_dir.is_dir():
-            for f in sorted(det_dir.glob("*.md")):
-                candidate_files.append(f)
-
-        adr_dir = memory_dir / "adr"
-        if adr_dir.is_dir():
-            for f in sorted(adr_dir.glob("*.md")):
-                candidate_files.append(f)
-
-    pol_dir = agents_dir / "policies"
-    if pol_dir.is_dir():
-        for f in sorted(pol_dir.glob("*.md")):
-            candidate_files.append(f)
-
-    specs_dir = agents_dir / "specs"
-    if specs_dir.is_dir():
-        for f in sorted(specs_dir.glob("*.md")):
-            candidate_files.append(f)
-
-    skill_lesson = agents_dir / "skills" / "lesson-learned" / "SKILL.md"
-    if skill_lesson.is_file():
-        candidate_files.append(skill_lesson)
+    for folder in ("policies", "specs"):
+        f_dir = agents_dir / folder
+        if f_dir.is_dir():
+            for f in sorted(f_dir.glob("*.md")):
+                if f.name != "INDEX.md":
+                    candidate_files.append(f)
 
     return candidate_files
 
 
-def build_or_update_index(workspace: Path) -> Dict[str, int]:
-    """Indexa incrementalmente todos os arquivos de memória e governança."""
-    workspace = workspace.resolve()
-    candidate_files = find_candidate_files(workspace)
-    if not candidate_files:
+def _index_files_into_db(base_dir: Path, files: List[Path], db_path: Path) -> Dict[str, int]:
+    if not files:
         return {"indexed_items": 0, "reindexed_files": 0}
-
-    db_path = get_db_path(workspace)
     conn = init_db(db_path)
-
-    total_indexed_items = 0
-    reindexed_files_count = 0
-
-    for fpath in candidate_files:
-        rel_path = str(fpath.relative_to(workspace))
+    total_indexed = 0
+    reindexed = 0
+    for fpath in files:
+        try:
+            rel_path = str(fpath.relative_to(base_dir))
+        except ValueError:
+            rel_path = fpath.name
         mtime, size, fhash = get_file_meta(fpath)
-
-        cursor = conn.cursor()
-        cursor.execute("SELECT mtime, size, hash FROM indexed_files WHERE file_path = ?", (rel_path,))
-        row = cursor.fetchone()
-
+        row = conn.execute(
+            "SELECT mtime, size, hash FROM indexed_files WHERE file_path = ?", (rel_path,)
+        ).fetchone()
         if row and row[0] == mtime and row[1] == size and row[2] == fhash:
             continue
 
         conn.execute("DELETE FROM memory_fts WHERE source_file = ?", (rel_path,))
-
-        entries = extract_entries_from_file(fpath, rel_path)
-        for e in entries:
+        for e in extract_entries_from_file(fpath, rel_path):
             conn.execute(
-                """
-                INSERT INTO memory_fts (category, identifier, title, content, source_file, line_number)
-                VALUES (?, ?, ?, ?, ?, ?);
-                """,
+                "INSERT INTO memory_fts (category, identifier, title, content, source_file, line_number) VALUES (?, ?, ?, ?, ?, ?);",
                 (e["category"], e["identifier"], e["title"], e["content"], e["source_file"], e["line_number"]),
             )
-            total_indexed_items += 1
-
+            total_indexed += 1
         conn.execute(
-            """
-            INSERT OR REPLACE INTO indexed_files (file_path, mtime, size, hash)
-            VALUES (?, ?, ?, ?);
-            """,
+            "INSERT OR REPLACE INTO indexed_files (file_path, mtime, size, hash) VALUES (?, ?, ?, ?);",
             (rel_path, mtime, size, fhash),
         )
-        reindexed_files_count += 1
-
+        reindexed += 1
     conn.commit()
     conn.close()
-
-    return {
-        "indexed_items": total_indexed_items,
-        "reindexed_files": reindexed_files_count,
-    }
+    return {"indexed_items": total_indexed, "reindexed_files": reindexed}
 
 
-def search_memory(
-    workspace: Path,
-    query: str,
-    limit: int = 5,
-    category: Optional[str] = None,
+def build_or_update_index(workspace: Path) -> Dict[str, int]:
+    ws = workspace.resolve()
+    return _index_files_into_db(ws, find_candidate_files(ws), get_db_path(ws))
+
+
+def build_or_update_user_index(user_dir: Optional[Path] = None) -> Dict[str, int]:
+    u_dir = resolve_user_memory_dir(user_dir)
+    if not u_dir.is_dir():
+        return {"indexed_items": 0, "reindexed_files": 0}
+    files = sorted(u_dir.glob("*.md"))
+    return _index_files_into_db(u_dir, files, u_dir / USER_DB_FILENAME)
+
+
+def _query_db(
+    db_path: Path,
+    safe_terms: List[str],
+    limit: int,
+    category: Optional[str],
+    scope_label: str,
 ) -> List[Dict[str, Any]]:
-    """Executa busca full-text com ponderação BM25 em SQLite FTS5."""
-    workspace = workspace.resolve()
-    db_path = get_db_path(workspace)
-
-    build_or_update_index(workspace)
-
     if not db_path.is_file():
         return []
-
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
-
-    safe_terms = [re.sub(r'[^a-zA-Z0-9_\-]', '', t) for t in query.split() if t.strip()]
-    if not safe_terms:
-        conn.close()
-        return []
-
-    # Tenta busca exata / AND primeiro, se vazio tenta OR
     query_and = " ".join([f'"{term}"*' for term in safe_terms])
     query_or = " OR ".join([f'"{term}"*' for term in safe_terms])
-
-    results: List[Dict[str, Any]] = []
 
     def execute_query(fts_pattern: str) -> List[Dict[str, Any]]:
         sql = """
@@ -344,75 +361,114 @@ def search_memory(
         if category:
             sql += " AND category = ?"
             params.append(category)
-
-        sql += " ORDER BY CASE WHEN category IN ('lesson', 'policy', 'decision', 'spec') THEN 0 ELSE 1 END, rank ASC LIMIT ?"
+        sql += (
+            " ORDER BY CASE WHEN category IN ('dead_end', 'never', 'lesson', 'policy', 'decision', 'spec') "
+            "THEN 0 ELSE 1 END, rank ASC LIMIT ?"
+        )
         params.append(limit)
-
-        res = []
-        cursor = conn.cursor()
-        cursor.execute(sql, params)
-        for row in cursor.fetchall():
-            res.append({
-                "category": row["category"],
-                "identifier": row["identifier"],
-                "title": row["title"],
-                "content": row["content"],
-                "source_file": row["source_file"],
-                "line_number": row["line_number"],
-                "rank": row["rank"],
-            })
-        return res
+        rows = conn.execute(sql, params).fetchall()
+        return [
+            {
+                "category": r["category"],
+                "identifier": r["identifier"],
+                "title": r["title"],
+                "content": r["content"],
+                "source_file": r["source_file"],
+                "line_number": r["line_number"],
+                "rank": r["rank"],
+                "scope": scope_label,
+            }
+            for r in rows
+        ]
 
     try:
-        results = execute_query(query_and)
-        if not results and query_and != query_or:
-            results = execute_query(query_or)
+        res = execute_query(query_and)
+        if not res and query_and != query_or:
+            res = execute_query(query_or)
+        return res
     except sqlite3.OperationalError:
-        pass
+        return []
     finally:
         conn.close()
 
-    return results
+
+def search_memory(
+    workspace: Path,
+    query: str,
+    limit: int = 5,
+    category: Optional[str] = None,
+    scope: str = "all",
+    user_dir: Optional[Path] = None,
+) -> List[Dict[str, Any]]:
+    """Executa busca full-text BM25 em SQLite FTS5 nos escopos repo:, user: ou all."""
+    ws = workspace.resolve()
+    safe_terms = [re.sub(r"[^a-zA-Z0-9_\-]", "", t) for t in query.split() if t.strip()]
+    safe_terms = [t for t in safe_terms if t]
+    if not safe_terms:
+        return []
+
+    combined: List[Dict[str, Any]] = []
+    if scope in ("all", "repo"):
+        build_or_update_index(ws)
+        combined.extend(_query_db(get_db_path(ws), safe_terms, limit, category, "repo"))
+
+    if scope in ("all", "user"):
+        u_dir = resolve_user_memory_dir(user_dir)
+        if u_dir.is_dir():
+            build_or_update_user_index(u_dir)
+            combined.extend(_query_db(u_dir / USER_DB_FILENAME, safe_terms, limit, category, "user"))
+
+    priority_cats = {"dead_end", "never", "lesson", "policy", "decision", "spec"}
+    combined.sort(
+        key=lambda r: (
+            0 if r["category"] in priority_cats else 1,
+            0 if r["scope"] == "repo" else 1,
+            r["rank"],
+        )
+    )
+    return combined[:limit]
 
 
 def format_search_results(results: List[Dict[str, Any]], query: str) -> str:
-    """Formata os resultados de busca em bloco ultracompacto (< 15 linhas / ~80 tokens)."""
     if not results:
         return f"ℹ️ Nenhuma entrada encontrada na memória para: '{query}'"
-
     lines: List[str] = [f"🔍 Memória FTS5 — Resultados para '{query}' ({len(results)} encontrados):"]
     for r in results:
-        cat_badge = f"[{r['category'].upper()}]"
-        ident = f"`{r['identifier']}`" if r['identifier'] else ""
-        content = r['content']
-        if r['category'] == 'history':
+        sc = r.get("scope", "repo").upper()
+        cat_badge = f"[{sc}|{r['category'].upper()}]"
+        ident = f"`{r['identifier']}`" if r["identifier"] else ""
+        content = r["content"]
+        if r["category"] == "history":
             parts = [p.strip() for p in content.split("|")[1:-1]]
             if len(parts) >= 3:
                 content = f"{parts[0]} ({parts[1]}): {parts[2]}"
-
         loc = f"({r['source_file']}#L{r['line_number']})"
         lines.append(f"- {cat_badge} {ident} {content} {loc}")
-
     return "\n".join(lines)
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Motor de Busca Rápida de Memória & Lições (SQLite FTS5)")
+    parser = argparse.ArgumentParser(description="Motor de Busca Rápida de Memória Multi-Repo (SQLite FTS5)")
     parser.add_argument("query", nargs="?", default="", help="Termo para buscar na memória")
     parser.add_argument("--workspace", default=".", help="Diretório raiz do projeto")
-    parser.add_argument("--limit", type=int, default=5, help="Limite de resultados (padrão: 5)")
-    parser.add_argument("--category", choices=["lesson", "history", "decision", "policy", "spec"], help="Filtrar por categoria")
-    parser.add_argument("--index", action="store_true", help="Apenas reindexar o banco de memória")
+    parser.add_argument("--limit", type=int, default=5)
+    parser.add_argument("--scope", choices=["all", "repo", "user"], default="all")
+    parser.add_argument("--category", choices=["lesson", "history", "decision", "policy", "spec", "dead_end", "never"])
+    parser.add_argument("--index", action="store_true", help="Apenas reindexar os bancos de memória")
 
     args = parser.parse_args()
     ws = Path(args.workspace)
 
     if args.index or not args.query:
         stats = build_or_update_index(ws)
-        print(f"✅ Índice de memória atualizado: {stats['indexed_items']} itens indexados em {stats['reindexed_files']} arquivos.")
+        u_stats = build_or_update_user_index()
+        print(
+            f"✅ Índice atualizado: repo={stats['indexed_items']} itens ({stats['reindexed_files']} arq.) | "
+            f"user={u_stats['indexed_items']} itens ({u_stats['reindexed_files']} arq.)"
+        )
         return 0
 
-    results = search_memory(ws, args.query, limit=args.limit, category=args.category)
+    results = search_memory(ws, args.query, limit=args.limit, category=args.category, scope=args.scope)
     print(format_search_results(results, args.query))
     return 0
 

@@ -2,236 +2,130 @@
 set -euo pipefail
 
 # ==============================================================================
-# Script de Instalação e Sincronização Global do XP Multi-Agent Kit v2
-# Otimizado para alta eficiência de tokens no Antigravity (~/.gemini/config/)
+# Instalação e Sincronização Global — XP Multi-Agent Kit v4 (Thin Harness)
 # ==============================================================================
 
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GLOBAL_CONFIG_DIR="$HOME/.gemini/config"
 GLOBAL_SKILLS_DIR="$GLOBAL_CONFIG_DIR/skills"
-GLOBAL_RULES_DIR="$GLOBAL_CONFIG_DIR/rules"
-GLOBAL_PLUGIN_DIR="$GLOBAL_CONFIG_DIR/plugins/xp-multiagent-kit"
 
 echo "===================================================================="
-echo "🚀 Sincronizando XP Multi-Agent Kit v2 no Antigravity"
+echo "🚀 Sincronizando XP Multi-Agent Kit v4 no Antigravity"
 echo "📂 Origem: $KIT_DIR"
 echo "🌐 Destino Global: $GLOBAL_CONFIG_DIR"
 echo "===================================================================="
 
-# 1. Limpar regras e links legados redundantes que causavam estouro de tokens
-rm -rf "$GLOBAL_PLUGIN_DIR"
+# 1. Limpar regras legadas redundantes
+rm -rf "$GLOBAL_CONFIG_DIR/plugins/xp-multiagent-kit"
 rm -f "$HOME/.gemini/AGENTS.md" "$HOME/.gemini/GEMINI.md" "$GLOBAL_CONFIG_DIR/GEMINI.md"
-
-# 2. Criar pastas estruturais necessárias
 mkdir -p "$GLOBAL_SKILLS_DIR"
 
-# 3. Configurar AGENTS.md como Global Dispatcher Minimalista (elimina duplicação de 5k tokens por turno)
-echo "🔗 Gerando AGENTS.md mestre global como dispatcher minimalista..."
+# 2. Global Dispatcher minimalista (~270 B, sem duplicação com AGENTS.md local)
 cat << 'EOF' > "$GLOBAL_CONFIG_DIR/AGENTS.md"
-# Global Agent Dispatcher — XP Multi-Agent Kit v4 (Thin Harness)
+# XP Kit v4 — Global Dispatcher
 
-Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder, Claude):
-1. If the active repository/workspace contains an `AGENTS.md` file, strictly follow its directives as the single source of truth.
-2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.
-3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.
-4. **Mandatory Language Rule:** Internal skills and workflows are in English for token efficiency, but **ALL user-facing responses and explanations MUST be in Portuguese (Português)** unless requested otherwise.
+1. Follow workspace `AGENTS.md` as single source of truth.
+2. Prioritize 100% completeness (Heilmeier + Zero-Decision Plan + EGM).
+3. When requested, dispatch subagents in Turn 1.
+4. ALL user-facing responses MUST be in Português (PT-BR).
 EOF
 
-# 3.1. Reorganizar skills legadas de GCP em plugins_disabled para não estourar o orçamento de skills
+# 3. Isolar skills não-symlink legadas
 GCP_PLUGIN_SKILLS="$GLOBAL_CONFIG_DIR/plugins_disabled/googlecloudtools.datacloud_telemetry/skills"
 mkdir -p "$GCP_PLUGIN_SKILLS"
 for existing_skill in "$GLOBAL_SKILLS_DIR"/*; do
   if [ -d "$existing_skill" ] && [ ! -L "$existing_skill" ]; then
     sname="$(basename "$existing_skill")"
-    echo "📦 Isolando skill legado em plugins_disabled: $sname"
     rm -rf "$GCP_PLUGIN_SKILLS/$sname"
     mv "$existing_skill" "$GCP_PLUGIN_SKILLS/"
   fi
 done
-# Garantir que o diretório do plugin interno exista para evitar falhas em hooks de PreToolUse
 mkdir -p "$GLOBAL_CONFIG_DIR/plugins/googlecloudtools.datacloud_telemetry"
 
-# 4. Vincular todas as Skills globais dinamicamente (removendo links órfãos da poda)
-echo "🔗 Sincronizando Skills globais do kit..."
+# 4. Sincronizar Skills e ativos v4
 for existing_link in "$GLOBAL_SKILLS_DIR"/*; do
-  if [ -L "$existing_link" ]; then
-    rm -f "$existing_link"
-  fi
+  [ -L "$existing_link" ] && rm -f "$existing_link"
 done
 skill_count=0
 for skill_path in "$KIT_DIR/.agents/skills"/*; do
   if [ -d "$skill_path" ]; then
-    skill_name="$(basename "$skill_path")"
-    ln -sfn "$skill_path" "$GLOBAL_SKILLS_DIR/$skill_name"
+    ln -sfn "$skill_path" "$GLOBAL_SKILLS_DIR/$(basename "$skill_path")"
     skill_count=$((skill_count + 1))
   fi
 done
-echo "   ✅ $skill_count skills sincronizadas em $GLOBAL_SKILLS_DIR!"
+echo "   ✅ $skill_count skills sincronizadas em $GLOBAL_SKILLS_DIR"
 
-# 4.1. Vincular Agents, Workflows, Policies, Rules e Templates
-ln -sfn "$KIT_DIR/.agents/agents" "$GLOBAL_CONFIG_DIR/agents"
-ln -sfn "$KIT_DIR/.agents/workflows" "$GLOBAL_CONFIG_DIR/workflows"
-ln -sfn "$KIT_DIR/.agents/policies" "$GLOBAL_CONFIG_DIR/policies"
-ln -sfn "$KIT_DIR/.agents/rules" "$GLOBAL_CONFIG_DIR/rules"
-ln -sfn "$KIT_DIR/.agents/templates" "$GLOBAL_CONFIG_DIR/templates"
-ln -sfn "$KIT_DIR/.agents/memory" "$GLOBAL_CONFIG_DIR/memory"
+for sub in agents policies templates memory graph packs; do
+  [ -d "$KIT_DIR/.agents/$sub" ] && ln -sfn "$KIT_DIR/.agents/$sub" "$GLOBAL_CONFIG_DIR/$sub"
+done
+rm -f "$GLOBAL_CONFIG_DIR/workflows" "$GLOBAL_CONFIG_DIR/rules"
 
-# 4.2. Renderizar hooks.json diretamente para a configuração global
+# 5. Renderizar hooks.json com caminhos absolutos
 HOOKS_SRC="$GLOBAL_CONFIG_DIR/hooks.json"
 if [ -f "$KIT_DIR/.agents/hooks.json" ]; then
-  echo "🔗 Renderizando hooks.json com caminhos absolutos em $GLOBAL_CONFIG_DIR/hooks.json..."
   python3 -c "
 import json
-src = '$KIT_DIR/.agents/hooks.json'
-dst = '$GLOBAL_CONFIG_DIR/hooks.json'
-kit = '$KIT_DIR'
-try:
-    with open(src) as f:
-        raw = f.read()
-    d = json.loads(raw.replace('\${KIT_ROOT}', kit).replace('\$KIT_ROOT', kit))
-    d.pop('orca-status', None)
-    with open(dst, 'w') as f:
-        json.dump(d, f, indent=2)
-        f.write('\n')
-except Exception:
-    pass
+src, dst, kit = '$KIT_DIR/.agents/hooks.json', '$HOOKS_SRC', '$KIT_DIR'
+d = json.loads(open(src).read().replace('\${KIT_ROOT}', kit).replace('\$KIT_ROOT', kit))
+open(dst, 'w').write(json.dumps(d, indent=2) + '\n')
 " 2>/dev/null || true
-  rm -f "$KIT_DIR/.agents/hooks.rendered.json"
-else
-  HOOKS_SRC="$KIT_DIR/.agents/hooks.json"
 fi
 
-# 4.3. Garantir paridade com Antigravity CLI
-CLI_DIR="$HOME/.gemini/antigravity-cli"
-if [ -d "$CLI_DIR" ]; then
-  echo "🔗 Sincronizando paridade com Antigravity CLI ($CLI_DIR)..."
-  ln -sfn "$GLOBAL_CONFIG_DIR/agents" "$CLI_DIR/agents"
-  ln -sfn "$GLOBAL_CONFIG_DIR/workflows" "$CLI_DIR/workflows"
-  ln -sfn "$GLOBAL_CONFIG_DIR/skills" "$CLI_DIR/skills"
-  ln -sfn "$GLOBAL_CONFIG_DIR/rules" "$CLI_DIR/rules"
-  ln -sfn "$GLOBAL_CONFIG_DIR/policies" "$CLI_DIR/policies"
-  ln -sfn "$GLOBAL_CONFIG_DIR/templates" "$CLI_DIR/templates"
-  ln -sfn "$KIT_DIR/.agents/memory" "$CLI_DIR/memory"
-  ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$CLI_DIR/AGENTS.md"
-  rm -f "$CLI_DIR/GEMINI.md"
-  ln -sf "$HOOKS_SRC" "$CLI_DIR/hooks.json"
-  [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$CLI_DIR/mcp_config.json"
-fi
-
-# 4.4. Garantir paridade com Antigravity IDE
-IDE_DIR="$HOME/.gemini/antigravity-ide"
-if [ -d "$IDE_DIR" ]; then
-  echo "🔗 Sincronizando paridade com Antigravity IDE ($IDE_DIR)..."
-  ln -sfn "$GLOBAL_CONFIG_DIR/agents" "$IDE_DIR/agents"
-  ln -sfn "$GLOBAL_CONFIG_DIR/workflows" "$IDE_DIR/workflows"
-  ln -sfn "$GLOBAL_CONFIG_DIR/skills" "$IDE_DIR/skills"
-  ln -sfn "$GLOBAL_CONFIG_DIR/rules" "$IDE_DIR/rules"
-  ln -sfn "$GLOBAL_CONFIG_DIR/policies" "$IDE_DIR/policies"
-  ln -sfn "$GLOBAL_CONFIG_DIR/templates" "$IDE_DIR/templates"
-  ln -sfn "$KIT_DIR/.agents/memory" "$IDE_DIR/memory"
-  ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$IDE_DIR/AGENTS.md"
-  rm -f "$IDE_DIR/GEMINI.md"
-  [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$IDE_DIR/mcp_config.json"
-  ln -sf "$HOOKS_SRC" "$IDE_DIR/hooks.json"
-  rm -rf "$CLI_DIR/mcp"/* "$IDE_DIR/mcp"/* 2>/dev/null || true
-  if [ -f "$CLI_DIR/settings.json" ] && [ ! -f "$IDE_DIR/settings.json" ]; then
-    cp "$CLI_DIR/settings.json" "$IDE_DIR/settings.json"
+# 6. Paridade Antigravity CLI e IDE
+for TARGET_DIR in "$HOME/.gemini/antigravity-cli" "$HOME/.gemini/antigravity-ide"; do
+  if [ -d "$TARGET_DIR" ]; then
+    for sub in agents skills policies templates memory; do
+      [ -e "$GLOBAL_CONFIG_DIR/$sub" ] && ln -sfn "$GLOBAL_CONFIG_DIR/$sub" "$TARGET_DIR/$sub"
+    done
+    rm -f "$TARGET_DIR/workflows" "$TARGET_DIR/rules" "$TARGET_DIR/GEMINI.md"
+    ln -sf "$GLOBAL_CONFIG_DIR/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+    ln -sf "$HOOKS_SRC" "$TARGET_DIR/hooks.json"
+    [ -f "$GLOBAL_CONFIG_DIR/mcp_config.json" ] && ln -sf "$GLOBAL_CONFIG_DIR/mcp_config.json" "$TARGET_DIR/mcp_config.json"
   fi
-fi
+done
 
-# 4.4. Implantar universal .geminiignore e .antigravityignore em todos os projetos
-if [ -f "$KIT_DIR/scripts/apply_ignore_rules.py" ]; then
-  echo "📄 Implantando .geminiignore & .antigravityignore em todos os projetos da IDE e CLI..."
-  python3 "$KIT_DIR/scripts/apply_ignore_rules.py" || true
-fi
-
-# 4.5. Configurar permissões irrestritas de MCP e auto-aprovação de ferramentas
-echo "⚙️  Configurando permissões irrestritas e auto-aprovação MCP..."
+# 7. Ignore rules + permissões MCP
+[ -f "$KIT_DIR/scripts/apply_ignore_rules.py" ] && python3 "$KIT_DIR/scripts/apply_ignore_rules.py" || true
 python3 "$KIT_DIR/scripts/kit_installer.py" --configure-mcp || true
 
-# 5. Instalar executáveis CLI globais em ~/.local/bin/
-echo "🔗 Instalando ferramentas globais de otimização de tokens em ~/.local/bin/..."
-mkdir -p "$HOME/.local/bin"
+# 8. CLI unificada `xp` + essenciais em ~/.local/bin/
+BIN_DIR="$HOME/.local/bin"
+mkdir -p "$BIN_DIR"
 chmod +x "$KIT_DIR/scripts"/* "$KIT_DIR/scripts/hooks"/* "$KIT_DIR/scripts/global-token-optimizer"/* 2>/dev/null || true
 
-ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/agy-sanitize"
-# Enforcement portátil (C1) + telemetria local (D) + evidência/conformance (E1/E2)
-ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/agy-run"
-ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$HOME/.local/bin/agy-turn"
-ln -sf "$KIT_DIR/scripts/evidence_recorder.py" "$HOME/.local/bin/agy-evidence"
-ln -sf "$KIT_DIR/scripts/conformance_report.py" "$HOME/.local/bin/agy-conformance"
-ln -sf "$KIT_DIR/scripts/skill_index.py" "$HOME/.local/bin/agy-skill-index"
-ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit-config"
-ln -sf "$KIT_DIR/scripts/agy-audit-config" "$HOME/.local/bin/agy-audit"
-ln -sf "$KIT_DIR/scripts/apply_ignore_rules.py" "$HOME/.local/bin/agy-apply-ignore"
-if [ -f "$HOME/.local/bin/agy" ] && [ ! -L "$HOME/.local/bin/agy" ]; then
-  mv "$HOME/.local/bin/agy" "$HOME/.local/bin/agy-native"
-fi
-ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy"
-ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-fast"
-ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-deep"
-ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$HOME/.local/bin/agy-smart"
-ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/agy-effort"
-ln -sf "$KIT_DIR/scripts/agy-init-memory" "$HOME/.local/bin/agy-init-memory"
-ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/agy-ci-heal"
-ln -sf "$KIT_DIR/scripts/ci_healer.py" "$HOME/.local/bin/xp-ci-heal"
-ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/agy-worktree"
-ln -sf "$KIT_DIR/scripts/agy-skills-profile" "$HOME/.local/bin/agy-skills-profile"
-ln -sf "$KIT_DIR/scripts/agy-skills-profile" "$HOME/.local/bin/agy-skills"
-ln -sf "$KIT_DIR/scripts/agy-worktree" "$HOME/.local/bin/xp-worktree"
-ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/agy-compact"
-ln -sf "$KIT_DIR/scripts/agy-compact" "$HOME/.local/bin/xp-compact"
-ln -sf "$KIT_DIR/scripts/agy-git-ops" "$HOME/.local/bin/agy-git-ops"
-ln -sf "$KIT_DIR/scripts/agy-memory-archive" "$HOME/.local/bin/agy-memory-archive"
-ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/agy-health"
-ln -sf "$KIT_DIR/scripts/agy-memory-search" "$HOME/.local/bin/agy-memory-search"
-ln -sf "$KIT_DIR/scripts/agy-context" "$HOME/.local/bin/agy-context"
-ln -sf "$KIT_DIR/scripts/xp-context" "$HOME/.local/bin/xp-context"
-rm -f "$HOME/.local/bin/agy-handoff" "$HOME/.local/bin/xp-handoff" "$HOME/.local/bin/agy-resume" "$HOME/.local/bin/agy-daemon" "$HOME/.local/bin/agy-dashboard" "$HOME/.local/bin/agy-session-compact" "$HOME/.local/bin/agy-pack" "$HOME/.local/bin/xp-pack"
-ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/agy-debt"
-ln -sf "$KIT_DIR/scripts/agy-debt" "$HOME/.local/bin/xp-debt"
-ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/agy-kit"
-ln -sf "$KIT_DIR/scripts/agy-kit" "$HOME/.local/bin/xp-kit"
-ln -sf "$KIT_DIR/scripts/agy-run" "$HOME/.local/bin/xp-run"
-ln -sf "$KIT_DIR/scripts/agy-sanitize" "$HOME/.local/bin/xp-sanitize"
-ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$HOME/.local/bin/xp-turn"
-ln -sf "$KIT_DIR/scripts/evidence_recorder.py" "$HOME/.local/bin/xp-evidence"
-ln -sf "$KIT_DIR/scripts/conformance_report.py" "$HOME/.local/bin/xp-conformance"
-ln -sf "$KIT_DIR/scripts/skill_index.py" "$HOME/.local/bin/xp-skill-index"
-ln -sf "$KIT_DIR/scripts/agy-health" "$HOME/.local/bin/xp-health"
-ln -sf "$KIT_DIR/scripts/agy-effort" "$HOME/.local/bin/xp-effort"
-ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/agy-spec"
-ln -sf "$KIT_DIR/scripts/spec_tool.py" "$HOME/.local/bin/xp-spec"
-ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/agy-goldfish"
-ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$HOME/.local/bin/xp-goldfish"
-ln -sf "$KIT_DIR/scripts/xp" "$HOME/.local/bin/xp"
-ln -sf "$KIT_DIR/scripts/xp_gate.py" "$HOME/.local/bin/xp-gate"
-ln -sf "$KIT_DIR/scripts/xp_contract.py" "$HOME/.local/bin/xp-contract"
-ln -sf "$KIT_DIR/scripts/xp_flow.py" "$HOME/.local/bin/xp-flow"
-ln -sf "$KIT_DIR/scripts/xp_evolve.py" "$HOME/.local/bin/xp-evolve"
+# Limpar shims depreciados/mortos
+rm -f "$BIN_DIR"/{agy-handoff,xp-handoff,agy-resume,agy-daemon,agy-dashboard,agy-session-compact,agy-pack,xp-pack,agy-audit-config,agy-audit,agy-health,xp-health,agy-init-memory,agy-compact,xp-compact,agy-context,xp-context,agy-debt,xp-debt,agy-effort,xp-effort,agy-memory-archive,agy-memory-search,agy-repo-map,agy-skills-profile,agy-skills,agy-worktree,xp-worktree}
 
-echo "   ✅ xp-spec, agy-spec, xp, xp-gate, xp-contract, agy-sanitize, agy-run, agy-turn, agy-evidence, agy-conformance, agy-skill-index, agy-audit, agy-apply-ignore, agy-ci-heal, agy-effort, agy-smart, agy-repo-map, agy-worktree, agy-compact, agy-git-ops, agy-memory-archive, agy-health, agy-memory-search, agy-debt, agy-kit disponíveis no PATH!"
-
-
-# 5.1. Instalação e verificação do RTK (Rust Token Killer)
-if [ -f "$KIT_DIR/rtk-develop/target/release/rtk" ]; then
-  echo "🦀 Instalando RTK compilado em $HOME/.local/bin/rtk..."
-  cp "$KIT_DIR/rtk-develop/target/release/rtk" "$HOME/.local/bin/rtk"
-  chmod +x "$HOME/.local/bin/rtk"
-elif command -v cargo >/dev/null 2>&1 && [ -d "$KIT_DIR/rtk-develop" ]; then
-  echo "🦀 Compilando RTK (Rust Token Killer) para alto desempenho..."
-  cargo build --release --manifest-path "$KIT_DIR/rtk-develop/Cargo.toml" || true
-  if [ -f "$KIT_DIR/rtk-develop/target/release/rtk" ]; then
-    cp "$KIT_DIR/rtk-develop/target/release/rtk" "$HOME/.local/bin/rtk"
-    chmod +x "$HOME/.local/bin/rtk"
-  fi
-fi
-if command -v rtk >/dev/null 2>&1; then
-  echo "   ✅ RTK ativo: $(rtk --version 2>/dev/null || echo 'instalado')"
+if [ -f "$BIN_DIR/agy" ] && [ ! -L "$BIN_DIR/agy" ]; then
+  mv "$BIN_DIR/agy" "$BIN_DIR/agy-native"
 fi
 
-# 6. Configurar Git Hooks globais para o CI/CD Auto-Healer
-echo "🔗 Configurando Git Hooks globais (post-push watcher)..."
+ln -sf "$KIT_DIR/scripts/xp" "$BIN_DIR/xp"
+ln -sf "$KIT_DIR/scripts/xp_gate.py" "$BIN_DIR/xp-gate"
+ln -sf "$KIT_DIR/scripts/xp_contract.py" "$BIN_DIR/xp-contract"
+ln -sf "$KIT_DIR/scripts/xp_flow.py" "$BIN_DIR/xp-flow"
+ln -sf "$KIT_DIR/scripts/xp_evolve.py" "$BIN_DIR/xp-evolve"
+ln -sf "$KIT_DIR/scripts/kit_installer.py" "$BIN_DIR/xp-kit"
+ln -sf "$KIT_DIR/scripts/kit_installer.py" "$BIN_DIR/agy-kit"
+ln -sf "$KIT_DIR/scripts/spec_tool.py" "$BIN_DIR/xp-spec"
+ln -sf "$KIT_DIR/scripts/spec_tool.py" "$BIN_DIR/agy-spec"
+ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$BIN_DIR/xp-goldfish"
+ln -sf "$KIT_DIR/scripts/goldfish_review.py" "$BIN_DIR/agy-goldfish"
+ln -sf "$KIT_DIR/scripts/conformance_report.py" "$BIN_DIR/xp-conformance"
+ln -sf "$KIT_DIR/scripts/evidence_recorder.py" "$BIN_DIR/xp-evidence"
+ln -sf "$KIT_DIR/scripts/turn_telemetry.py" "$BIN_DIR/xp-turn"
+ln -sf "$KIT_DIR/scripts/skill_index.py" "$BIN_DIR/xp-skill-index"
+ln -sf "$KIT_DIR/scripts/ci_healer.py" "$BIN_DIR/xp-ci-heal"
+ln -sf "$KIT_DIR/scripts/agy-run" "$BIN_DIR/xp-run"
+ln -sf "$KIT_DIR/scripts/agy-run" "$BIN_DIR/agy-run"
+ln -sf "$KIT_DIR/scripts/agy-sanitize" "$BIN_DIR/agy-sanitize"
+ln -sf "$KIT_DIR/scripts/agy-git-ops" "$BIN_DIR/agy-git-ops"
+ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$BIN_DIR/agy"
+ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$BIN_DIR/agy-fast"
+ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$BIN_DIR/agy-deep"
+ln -sf "$KIT_DIR/scripts/global-token-optimizer/agy-wrapper.sh" "$BIN_DIR/agy-smart"
+
+# 9. Git Hooks globais (CI Auto-Healer)
 GLOBAL_GIT_HOOKS="$HOME/.config/git/hooks"
 mkdir -p "$GLOBAL_GIT_HOOKS"
 ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/pre-push"
@@ -239,22 +133,9 @@ ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$GLOBAL_GIT_HOOKS/post-pus
 chmod +x "$GLOBAL_GIT_HOOKS/pre-push" "$GLOBAL_GIT_HOOKS/post-push"
 git config --global core.hooksPath "$GLOBAL_GIT_HOOKS"
 
-# Hook local do repositório
-if [ -d "$KIT_DIR/.git/hooks" ]; then
-  ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/pre-push"
-  ln -sf "$KIT_DIR/scripts/hooks/post-push-watcher.sh" "$KIT_DIR/.git/hooks/post-push"
-    chmod +x "$KIT_DIR/.git/hooks/pre-push" "$KIT_DIR/.git/hooks/post-push"
-fi
-echo "   ✅ Git Hooks configurados (Global + Local)!"
-
-# 7. Configurar aliases no shell do usuário
-if [ -f "$KIT_DIR/scripts/global-token-optimizer/install-shell-aliases.sh" ]; then
-  bash "$KIT_DIR/scripts/global-token-optimizer/install-shell-aliases.sh"
-fi
+# 10. Shell aliases
+[ -f "$KIT_DIR/scripts/global-token-optimizer/install-shell-aliases.sh" ] && bash "$KIT_DIR/scripts/global-token-optimizer/install-shell-aliases.sh"
 
 echo "===================================================================="
-echo "🎉 XP Multi-Agent Kit v2 otimizado e instalado com sucesso!"
-echo "⚡ Tokens de Rules e Skills otimizados + Telemetria (Janela, 5h e Semanal) ativa."
-echo "🔄 Paridade total Antigravity IDE <-> CLI estabelecida."
-echo "🤖 CI/CD Auto-Healer acoplado globalmente via Git Push Hook."
+echo "🎉 XP Multi-Agent Kit v4 sincronizado com sucesso! CLI canônica: xp"
 echo "===================================================================="

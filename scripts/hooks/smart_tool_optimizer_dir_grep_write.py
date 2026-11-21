@@ -12,13 +12,13 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from scripts.kit_constants import (  # noqa: E402
+from scripts.kit_constants import (
     MAX_TASK_STATUS_POLLS,
     WRITE_TO_FILE_MAX_LINES,
     runtime_dir,
 )
 
-from scripts.hooks.smart_tool_optimizer_state import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_state import (
     check_atdd_discipline,
     count_file_lines,
     record_file_edit,
@@ -105,7 +105,7 @@ def optimize_grep_search(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[
     Injeta filtros de exclusão de diretórios ruidosos (node_modules, .git, etc.)
     se o parâmetro Includes estiver vazio.
     """
-    from scripts.hooks.smart_tool_optimizer_loop import DEFAULT_GREP_NOISE_FILTERS  # noqa: E402
+    from scripts.hooks.smart_tool_optimizer_loop import DEFAULT_GREP_NOISE_FILTERS
 
     includes = args.get("Includes")
     if not includes or len(includes) == 0:

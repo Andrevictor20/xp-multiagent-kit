@@ -10,13 +10,13 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from scripts.kit_constants import (  # noqa: E402
+from scripts.kit_constants import (
     SECTION_READ_MAX_LINES,
     WHOLE_FILE_READ_MAX_LINES,
     runtime_dir,
 )
 
-from scripts.hooks.smart_tool_optimizer_state import (  # noqa: E402
+from scripts.hooks.smart_tool_optimizer_state import (
     check_post_edit_reread,
     count_file_lines,
     detect_contiguous_read,
@@ -46,7 +46,7 @@ def optimize_view_file(args: Dict[str, Any]) -> Tuple[str, str, Optional[Dict[st
                 m2 = _COMPONENT_RE2.search(path_str)
                 cid = m2.group(1).replace(".yaml", "").replace(".json", "") if m2 else None
             if cid:
-                from scripts.kit_events import emit  # noqa: E402
+                from scripts.kit_events import emit
 
                 emit("usage", component=cid)
         except Exception:

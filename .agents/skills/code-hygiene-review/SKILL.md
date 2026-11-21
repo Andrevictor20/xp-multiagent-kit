@@ -1,6 +1,6 @@
 ---
 name: code-hygiene-review
-description: Strict code quality guardian enforcing atomic commits, code deslop, YAGNI diff simplification, no-workarounds, and no god files.
+description: "Code quality review: atomic commits, deslop, YAGNI, no workarounds, <500 lines."
 ---
 
 # Code Hygiene Review (`code-hygiene-review`)

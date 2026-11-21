@@ -16,7 +16,7 @@ workflows:
       - {name: "threat_model", run: "sentinel", kind: "model", skills: ["threat-modeling"], soft_turns: 4, exit_cmd: "xp approve threat_model_ok", on_fail: "retry", timeout: 10, approval_required: true}
       - {name: "test_red", run: "builder", kind: "model", skills: ["tdd-safety-net"], soft_turns: 5, exit_cmd: "! {verify_cmd}", on_fail: "retry", timeout: 15, freeze_tests: true}
       - {name: "impl_green", run: "builder", kind: "model", skills: ["tdd-safety-net"], soft_turns: 10, exit_cmd: "{verify_cmd}", on_fail: "retry", timeout: 30}
-      - {name: "egm_review", run: "reviewer", kind: "model", skills: ["code-hygiene-review"], soft_turns: 5, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "retry", timeout: 15}
+      - {name: "egm_review", run: "reviewer", kind: "model", skills: ["code-hygiene-review"], soft_turns: 5, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "reopen:impl_green", max_retries: 2, output_key: "egm_report", timeout: 15}
       - {name: "gate", run: "reviewer", kind: "code", skills: [], soft_turns: 2, exit_cmd: "python3 scripts/xp_gate.py check", on_fail: "abort", timeout: 5}
 
   fix:

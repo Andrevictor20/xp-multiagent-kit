@@ -96,6 +96,12 @@ components:
     added: "2026-11-01"
     review_by: "2027-02-01"
 
+  - id: "memory_store"
+    kind: "script"
+    prevents: "Cross-repo memory amnesia, unindexed Dead-Ends/never rules, and forgotten session consolidation"
+    added: "2026-11-21"
+    review_by: "2027-05-01"
+
   - id: "evidence_recorder"
     kind: "script"
     prevents: "Unverifiable test outputs, lost execution logs, and turn bloat"

@@ -1,6 +1,6 @@
 ---
 name: cloud-and-iac-security
-description: Zero Trust cloud architecture, Infrastructure as Code (IaC) governance, and Model Context Protocol (MCP) server security.
+description: "Zero Trust cloud, Terraform/K8s/Docker IaC hardening, and MCP security."
 ---
 
 # Cloud & IaC Security (`cloud-and-iac-security`)

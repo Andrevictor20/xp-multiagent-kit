@@ -26,7 +26,7 @@ from typing import Any, Dict, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from kit_constants import runtime_dir  # noqa: E402
+from kit_constants import runtime_dir
 
 EVIDENCE_DIR = "evidence"
 INDEX_FILE = "index.jsonl"

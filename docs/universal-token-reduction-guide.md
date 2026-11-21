@@ -8,11 +8,11 @@ This guide presents **operational best practices and tools** to maintain strict 
 
 ### 1. The 25 Turns / 50k Tokens Rule (Preventive Reset)
 - **The Problem:** Antigravity retransmits the entire conversation history on every new turn. In chats exceeding 25 turns, a simple 2-line question can cost 80,000 tokens just in repeated history.
-- **The Solution:** Upon reaching 20 to 25 turns or during long sessions, generate the transition package and start a fresh chat:
+- **The Solution:** Upon reaching 20 to 25 turns or during long sessions, compact the session and start a fresh chat:
   ```bash
-  agy-handoff --write-file
+  xp session compact
   ```
-- **Outcome:** The new chat starts cleanly, loading only the ~25 lines of `SESSION_HANDOFF.md` (~300 tokens), saving **over 90% of tokens per message**.
+- **Outcome:** The new chat starts cleanly via `xp session resume`, saving **over 90% of tokens per message**.
 
 ---
 
@@ -52,9 +52,9 @@ This guide presents **operational best practices and tools** to maintain strict 
 ### 5. Global Diet and Exclusion Templates (`.geminiignore`)
 - **The Problem:** Leaving oversized rules in `~/.gemini/config/rules/` or forgetting to ignore `node_modules` / `.venv` causes the agent to index gigabytes of unnecessary code.
 - **The Solution:**
-  - Periodically audit global configurations:
+  - Periodically audit global and repository configurations:
     ```bash
-    agy-audit
+    xp kit doctor
     ```
   - Copy the universal template to new projects:
     ```bash
@@ -70,8 +70,10 @@ This guide presents **operational best practices and tools** to maintain strict 
 | `agy-fast` | Runs CLI with reduced effort (thinking token savings) | `agy-fast "instruction"` |
 | `agy-deep` | Runs CLI with maximum effort for critical problems | `agy-deep "complex instruction"` |
 | `agy-sanitize` | Truncates terminal output and prevents log floods | `agy-sanitize <command>` or `<cmd> \| agy-sanitize` |
-| `agy-handoff` | Generates ultra-compact summary (<30 lines) to reset chat | `agy-handoff --write-file` |
-| `agy-audit` | Audits bloating in rules, MCPs, and global skills | `agy-audit` |
+| `xp session compact` | Compacts session state to reset long chats | `xp session compact` / `xp session resume` |
+| `xp context <query>` | JIT retrieval across `repo:` and `user:` memory (≤ 350 tokens) | `xp context "auth" --scope all --files src/auth.py` |
+| `xp policy show <id>` | Loads a single governance policy on demand | `xp policy show token-economy` |
+| `xp kit doctor` | Audits governance, context budgets, and descriptions (≤ 110 chars) | `xp kit doctor` |
 
 ---
 
@@ -80,4 +82,4 @@ This guide presents **operational best practices and tools** to maintain strict 
 When a complex task demands maximum focus:
 1. **Avoid broad exploratory tasks:** Ask only for the strictly necessary modification.
 2. **Execute a single RED -> GREEN cycle:** Do not initiate new epics or peripheral refactorings.
-3. **Generate checkpoint immediately:** Save current state with `agy-handoff --write-file` to avoid leaving work half-done.
+3. **Generate checkpoint immediately:** Save current state with `xp session compact` to avoid leaving work half-done.

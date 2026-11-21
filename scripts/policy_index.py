@@ -2,24 +2,33 @@
 """scripts/policy_index.py — Índice compacto de políticas para injeção JIT.
 
 O kit carrega AGENTS.md + PROJECT_MEMORY.md em todo turno (contexto base).
-As 7 políticas de `.agents/policies/` não deveriam ser injetadas integralmente:
-o custo fixo era ~9.2 KB. Este índice tem uma linha por política
-(gatilho + resumo) e o corpo inteiro só é carregado por gatilho
-via `xp context <query>`.
+As políticas de `.agents/policies/` são indexadas em 1 linha cada (gatilho + resumo)
+e o corpo inteiro só é carregado sob demanda via `xp context <query>` ou `xp policy show <id>`.
 """
 from __future__ import annotations
 
 import argparse
-import json
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from scripts.kit_constants import POLICY_JIT_THRESHOLD_BYTES, kit_root  # noqa: E402
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+from scripts.kit_constants import POLICY_JIT_THRESHOLD_BYTES, kit_root
 
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
+POLICY_TRIGGER_MAP: Dict[str, str] = {
+    "architecture-and-persistence": "db, sql, migration, n+1, stdlib",
+    "frontend-and-design-system": "ui, css, design, tokens, wcag",
+    "memory-and-context": "memory, context, dead-ends, archive",
+    "release-and-deployment": "release, deploy, rollback, canary",
+    "security-and-zero-trust": "auth, security, stride, secrets, pii",
+    "testing-and-quality": "tdd, atdd, test, spec, conformance",
+    "token-economy": "token, budget, batch, debt, loop",
+}
 TRIGGER_HINTS = [
     "auth", "security", "billing", "payments", "migration", "terraform", "k8s",
     "docker", "ci", "release", "deploy", "database", "sql", "frontend",
@@ -27,14 +36,45 @@ TRIGGER_HINTS = [
 ]
 
 
-def parse_policy(text: str) -> Dict[str, str]:
-    """Extrai título, gatilho e resumo de um arquivo de política."""
+def _extract_first_summary(body: str) -> str:
+    """Extrai resumo curto da primeira regra ou parágrafo útil do corpo Markdown."""
+    headings: List[str] = []
+    for line in body.splitlines():
+        s = line.strip()
+        if not s or s.startswith(">"):
+            continue
+        if s.startswith("## "):
+            headings.append(re.sub(r"^##\s+\d+\.\s*", "", s).strip())
+            if len(headings) >= 2:
+                break
+    if headings:
+        return "; ".join(headings)
+    for line in body.splitlines():
+        s = line.strip()
+        if s and not s.startswith("#") and not s.startswith(">"):
+            return " ".join(s.split())
+    return ""
+
+
+def _derive_trigger(text: str, policy_id: str = "") -> str:
+    if policy_id in POLICY_TRIGGER_MAP:
+        return POLICY_TRIGGER_MAP[policy_id]
+    lower = f"{policy_id} {text}".lower()
+    hits = [hint for hint in TRIGGER_HINTS if hint in lower]
+    return ", ".join(hits[:4]) if hits else "geral"
+
+
+def parse_policy(text: str, policy_id: str = "") -> Dict[str, str]:
+    """Extrai título, gatilho e resumo de um arquivo de política (com ou sem frontmatter)."""
     match = FRONTMATTER_PATTERN.match(text)
     if not match:
-        # Fallback: usa o cabeçalho H1
         title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
-        title = title_match.group(1).strip() if title_match else text.splitlines()[0].lstrip("# ")
-        return {"title": title, "trigger": "geral", "summary": ""}
+        title = title_match.group(1).strip() if title_match else (text.splitlines()[0].lstrip("# ") if text.splitlines() else "política")
+        return {
+            "title": title,
+            "trigger": _derive_trigger(text, policy_id),
+            "summary": _extract_first_summary(text),
+        }
 
     meta: Dict[str, str] = {}
     for line in match.group(1).splitlines():
@@ -45,26 +85,11 @@ def parse_policy(text: str) -> Dict[str, str]:
             if val in (">-", ">", "|", "|-"):
                 val = ""
             meta[key] = val
+    body = text[match.end():]
     title = meta.get("title") or meta.get("name") or "política"
-    trigger = meta.get("trigger") or "geral"
-    summary = meta.get("summary", "")
-    if not summary:
-        body = text[match.end():]
-        for line in body.splitlines():
-            if line.strip() and not line.startswith("#"):
-                summary = " ".join(line.split())
-                break
-    if not trigger or trigger == "geral":
-        trigger = _derive_trigger(text)
+    trigger = meta.get("trigger") or _derive_trigger(body, policy_id)
+    summary = meta.get("summary") or _extract_first_summary(body)
     return {"title": title, "trigger": trigger, "summary": summary}
-
-
-def _derive_trigger(text: str) -> str:
-    lower = text.lower()
-    for hint in TRIGGER_HINTS:
-        if hint in lower:
-            return hint
-    return "geral"
 
 
 def collect_policies(policies_dir: Path) -> List[Dict[str, Any]]:
@@ -73,7 +98,7 @@ def collect_policies(policies_dir: Path) -> List[Dict[str, Any]]:
         if path.name == "INDEX.md":
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
-        parsed = parse_policy(text)
+        parsed = parse_policy(text, policy_id=path.stem)
         out.append({
             "id": path.stem,
             "path": path,
@@ -86,21 +111,19 @@ def collect_policies(policies_dir: Path) -> List[Dict[str, Any]]:
 
 
 def render_policy_index(policies: List[Dict[str, Any]]) -> str:
+    total_kb = sum(p["bytes"] for p in policies) // 1024
     lines = [
-        "# Políticas do XP Kit (JIT Loading)",
+        "# Políticas JIT (`xp policy show <id>` | `xp context <query>`)",
+        f"> {len(policies)} políticas ({total_kb} KB total, carregadas sob demanda).",
         "",
-        "> Carregue uma política completa com `xp context <query>` ou `xp policy show <id>`.",
-        f"> {len(policies)} políticas indexadas • total integral: "
-        f"{sum(p['bytes'] for p in policies) // 1024} KB • injetado: {len(policies) * 60} B.",
-        "",
-        "| ID | Gatilho | Resumo | Bytes |",
-        "|----|---------|--------|-------|",
+        "| ID | Gatilho | Resumo |",
+        "|---|---|---|",
     ]
     for policy in policies:
         summary = policy["summary"]
-        if len(summary) > 80:
-            summary = summary[:79] + "…"
-        lines.append(f"| `{policy['id']}` | {policy['trigger']} | {summary} | {policy['bytes']} |")
+        if len(summary) > 68:
+            summary = summary[:67] + "…"
+        lines.append(f"| `{policy['id']}` | {policy['trigger']} | {summary} |")
     return "\n".join(lines) + "\n"
 
 
@@ -137,7 +160,7 @@ def main() -> int:
     if args.action == "list":
         for p in policies:
             jit = "JIT" if p["bytes"] > POLICY_JIT_THRESHOLD_BYTES else "fixo"
-            print(f"[{jit:5}] {p['id']:<35} {p['bytes']:>6} B  {p['trigger']}")
+            print(f"[{jit:5}] {p['id']:<32} {p['bytes']:>5} B  {p['trigger']}")
         return 0
     if args.action == "show":
         target = next((p for p in policies if p["id"] == args.policy_id), None)

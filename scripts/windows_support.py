@@ -23,9 +23,7 @@ SHIM_COMMANDS: Dict[str, str] = {
     "xp-debt": "scripts/debt_tracker.py",
     "xp-turn": "scripts/turn_telemetry.py",
     "xp-skill-index": "scripts/skill_index.py",
-    "xp-health": "scripts/agy_health.py",
     "xp-effort": "scripts/agy_effort_router.py",
-    "xp-pack": "contrib/scripts/skill_packer.py",
     "xp-goldfish": "scripts/goldfish_review.py",
     "agy-spec": "scripts/spec_tool.py",
     "agy-kit": "scripts/kit_installer.py",
@@ -36,9 +34,7 @@ SHIM_COMMANDS: Dict[str, str] = {
     "agy-skill-index": "scripts/skill_index.py",
     "agy-effort": "scripts/agy_effort_router.py",
     "agy-smart": "scripts/agy_effort_router.py",
-    "agy-health": "scripts/agy_health.py",
     "agy-debt": "scripts/debt_tracker.py",
-    "agy-pack": "contrib/scripts/skill_packer.py",
     "agy-goldfish": "scripts/goldfish_review.py",
 }
 

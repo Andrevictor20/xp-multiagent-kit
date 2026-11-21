@@ -40,12 +40,20 @@ class TestXpCLI(unittest.TestCase):
         res = subprocess.run(cmd, capture_output=True, text=True)
         self.assertEqual(res.returncode, 0)
         self.assertIn("design", res.stdout)
-        self.assertIn("marketing", res.stdout)
 
         cmd_enable = [sys.executable, "scripts/xp", "kit", "pack", "enable", "design"]
         res_enable = subprocess.run(cmd_enable, capture_output=True, text=True)
         self.assertEqual(res_enable.returncode, 0)
         self.assertIn("Pack 'design' ativado", res_enable.stdout)
+
+    def test_xp_cli_policy_list_and_show(self):
+        res_list = subprocess.run([sys.executable, "scripts/xp", "policy", "list"], capture_output=True, text=True)
+        self.assertEqual(res_list.returncode, 0)
+        self.assertIn("token-economy", res_list.stdout)
+
+        res_show = subprocess.run([sys.executable, "scripts/xp", "policy", "show", "token-economy"], capture_output=True, text=True)
+        self.assertEqual(res_show.returncode, 0)
+        self.assertIn("Token Economy", res_show.stdout)
 
 
 if __name__ == "__main__":

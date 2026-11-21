@@ -1,14 +1,12 @@
-# Políticas do XP Kit (JIT Loading)
+# Políticas JIT (`xp policy show <id>` | `xp context <query>`)
+> 7 políticas (9 KB total, carregadas sob demanda).
 
-> Carregue uma política completa com `xp context <query>` ou `xp policy show <id>`.
-> 7 políticas indexadas • total integral: 9 KB • injetado: 420 B.
-
-| ID | Gatilho | Resumo | Bytes |
-|----|---------|--------|-------|
-| `architecture-and-persistence` | geral |  | 1220 |
-| `frontend-and-design-system` | geral |  | 990 |
-| `memory-and-context` | geral |  | 1436 |
-| `release-and-deployment` | geral |  | 1118 |
-| `security-and-zero-trust` | geral |  | 1068 |
-| `testing-and-quality` | geral |  | 2178 |
-| `token-economy` | geral |  | 1226 |
+| ID | Gatilho | Resumo |
+|---|---|---|
+| `architecture-and-persistence` | db, sql, migration, n+1, stdlib | Database Architecture & Concurrency; Platform-Native First (Zero Un… |
+| `frontend-and-design-system` | ui, css, design, tokens, wcag | Design System & Token Governance; Interactive Ergonomics & Anti-Slop |
+| `memory-and-context` | memory, context, dead-ends, archive | 5-Tier Continuous Memory; Context Optimization & JIT Retrieval |
+| `release-and-deployment` | release, deploy, rollback, canary | Release Quality Gate; Zero-Downtime Deployment |
+| `security-and-zero-trust` | auth, security, stride, secrets, pii | Threat Modeling & Risk Scope; Access Control & Authorization |
+| `testing-and-quality` | tdd, atdd, test, spec, conformance | Specification & Contract Separation; Strict TDD & Anti-Test-Bypass |
+| `token-economy` | token, budget, batch, debt, loop | Completeness Over Speed; 7-Step Simplification Ladder |

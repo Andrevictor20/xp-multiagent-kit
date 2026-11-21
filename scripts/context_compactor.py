@@ -23,7 +23,7 @@ if str(kit_dir) not in sys.path:
 if not os.environ.get("KIT_ROOT"):
     os.environ["KIT_ROOT"] = str(kit_dir)
 
-from scripts.context_compactor_core import (  # noqa: E402
+from scripts.context_compactor_core import (
     ANSI_REGEX,
     calculate_compression_stats,
     compress_diff,
@@ -32,12 +32,12 @@ from scripts.context_compactor_core import (  # noqa: E402
     compress_whitespace,
     strip_ansi_codes,
 )
-from scripts.context_compactor_cci import (  # noqa: E402
+from scripts.context_compactor_cci import (
     compress_ci_output,
     compress_git_output,
     compress_html,
 )
-from scripts.context_compactor_ccr import (  # noqa: E402
+from scripts.context_compactor_ccr import (
     ContextualCompressorWithRetrieval,
     compress_conversation_turns,
     compact_payload,

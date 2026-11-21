@@ -122,6 +122,19 @@ class TestSkillIndex(unittest.TestCase):
         self.assertEqual(report["oversized_skills"], [])
         self.assertFalse(report["blocking"])
 
+    def test_cli_audit_runs_directly_without_pythonpath(self):
+        import subprocess
+        env = {"PATH": "/usr/bin:/bin"}
+        res = subprocess.run(
+            [sys.executable, str(ROOT_DIR / "scripts" / "skill_index.py"), "audit"],
+            cwd=str(ROOT_DIR),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 0, msg=res.stderr + res.stdout)
+        self.assertIn("AGENTS.md", res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

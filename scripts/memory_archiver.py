@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 try:
     from scripts.kit_constants import MEMORY_DETAILS_DIR, MEMORY_INDEX_MAX_BYTES
 except ImportError:  # pragma: no cover - execução direta
-    from kit_constants import (  # type: ignore
+    from kit_constants import (
         MEMORY_DETAILS_DIR,
         MEMORY_INDEX_MAX_BYTES,
     )

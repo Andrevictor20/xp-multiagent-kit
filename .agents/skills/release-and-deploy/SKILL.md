@@ -1,6 +1,6 @@
 ---
 name: release-and-deploy
-description: End-to-end continuous deployment, CI security gates, dependency governance, observability/SLOs, and zero-downtime release strategies.
+description: "Zero-downtime deployment (Canary/Blue-Green), CI gates, SLOs, and rollback."
 ---
 
 # Release and Deploy (`release-and-deploy`)

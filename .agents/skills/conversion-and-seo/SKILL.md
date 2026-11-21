@@ -1,6 +1,6 @@
 ---
 name: conversion-and-seo
-description: High-conversion UI copywriting, CRO landing page optimization, multi-sweep prose editing, and technical on-page SEO.
+description: "Conversion UI copywriting, CRO landing pages, prose sweeps, and technical SEO."
 ---
 
 # Conversion & Technical SEO (`conversion-and-seo`)

@@ -155,13 +155,13 @@ class TestEgmCompletenessEngine(unittest.TestCase):
         self.assertEqual(plan_effort, EFFORT_HIGH)
 
     # ------------------------------------------------------------------
-    # AC-4: goldfish-spec-review & spec-driven-development in CORE_SKILLS
+    # AC-4: spec-pyramid in CORE_SKILLS (goldfish-spec-review retired in v4)
     # ------------------------------------------------------------------
     def test_ac4_goldfish_in_core_skills(self):
         from scripts.skill_profiles import CORE_SKILLS, SKILL_DESCRIPTIONS
 
         self.assertNotIn("goldfish-spec-review", CORE_SKILLS)
-        self.assertIn("spec-driven-development", CORE_SKILLS)
+        self.assertIn("spec-pyramid", CORE_SKILLS)
         self.assertNotIn("goldfish-spec-review", SKILL_DESCRIPTIONS)
 
     # ------------------------------------------------------------------

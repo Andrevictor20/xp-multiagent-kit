@@ -1,97 +1,36 @@
 ---
 name: craft-sync
-description: Use when a design task is about to start in a project whose design system already lives in code (a UI package, design tokens, a component library) but isn't in the design tool, when asked to import or bring the design system, tokens or components into the design tool, or to apply, push or sync changes from the design tool's guide back to the code.
+description: "Sync design tokens and components bidirectionally between code and design tools."
 ---
 
 # Design system sync
 
 ## Overview
+Mirror an existing code design system in the design tool (**Import**) and push approved guide edits back to code as a reviewed diff (**Export**). Track last agreed values in **`design-sync.json`** at project root; code remains source of truth until export is approved.
 
-When a design system already lives in code, the design tool should **mirror it, not reinvent it**.
-- **Import** brings the code's tokens and the components the person picks into the tool, under the same names.
-- **Export** takes changes made in the tool's guide back to the code as a reviewed diff.
-
-A small file at the project root, **`design-sync.json`**, remembers what was last synced. Code stays the source of truth until the person says otherwise: changes are *drawn* first in the tool and *land* in code through an approved export.
-
-## When to use
-
-- A design task is about to start in a project with a design system in code and no guide in the tool. `craft-setup` and `craft` hand off to this.
-- "Import / bring our design system (tokens, components) into Paper / Figma / the design tool."
-- "Apply / push / sync the guide's changes to the code."
-
-## When NOT to use
-
-- No design system in code: `craft-system` (create mode).
-- A review, options or a small edit in such a project: those skills work from the code as it is.
-- A single token value the person dictated ("make the accent #3d7f69 in code"): edit it directly, update `design-sync.json` for that name, say what it affects.
+## When to use / NOT to use
+- **Use:** Starting design with a code design system not yet in the tool; importing tokens/components to Paper/Figma; exporting guide edits back to code.
+- **Skip:** No code design system → `craft-system` (create). Single explicit code token change → edit directly and update `design-sync.json`.
 
 ## Before you start
-
-0. Read `DESIGN.md` and `design-sync.json` if present.
-1. Pick adapter in `references/adapters/` (`paper.md`, `figma.md`, `html.md`), defaulting to HTML; note estimated values if working from an image only.
-
-## `design-sync.json`
-
-Schema and example in [sync schema & common mistakes](references/common-mistakes.md). `tokens` holds only the values both sides agreed on at the last sync; a component import updates only its `components` entry.
+Read `DESIGN.md` and `design-sync.json` if present; pick adapter in `references/adapters/` (`paper.md`, `figma.md`, fallback `html.md`). Schema in [common mistakes](references/common-mistakes.md).
 
 ## Import (code → design tool)
+1. **Detect** ([signals](references/detect.md)): locate token **source of truth** (never generated output) and naming rule. Two UI packages → ask which is source.
+2. **Inventory, then stop** ([inventory format](references/inventory.md)): list tokens by role, components (grouped if >15), docs, gaps, and **conflicts**. Ask which 3–6 components to draw now and how to resolve each conflict. Never draw everything by default.
+3. **Build:** register tokens (never overwrite unsettled conflicts), create foundations guide + component index (`drawn` / `in code only`), draw chosen components with state matrices from code values (label undefined states `"proposed"`).
+4. **Self-check:** render guide and compare with Storybook/demo if available (else state unrendered).
+5. **Record:** write `design-sync.json`; update `DESIGN.md` Brand (`Design system source: <path>`) and Decisions log (if no `DESIGN.md`, create sync-only stub `<!-- sync record only: run craft-setup for the brief -->`).
 
-1. **Detect** with [the signals](references/detect.md). Find the **source of truth for values** (the token source, not a generated output) and the **naming rule** the tool will use. **Two UI packages** → list both and ask which is the source.
-2. **Inventory, then stop.** Use [the inventory format](references/inventory.md):
-   - tokens by role, with counts and paths;
-   - components (grouped with counts when there are more than about 15);
-   - guideline docs;
-   - gaps;
-   - **conflicts**: any name that already exists in the tool with a different value, and any token type the tool can't hold.
-
-   **Ask which components to draw now**, suggesting 3–6 for the next screens, and how to settle each conflict. Never draw everything by default.
-3. **Build in the tool** after the answers:
-   - register the tokens under the naming rule; never overwrite a tool value the person didn't settle;
-   - make a foundations guide page, with guideline docs as the legend;
-   - make a **component index**: name, code path, status (`drawn` / `in code only`), with variants filled in once drawn;
-   - draw the picked components with their states matrix, using values from code. A state the code doesn't define is drawn and labelled **"proposed"**.
-4. **Self-check.** Render the guide. If the code can render the component (Storybook, a demo page), compare at the same size. Otherwise say the values were read from code, unrendered.
-5. **Record:**
-   - write `design-sync.json` (all token values now equal on both sides, plus component statuses);
-   - in `DESIGN.md`, Brand gets "Design system source: `<path>`; the <tool> guide mirrors it", and the Decisions log gets a dated import line;
-   - if there's no `DESIGN.md`, create one whose first line is `<!-- sync record only: run craft-setup for the brief -->` with just Brand and the Decisions log. `craft` treats a `DESIGN.md` without a Product section as missing.
-
-### Import of one component (from `craft`)
-
-The person already agreed to mirror the system, so there's no inventory stop:
-- draw that component;
-- set its `components` entry to `drawn`;
-- leave `tokens` alone.
-
-If the tool has no guide yet, or the person never agreed to an import (or declined it), ask once: "Input exists only in code. Import it into the guide first?"
+### One-component import (from `craft`)
+Skip inventory stop if import was already agreed: draw that component, mark `drawn`, leave `tokens` untouched. If never agreed/declined, ask once before importing.
 
 ## Export (design tool → code)
+1. **Read** guide values (adapter) and code values by name.
+2. **Classify** with `design-sync.json` ([diff format](references/export-diff.md)): `equal` (in sync), `guide changed` (propose), `code changed` (offer refresh), `both changed` (**ask which wins**). Without `design-sync.json`, ask direction per difference.
+3. **Propose edits** to **source** files only (file, line, impact, color contrast); exclude `"proposed"` states and substituted fonts. **Stop.**
+4. **Apply** approved edits, sync guide for code-wins items, run project checks (lint/typecheck/tests).
+5. **Record:** update `design-sync.json`, append Decisions log, log open conflicts.
 
-1. **Read** the guide's values (adapter) and the code's values, by name.
-2. **Classify every name** with `design-sync.json` and [the diff format](references/export-diff.md):
-   - **equal now** → in sync;
-   - **guide changed** → propose;
-   - **code changed** → offer to refresh the guide;
-   - **both changed** → show the three values and **ask which wins**.
-
-   With no `design-sync.json`, list every difference and ask the direction for each.
-3. **Propose the edits** to the **source** files (never a generated output): file and line, what each affects, and the contrast for colours. "Proposed" states and substituted fonts aren't changes to export. **Stop.**
-4. **Apply** only what was approved, update the guide for anything decided in the code's favour, and **run the project's checks** (lint, typecheck, tests, visual tests), or say there are none.
-5. **Record:**
-   - update `design-sync.json` with the values now equal on both sides;
-   - add a dated line to `DESIGN.md` › Decisions log;
-   - add open conflicts to Open questions.
-
-## Rules
-
-Keep identical token names via one naming rule, read values from code (never screenshots), label missing states as `"proposed"`, stop before exporting diffs to source files, and ask when both sides changed. Full rules table in [sync rules & common mistakes](references/common-mistakes.md).
-
-## Done when
-
-- **Import:** inventory and conflicts settled; picked components drawn; guide rendered (or "unrendered" stated); `design-sync.json` and `DESIGN.md` written.
-- **One component:** drawn, with its status updated.
-- **Export:** approved edits applied, the checks run (or "none" stated), `design-sync.json` updated, conflicts decided or open.
-
-## Common mistakes
-
-See [sync schema & common mistakes](references/common-mistakes.md) before overwriting conflicts, renaming code tokens silently, or applying diffs without approval.
+## Rules & Done when
+Keep identical token names via one rule, read values from code (never screenshots), label missing states `"proposed"`, stop before exporting diffs. Done when inventory/conflicts or approved diffs are settled, checks run, and `design-sync.json` + `DESIGN.md` are updated. See [common mistakes](references/common-mistakes.md).

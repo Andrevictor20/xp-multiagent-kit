@@ -162,7 +162,7 @@ class HostAdapters:
             oc_data["instructions"] = [
                 "AGENTS.md",
                 ".agents/memory/PROJECT_MEMORY.md",
-                ".agents/policies/*.md",
+                ".agents/policies/INDEX.md",
             ]
             oc_data["default_agent"] = "orchestrator"
             oc_data["subagent_depth"] = 2
@@ -245,11 +245,11 @@ class HostAdapters:
             agents_md = (self.kit_dir / "AGENTS.md").read_text(encoding="utf-8") if (self.kit_dir / "AGENTS.md").is_file() else "# XP Rules\n"
             (rules_dir / "00-xp-core.mdc").write_text(f"---\ndescription: XP Core Governance\nglobs:\nalwaysApply: true\n---\n\n{agents_md}", encoding="utf-8")
 
-            fe_file = self.kit_dir / ".agents" / "policies" / "frontend.md"
+            fe_file = self.kit_dir / ".agents" / "policies" / "frontend-and-design-system.md"
             fe_policy = fe_file.read_text(encoding="utf-8") if fe_file.is_file() else "# Frontend Policy\n"
             (rules_dir / "10-frontend-design.mdc").write_text(f'---\ndescription: Frontend Design\nglobs: ["*.tsx", "*.ts", "*.jsx", "*.css"]\nalwaysApply: false\n---\n\n{fe_policy}', encoding="utf-8")
 
-            tdd_file = self.kit_dir / ".agents" / "policies" / "tdd.md"
+            tdd_file = self.kit_dir / ".agents" / "policies" / "testing-and-quality.md"
             tdd_policy = tdd_file.read_text(encoding="utf-8") if tdd_file.is_file() else "# TDD Policy\n"
             (rules_dir / "20-tdd-testing.mdc").write_text(f'---\ndescription: Strict TDD\nglobs: ["*test*", "*spec*"]\nalwaysApply: false\n---\n\n{tdd_policy}', encoding="utf-8")
 
@@ -370,12 +370,10 @@ class HostAdapters:
             claude_md_path = project_dir / "CLAUDE.md"
             if not claude_md_path.is_file():
                 claude_content = (
-                    "# CLAUDE.md — XP Multi-Agent Kit v3.0\n\n"
-                    "Directives for Claude Code:\n"
+                    "# CLAUDE.md — XP Multi-Agent Kit v4.0.0\n\n"
                     "1. Follow `AGENTS.md` and `.agents/memory/PROJECT_MEMORY.md`.\n"
-                    "2. Strict TDD: Write failing tests (RED) before implementation (GREEN), then REFACTOR.\n"
-                    "3. Zero workarounds: Root-cause fixes only (no type bypasses, no arbitrary sleeps).\n"
-                    "4. Mandatory Language: ALL user-facing responses MUST be in Português (PT-BR).\n"
+                    "2. Strict TDD (RED -> GREEN -> REFACTOR) + `xp gate check`.\n"
+                    "3. ALL user-facing responses MUST be in Português (PT-BR).\n"
                 )
                 claude_md_path.write_text(claude_content, encoding="utf-8")
 
@@ -416,15 +414,14 @@ class HostAdapters:
             agy_global = self.home_dir / ".gemini" / "config"
             agy_global.mkdir(parents=True, exist_ok=True)
             dispatcher_content = (
-                "# Global Agent Dispatcher — XP Multi-Agent Kit v4.0.0 (Agnostic Core)\n\n"
-                "Master global rule for agent execution (Antigravity, OpenCode, Cursor, Codex, Qoder):\n"
-                "1. If workspace contains `AGENTS.md`, follow its directives as single source of truth.\n"
-                "2. **Completeness Over Speed & Multi-Pass EGM:** Always prioritize 100% complete planning (Heilmeier + Alternatives + Zero-Decision Plan) and full feature delivery over speed or turn count. Run 3-Pass EGM Goldfish reviews (`xp-goldfish --multipass` + stateless Goldfish subagents) on specs and code.\n"
-                "3. **Turn-1 Multi-Agent Dispatch:** When requested in prompt, dispatch subagents immediately in Turn 1 without stalling; report agent count and names in initial and final output.\n"
-                "4. **Mandatory Language Rule:** ALL user-facing responses MUST be in Portuguese (Português).\n"
+                "# XP Kit v4 — Global Dispatcher\n\n"
+                "1. Follow workspace `AGENTS.md` as single source of truth.\n"
+                "2. Prioritize 100% completeness (Heilmeier + Zero-Decision Plan + EGM).\n"
+                "3. When requested, dispatch subagents in Turn 1.\n"
+                "4. ALL user-facing responses MUST be in Português (PT-BR).\n"
             )
             (agy_global / "AGENTS.md").write_text(dispatcher_content, encoding="utf-8")
-            for sub in ("skills", "agents", "workflows", "policies", "rules", "templates"):
+            for sub in ("skills", "agents", "policies", "templates", "graph", "packs"):
                 s_dir = self.kit_dir / ".agents" / sub
                 d_dir = agy_global / sub
                 if s_dir.is_dir() and not d_dir.exists():

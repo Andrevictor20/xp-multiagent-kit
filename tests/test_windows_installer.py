@@ -43,8 +43,8 @@ class TestWindowsInstaller(unittest.TestCase):
         self.assertTrue(len(generated) > 0)
 
         required_cmds = [
-            "xp-spec", "xp-kit", "xp-run", "xp-conformance", "xp-pack",
-            "agy-spec", "agy-kit", "agy-effort", "agy-smart", "agy-pack",
+            "xp", "xp-spec", "xp-kit", "xp-run", "xp-conformance", "xp-goldfish",
+            "agy-spec", "agy-kit", "agy-effort", "agy-smart", "agy-goldfish",
         ]
         for cmd in required_cmds:
             cmd_file = self.bin_dir / f"{cmd}.cmd"

@@ -19,7 +19,7 @@ import re
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 try:
-    from scripts.kit_constants import (  # noqa: E402
+    from scripts.kit_constants import (
         ASCII_ART_LETTER_DOMINANCE,
         SANITIZE_HEAD_LINES,
         SANITIZE_TAIL_LINES,
@@ -30,7 +30,7 @@ try:
         runtime_dir,
     )
 except ImportError:
-    from kit_constants import (  # noqa: E402
+    from kit_constants import (
         ASCII_ART_LETTER_DOMINANCE,
         SANITIZE_HEAD_LINES,
         SANITIZE_TAIL_LINES,

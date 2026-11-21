@@ -1,7 +1,7 @@
 ---
 name: tdd-safety-net
 version: 1.0.0
-description: Strict RED-GREEN-REFACTOR cycle, Anti-Test-Bypass, and surgical test execution.
+description: "Strict RED-GREEN-REFACTOR TDD cycle, Anti-Test-Bypass, and surgical testing."
 author: André Victor
 license: MIT
 tags: [tdd, testing, anti-test-bypass, clean-code, cursor, claude-code]

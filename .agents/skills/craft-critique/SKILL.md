@@ -1,6 +1,6 @@
 ---
 name: craft-critique
-description: Use when asked to review, critique, refine or polish a design or screen, when something "feels off", "looks busy" or "isn't good yet", after finishing a screen and before showing it, or before handing a design to code.
+description: "Render, critique, refine, and self-check UI designs before showing or handoff."
 ---
 
 # Design critique

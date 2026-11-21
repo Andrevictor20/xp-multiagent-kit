@@ -38,9 +38,13 @@ class TestOpenCodeInstructions(unittest.TestCase):
             [
                 "AGENTS.md",
                 ".agents/memory/PROJECT_MEMORY.md",
-                ".agents/policies/*.md",
+                ".agents/policies/INDEX.md",
             ],
         )
+
+    def test_instructions_never_inline_all_full_policies(self):
+        data = self._install()
+        self.assertNotIn(".agents/policies/*.md", data["instructions"])
 
     def test_instructions_never_reference_source_code(self):
         data = self._install()

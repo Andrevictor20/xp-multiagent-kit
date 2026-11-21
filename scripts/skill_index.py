@@ -23,9 +23,11 @@ import unicodedata
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
-from kit_constants import (  # noqa: E402
+from scripts.kit_constants import (
     AGENTS_MD_MAX_BYTES,
     MEMORY_INDEX_MAX_BYTES,
     POLICY_JIT_THRESHOLD_BYTES,
@@ -33,6 +35,7 @@ from kit_constants import (  # noqa: E402
     SKILL_INDEX_LINE_MAX_CHARS,
     kit_root,
 )
+from scripts.policy_index import collect_policies
 
 INDEX_FILE = "SKILLS_INDEX.md"
 FRONTMATTER_PATTERN = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
@@ -193,7 +196,6 @@ def audit_context_budget(root: Optional[Path] = None) -> Dict[str, Any]:
 
     policies_dir = base / ".agents" / "policies"
     if policies_dir.is_dir():
-        from scripts.policy_index import collect_policies  # noqa: WPS433
         idx_path = policies_dir / "INDEX.md"
         if idx_path.is_file():
             size = idx_path.stat().st_size

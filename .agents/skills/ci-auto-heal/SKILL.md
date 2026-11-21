@@ -1,6 +1,6 @@
 ---
 name: ci-auto-heal
-description: Autonomous CI/CD failure diagnosis and root-cause self-healing (max 3 iterations).
+description: "Autonomous CI/CD failure diagnosis and root-cause self-healing (max 3 retries)."
 ---
 
 # CI/CD Auto-Heal & Self-Correction

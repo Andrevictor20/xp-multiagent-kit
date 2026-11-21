@@ -1,6 +1,6 @@
 ---
 name: craft-system
-description: Use when starting a design system, style guide or token set, adding or changing a component or token, standardizing screens that drifted apart, or auditing a guide for loose colours, one-off pieces, missing states or screens that don't match it.
+description: "Create, extend, propagate, and audit design tokens, rules, and component states."
 ---
 
 # Design system

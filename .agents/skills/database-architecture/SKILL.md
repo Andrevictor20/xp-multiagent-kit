@@ -1,7 +1,7 @@
 ---
 name: database-architecture
 version: 1.0.0
-description: SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention.
+description: "SQL/NoSQL schema modeling, indexing, ACID concurrency, and N+1 prevention."
 author: André Victor
 license: MIT
 tags: [database, sql, nosql, indexing, acid, high-scale, cursor, claude-code]

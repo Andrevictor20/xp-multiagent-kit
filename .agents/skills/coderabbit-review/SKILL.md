@@ -1,7 +1,7 @@
 ---
 name: coderabbit-review
 version: 1.0.0
-description: External AI diff review and security audit using CodeRabbit CLI with graceful fallback.
+description: "External AI diff review and security audit via CodeRabbit CLI with fallback."
 author: André Victor
 license: MIT
 tags: [code-review, coderabbit, static-analysis, diff-audit, security]

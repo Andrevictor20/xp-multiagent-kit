@@ -1,6 +1,6 @@
 ---
 name: craft-states
-description: Use when designing or redesigning a screen, flow or component, when asked to cover all states or find missing ones, or before handing a screen to code. Also use when a design only shows the happy path, uses short tidy sample data, or assumes a single user.
+description: "Cover all screen states (empty, loading, error, overflow, multi-user) before code."
 ---
 
 # Screen states

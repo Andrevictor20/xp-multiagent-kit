@@ -34,6 +34,11 @@ from scripts.host_adapters import (
     normalize_targets,
 )
 from scripts.kit_constants import KIT_VERSION
+from scripts.mcp_installers import (
+    AletheInstaller,
+    McpConfigurator,
+    RtkInstaller,
+)
 from scripts.windows_support import (
     SHIM_COMMANDS,
     WindowsPathConfigurator,
@@ -237,11 +242,6 @@ class ProjectInstaller:
         return {"ok": True, "actions": actions, "project_dir": str(project_dir), "targets": resolved_targets}
 
 
-from scripts.mcp_installers import (  # noqa: E402, F401
-    AletheInstaller, McpConfigurator, RtkInstaller,
-)
-
-
 class GlobalInstaller:
     """Orchestrates global kit installation across Antigravity, OpenCode, Cursor, Qoder, Codex, and Claude."""
 
@@ -320,9 +320,8 @@ class KitDoctor:
             "bin": bin_dir.is_dir(),
         }
         essential_bins = [
-            "agy-run", "xp-run", "agy-spec", "xp-spec", "agy-debt", "agy-health",
-            "agy-kit", "xp-kit", "agy-pack", "xp-pack", "agy-orchestrate", "xp-orchestrate",
-            "alethe", "xp-alethe", "agy-goldfish", "xp-goldfish",
+            "xp", "agy-run", "xp-run", "agy-spec", "xp-spec", "xp-kit", "agy-kit",
+            "xp-goldfish", "agy-goldfish", "xp-conformance", "xp-gate", "xp-contract",
         ]
         hosts_status = {
             "antigravity": (self.home_dir / ".gemini" / "config" / "AGENTS.md").is_file(),

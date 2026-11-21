@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from scripts.kit_constants import (  # noqa: E402
+from scripts.kit_constants import (
     CONTIGUOUS_READ_TTL_SECONDS,
     POST_EDIT_REREAD_TTL_SECONDS,
     runtime_dir,

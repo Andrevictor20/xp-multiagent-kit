@@ -1,6 +1,6 @@
 ---
 name: browser-e2e-playwright
-description: Headless E2E browser testing with Playwright, auto-wait locators, and traces.
+description: "Headless E2E browser testing with Playwright, auto-wait locators, and traces."
 ---
 
 # Browser E2E Playwright

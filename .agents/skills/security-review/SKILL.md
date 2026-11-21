@@ -1,6 +1,6 @@
 ---
 name: security-review
-description: Comprehensive application security review covering AuthN/AuthZ, OWASP API, container hardening, crypto, secrets, and SAST/DAST testing.
+description: "AppSec audit: AuthN/AuthZ, OWASP API, crypto, secrets, containers, SAST/DAST."
 ---
 
 # Security Review (`security-review`)
