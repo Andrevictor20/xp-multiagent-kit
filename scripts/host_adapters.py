@@ -180,7 +180,6 @@ class HostAdapters:
                 "AGENTS.md",
                 ".agents/memory/PROJECT_MEMORY.md",
                 ".agents/policies/*.md",
-                "scripts/hooks/pre_tool_guard.py",
             ]
             oc_data["default_agent"] = "orchestrator"
             oc_data["subagent_depth"] = 2

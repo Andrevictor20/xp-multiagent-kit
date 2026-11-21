@@ -19,6 +19,7 @@
 - **Fluxo Craft (2026-11-17):** Design usa 7 skills `craft*` via `designer/agent.md` e `workflow.yaml` (base ≤ 8 KB).
 
 ## 3. PROGRESSO
+- **2026-11-20**: Contexto >200k em repos kit: `PROJECT_MEMORY.md` inlinado sem teto no opencode. Archiver sintetiza `## 3.` ausente e sai 3 acima do orçamento; `instructions` sem `pre_tool_guard.py`.
 - **2026-11-17**: Skills de design substituídas pelo fluxo `craft` (`design_search.py` -> `contrib/`).
 - **2026-11-07**: Ativação do Negative Memory (Dead-Ends Log) e trava anti-regressão com Step 0 obrigatório.
 - **2026-11-01** [Fase 3 SPEC-006]: smart_tool_optimizer e context_compactor divididos; workflow.yaml movido; kit_lint 100% verde.

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -6,6 +8,7 @@ from pathlib import Path
 from scripts.memory_archiver import (
     parse_episodic_entries,
     archive_memory,
+    check_memory_budget,
     spill_sections_to_details,
     split_top_level_sections,
     DEFAULT_MAX_EPISODIC_ENTRIES,
@@ -255,6 +258,154 @@ class TestSectionSpill(unittest.TestCase):
         self.assertTrue(moved)
         self.assertEqual(self.memory_file.read_text(encoding="utf-8"), before)
         self.assertFalse(self.details.exists())
+
+
+class TestOrphanLogRotation(unittest.TestCase):
+    """Memória que perdeu o cabeçalho `## 3.` não pode escapar da rotação."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.memory_file = self.root / "PROJECT_MEMORY.md"
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _orphan_memory(self, rows: int) -> str:
+        log = "\n".join(
+            f"| 2026-10-{i:02d} | `FEAT/{i}` | Entrega {i} " + ("detalhe " * 40) + " |"
+            for i in range(1, rows + 1)
+        )
+        return (
+            "# Memória do Projeto\n\n"
+            "> **Última Atualização:** 2026-10-31\n\n"
+            "---\n\n" + log + "\n\n---\n\n"
+            "## 4. Active Backlog\n- handoff crítico\n"
+        )
+
+    def test_orphan_log_is_rotated_and_gains_section_header(self):
+        self.memory_file.write_text(self._orphan_memory(40), encoding="utf-8")
+        original = self.memory_file.stat().st_size
+
+        retained, archived = archive_memory(
+            self.memory_file,
+            history_path=self.root / "archive" / "HISTORY.md",
+            max_entries=8,
+            max_bytes=None,
+        )
+
+        self.assertEqual(retained, 8)
+        self.assertEqual(archived, 32)
+        content = self.memory_file.read_text(encoding="utf-8")
+        self.assertIn("## 3. PROGRESSO", content)
+        self.assertIn("handoff crítico", content)
+        self.assertIn("Entrega 8 ", content)
+        self.assertNotIn("Entrega 9 ", content)
+        self.assertIn(
+            "Entrega 40",
+            (self.root / "archive" / "HISTORY.md").read_text(encoding="utf-8"),
+        )
+        self.assertLess(self.memory_file.stat().st_size, original)
+
+    def test_orphan_log_respects_byte_budget(self):
+        self.memory_file.write_text(self._orphan_memory(40), encoding="utf-8")
+        archive_memory(
+            self.memory_file,
+            history_path=self.root / "archive" / "HISTORY.md",
+            max_entries=8,
+            max_bytes=2500,
+        )
+        self.assertLessEqual(self.memory_file.stat().st_size, 2700)
+        self.assertIn("handoff crítico", self.memory_file.read_text(encoding="utf-8"))
+
+    def test_orphan_entries_are_parseable_after_rotation(self):
+        self.memory_file.write_text(self._orphan_memory(20), encoding="utf-8")
+        archive_memory(
+            self.memory_file,
+            history_path=self.root / "archive" / "HISTORY.md",
+            max_entries=5,
+            max_bytes=None,
+        )
+        entries = parse_episodic_entries(self.memory_file.read_text(encoding="utf-8"))
+        self.assertEqual(len(entries), 5)
+
+    def test_file_without_entries_is_left_untouched(self):
+        content = "# Memória\n\n## 1. Resumo\n- ok\n\n## 4. Backlog\n- item\n"
+        self.memory_file.write_text(content, encoding="utf-8")
+        retained, archived = archive_memory(
+            self.memory_file,
+            history_path=self.root / "archive" / "HISTORY.md",
+            max_bytes=3000,
+        )
+        self.assertEqual((retained, archived), (0, 0))
+        self.assertEqual(self.memory_file.read_text(encoding="utf-8"), content)
+
+
+class TestArchiverExitCode(unittest.TestCase):
+    """O CLI não pode declarar sucesso quando o teto de bytes não foi atingido."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.memory_file = self.root / "PROJECT_MEMORY.md"
+        self.script = Path(__file__).resolve().parent.parent / "scripts" / "memory_archiver.py"
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def _run(self):
+        return subprocess.run(
+            [sys.executable, str(self.script), "--file", str(self.memory_file)],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_exits_three_when_protected_sections_exceed_budget(self):
+        self.memory_file.write_text(
+            "# Memória\n\n## 1. Resumo\n- essencial\n\n"
+            "## 3. PROGRESSO\n| 2026-10-01 | entrega |\n\n"
+            "## 4. Backlog\n" + ("pendência crítica " * 400) + "\n",
+            encoding="utf-8",
+        )
+        proc = self._run()
+        self.assertEqual(proc.returncode, 3)
+        self.assertIn("Teto não atingido", proc.stderr)
+
+    def test_exits_zero_when_within_budget(self):
+        self.memory_file.write_text(
+            "# Memória\n\n## 1. Resumo\n- essencial\n\n"
+            "## 3. PROGRESSO\n| 2026-10-01 | entrega |\n",
+            encoding="utf-8",
+        )
+        proc = self._run()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertIn("dentro do orçamento", proc.stdout)
+
+
+class TestMemoryBudgetWarning(unittest.TestCase):
+    """O gate precisa sinalizar memória acima do orçamento sem bloquear."""
+
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp_dir.name)
+        self.mem_dir = self.root / ".agents" / "memory"
+        self.mem_dir.mkdir(parents=True)
+
+    def tearDown(self):
+        self.temp_dir.cleanup()
+
+    def test_no_warning_when_absent(self):
+        self.assertEqual(check_memory_budget(self.root), "")
+
+    def test_no_warning_when_within_budget(self):
+        (self.mem_dir / "PROJECT_MEMORY.md").write_text("# ok\n", encoding="utf-8")
+        self.assertEqual(check_memory_budget(self.root), "")
+
+    def test_warns_when_over_budget(self):
+        (self.mem_dir / "PROJECT_MEMORY.md").write_text("x" * 9000, encoding="utf-8")
+        warning = check_memory_budget(self.root)
+        self.assertIn("over_budget", warning)
+        self.assertIn("xp memory", warning)
 
 
 if __name__ == "__main__":

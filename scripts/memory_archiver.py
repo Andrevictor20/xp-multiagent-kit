@@ -44,18 +44,10 @@ NEXT_SECTION_PATTERN = re.compile(
 )
 
 
-def parse_episodic_entries(content: str) -> List[str]:
-    """Extrai todas as linhas individuais de entregas da Seção 3."""
-    match = SECTION_3_HEADER_PATTERN.search(content)
-    if not match:
-        return []
-
-    after_sec3 = content[match.end():]
-    next_match = NEXT_SECTION_PATTERN.search(after_sec3)
-    sec3_body = after_sec3[:next_match.start()] if next_match else after_sec3
-
+def _extract_entries(body: str) -> List[str]:
+    """Extrai entregas de um bloco: linhas de tabela, bullets ou subseções ###."""
     entries: List[str] = []
-    for line in sec3_body.splitlines():
+    for line in body.splitlines():
         line_stripped = line.strip()
         if line_stripped.startswith("|") and line_stripped.endswith("|"):
             # Ignora cabeçalhos genéricos de tabela markdown se houver
@@ -67,14 +59,48 @@ def parse_episodic_entries(content: str) -> List[str]:
         elif line_stripped.startswith(("- ", "* ")):
             entries.append(line_stripped)
 
-    if not entries and "### " in sec3_body:
-        blocks = re.split(r"(?m)(?=^### )", sec3_body)
+    if not entries and "### " in body:
+        blocks = re.split(r"(?m)(?=^### )", body)
         for b in blocks:
             b_str = b.strip()
             if b_str.startswith("### "):
                 entries.append(b_str)
 
     return entries
+
+
+def parse_episodic_entries(content: str) -> List[str]:
+    """Extrai todas as linhas individuais de entregas da Seção 3."""
+    return split_memory_sections(content)[1]
+
+
+TOP_LEVEL_HEADER_PATTERN = re.compile(r"(?m)^##\s+[^\n]+$")
+SYNTHETIC_SECTION_3_TITLE = "## 3. PROGRESSO (seção sintetizada na rotação)\n"
+
+
+def _split_orphan_log(content: str) -> Tuple[str, List[str], str]:
+    """Trata memória sem cabeçalho `## 3.`: log append-only antes da primeira seção.
+
+    Sem isso, projetos cujo arquivo perdeu o cabeçalho nunca rotacionam e o
+    arquivo cresce até dominar o contexto carregado a cada sessão.
+    """
+    first = TOP_LEVEL_HEADER_PATTERN.search(content)
+    leading = content[: first.start()] if first else content
+    suffix = content[first.start():] if first else ""
+    entries = _extract_entries(leading)
+    if not entries:
+        return content, [], ""
+
+    if entries[0].startswith("### "):
+        parts = re.split(r"(?m)(?=^### )", leading)
+        kept = [p.strip() for p in parts if p.strip() and not p.strip().startswith("### ")]
+        prefix = "\n\n".join(kept).rstrip() + "\n\n" + SYNTHETIC_SECTION_3_TITLE
+    else:
+        entry_set = set(entries)
+        kept_lines = [ln for ln in leading.splitlines() if ln.strip() not in entry_set]
+        prefix = "\n".join(kept_lines).rstrip() + "\n\n" + SYNTHETIC_SECTION_3_TITLE
+
+    return prefix, entries, suffix
 
 
 def split_memory_sections(content: str) -> Tuple[str, List[str], str]:
@@ -86,40 +112,26 @@ def split_memory_sections(content: str) -> Tuple[str, List[str], str]:
     """
     match = SECTION_3_HEADER_PATTERN.search(content)
     if not match:
-        return content, [], ""
+        return _split_orphan_log(content)
 
-    prefix = content[:match.end()]
+    prefix = content[: match.end()]
     after_sec3 = content[match.end():]
 
     next_match = NEXT_SECTION_PATTERN.search(after_sec3)
     if next_match:
-        sec3_body = after_sec3[:next_match.start()]
+        sec3_body = after_sec3[: next_match.start()]
         suffix = after_sec3[next_match.start():]
     else:
         sec3_body = after_sec3
         suffix = ""
 
-    entries: List[str] = []
-    for line in sec3_body.splitlines():
-        line_stripped = line.strip()
-        if line_stripped.startswith("|") and line_stripped.endswith("|"):
-            if "Data" in line_stripped and "Tipo" in line_stripped:
-                continue
-            if re.match(r"^\|[\s\-:|]+\|$", line_stripped):
-                continue
-            entries.append(line_stripped)
-        elif line_stripped.startswith(("- ", "* ")):
-            entries.append(line_stripped)
-
+    entries = _extract_entries(sec3_body)
     if not entries and "### " in sec3_body:
-        blocks = re.split(r"(?m)(?=^### )", sec3_body)
-        intro_blocks = []
-        for b in blocks:
-            b_str = b.strip()
-            if b_str.startswith("### "):
-                entries.append(b_str)
-            elif b_str:
-                intro_blocks.append(b_str)
+        intro_blocks = [
+            b.strip()
+            for b in re.split(r"(?m)(?=^### )", sec3_body)
+            if b.strip() and not b.strip().startswith("### ")
+        ]
         if intro_blocks:
             prefix = prefix.rstrip() + "\n\n" + "\n\n".join(intro_blocks)
 
@@ -329,6 +341,20 @@ def archive_memory(
     return len(retained_entries), len(archived_entries)
 
 
+def check_memory_budget(root: Optional[Union[str, Path]] = None) -> str:
+    """Aviso compacto quando a memória viva do projeto excede o orçamento do índice."""
+    mem_file = Path(root or Path.cwd()) / ".agents" / "memory" / "PROJECT_MEMORY.md"
+    if not mem_file.is_file():
+        return ""
+    size = mem_file.stat().st_size
+    if size <= MEMORY_INDEX_MAX_BYTES:
+        return ""
+    return (
+        f" mem=over_budget({size // 1024}KB>{MEMORY_INDEX_MAX_BYTES // 1024}KB)"
+        "; rode 'xp memory'"
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="XP Kit — Motor de Rotação e Arquivamento de Memória Episódica"
@@ -404,10 +430,11 @@ def main() -> int:
         new_size = spilled_size
 
     saved_bytes = max(0, orig_size - new_size)
+    within_budget = (not args.max_bytes) or new_size <= args.max_bytes
+    mode = "[DRY-RUN] " if args.dry_run else ""
 
     if archived > 0 or moved_sections:
-        mode = "[DRY-RUN] " if args.dry_run else ""
-        print(f"✅ {mode}Memória rotacionada com sucesso:")
+        print(f"✅ {mode}Memória rotacionada:")
         print(f"   • Entregas retidas na memória viva : {retained}")
         print(f"   • Entregas arquivadas em HISTORY.md: {archived}")
         if moved_sections:
@@ -415,11 +442,19 @@ def main() -> int:
                   f"({', '.join(moved_sections)})")
         print(f"   • Tamanho anterior : {orig_size / 1024:.1f} KB")
         print(f"   • Tamanho novo     : {new_size / 1024:.1f} KB (economia: ~{saved_bytes / 1024:.1f} KB / ~{saved_bytes // 4} tokens)")
-    else:
+    elif within_budget:
         print(
             f"ℹ️ Memória dentro do orçamento ({retained} entregas, "
             f"{orig_size / 1024:.1f} KB / teto {args.max_bytes / 1024:.1f} KB). Nenhuma rotação necessária."
         )
+
+    if not within_budget:
+        print(
+            f"❌ Teto não atingido: {new_size} B > {args.max_bytes} B. "
+            "O excedente está em seções protegidas (## 1-4) e exige curadoria manual.",
+            file=sys.stderr,
+        )
+        return 0 if args.dry_run else 3
 
     return 0
 

@@ -25,6 +25,7 @@ from scripts.hooks.pre_tool_guard import (
     record_review,
 )
 from scripts.kit_events import classify_failure, emit
+from scripts.memory_archiver import check_memory_budget
 from scripts.xp_contract import load_contract, record_dead_end
 
 def git(args: List[str]) -> subprocess.CompletedProcess:
@@ -229,7 +230,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
     if pass_entries:
         ev_id = f"EV-{pass_entries[-1].get('log_sha256', ev_id)}"
 
-    verdict_line = f"GATE PASS risk={risk} tier={effective_tier} verify={verify_status} tests={tests_run} ac={ac_tracked}/{ac_declared} stubs={stubs_count} big={big_count} ev={ev_id}"
+    verdict_line = f"GATE PASS risk={risk} tier={effective_tier} verify={verify_status} tests={tests_run} ac={ac_tracked}/{ac_declared} stubs={stubs_count} big={big_count} ev={ev_id}" + check_memory_budget()
     emit("gate", status="PASS", risk=risk, tier=effective_tier)
 
     receipt = build_receipt(contract, files, effective_tier, tests_run=tests_run, verify_status=verify_status, ac_tracked=ac_tracked, ac_declared=ac_declared)
