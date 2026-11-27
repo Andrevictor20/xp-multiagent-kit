@@ -135,6 +135,10 @@ SKILL_BODY_MAX_BYTES = 6000
 
 CONTEXT_BASE_ALERT_BYTES = 30000
 
+AUTO_COMPACT_CONTEXT_WINDOW = 1_000_000
+AUTO_COMPACT_TOKEN_THRESHOLD = 500_000
+"""Limiar tardio para compactação automática: evita quebrar KV-cache cedo; prefira handoff entre fases."""
+
 
 def get_kit_version() -> str:
     version_file = kit_root() / "VERSION"

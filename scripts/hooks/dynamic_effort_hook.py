@@ -245,8 +245,12 @@ def handle_pre_invocation(
 
     effort_upper = decision.effort.upper()
     risk_code = decision.risk_level.split()[0] if decision.risk_level else "L1"
-    
-    # Recupera contexto JIT automaticamente se for tarefa L1, L2 ou L3 (teto de 80 tokens, AC-9)
+
+    # Para L0/L1 simples, evitar JIT e ephemeralMessage preserva o KV-cache do prefixo entre turnos.
+    if skip_trivial_ephemeral and decision.risk_level in (LEVEL_L0_TRIVIAL, LEVEL_L1_SMALL):
+        return {"injectSteps": []}
+
+    # Recupera contexto JIT automaticamente para L2/L3 (ou L1 explícito sem skip_trivial_ephemeral)
     jit_summary = ""
     if decision.risk_level != "L0 (Trivial)" and prompt_text:
         try:
@@ -261,10 +265,6 @@ def handle_pre_invocation(
                 jit_summary = f" | jit: JIT Memory ({jit_items[0].get('title', '')})"
         except Exception:
             pass
-
-    # Para L0/L1 sem contexto JIT crítico, evitar ephemeralMessage preserva o KV-cache do prefixo entre turnos.
-    if skip_trivial_ephemeral and decision.risk_level in (LEVEL_L0_TRIVIAL, LEVEL_L1_SMALL) and not jit_summary:
-        return {"injectSteps": []}
 
     # Mensagem efêmera compacta <= 400 bytes (AC-9, B09)
     eff_tier = "n/a"

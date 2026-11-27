@@ -141,6 +141,7 @@ def clamp_output_text(
     max_head: int = SANITIZE_HEAD_LINES + 5,
     max_tail: int = SANITIZE_TAIL_LINES,
     max_chars: int = TOOL_OUTPUT_MAX_CHARS,
+    backup_path: Optional[str] = None,
 ) -> Tuple[str, bool]:
     """
     Trunca saídas extensas de ferramentas preservando o início e fim (resumos/erros).
@@ -157,9 +158,10 @@ def clamp_output_text(
     tail_char_sum = sum(len(l) for l in tail_lines)
     omitted_chars = max(0, char_count - head_char_sum - tail_char_sum)
 
+    saved_hint = f" | Saída completa salva em: {backup_path}" if backup_path else ""
     clamp_marker = (
         f"\n[... Omitidas {omitted_lines} linhas ({omitted_chars} chars) "
-        f"pelo PostTool Output Clamp ...]\n"
+        f"pelo PostTool Output Clamp{saved_hint} ...]\n"
     )
     clamped = "\n".join(head_lines) + clamp_marker + "\n".join(tail_lines)
     return clamped, True
@@ -200,13 +202,13 @@ def process_tool_payload(
             f.write(
                 f"⚠️ [TOOL FLOOD WARNING] {tool_name}: {char_count} chars, {line_count} linhas "
                 f"(ruído de shell removido: {noise['noise_lines']} linhas / {noise['saved_chars']} chars). "
-                f"Considere usar agy-sanitize ou agy-compact.\n"
+                f"Considere usar xp compact.\n"
             )
 
         backup_file = target_dir / "last_tool_output.log"
         backup_file.write_text(content, encoding="utf-8")
 
-        clamped_text, was_clamped = clamp_output_text(denoised)
+        clamped_text, was_clamped = clamp_output_text(denoised, backup_path=str(backup_file))
         if was_clamped:
             clamped_content = clamped_text
 

@@ -387,3 +387,9 @@ components:
     prevents: "Unmodeled attack surfaces and unexpected security boundary violations"
     added: "2026-11-01"
     review_by: "2027-02-01"
+
+  - id: "vito-prototype-fidelity"
+    kind: "skill"
+    prevents: "Mobile UI divergence from reference HTML prototype without Android visual diff"
+    added: "2026-11-26"
+    review_by: "2027-02-26"

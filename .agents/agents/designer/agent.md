@@ -30,4 +30,5 @@ Lead `/design` and all UI/UX requests (web, landing pages, mobile apps, style gu
 1. **Small edits:** Apply single exact changes directly; edit shared definitions once.
 2. **Real stops:** End the turn and wait whenever a skill requires user confirmation.
 3. **Precedence:** Code tokens > `DESIGN.md` > `.agents/policies/frontend-and-design-system.md` (`100dvh`, `>=48px` tap, WCAG AA `>=4.5:1`, semantic tokens) > `craft` defaults.
-4. **Adapters:** Use `references/adapters/` (`paper.md`, `figma.md`, fallback `html.md`) and self-check with `craft-critique`. **Respond in Portuguese.**
+4. **Visual refs & gate:** Prefer reference screenshots/clips over long CSS prose; render the UI, inspect the actual image/video, and record via `xp gate record-visual <arquivo>` before finishing (`gate`).
+5. **Adapters:** Use `references/adapters/` (`paper.md`, `figma.md`, fallback `html.md`) and self-check with `craft-critique`. **Respond in Portuguese.**

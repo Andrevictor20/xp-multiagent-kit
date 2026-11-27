@@ -24,17 +24,20 @@ def compress_conversation_turns(
     messages: List[Dict[str, Any]],
     budget_chars: int = 2000,
     ccr: Optional["ContextualCompressorWithRetrieval"] = None,
+    active_files: Optional[List[str]] = None,
+    decisions: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
     """
-    Micro-compactação de histórico de conversação (estilo Claude Code / AGY):
+    Micro-compactação tardia de histórico de conversação:
     Compacta saídas de ferramentas em turnos mais antigos que excederem o budget,
-    preservando as mensagens do usuário e a resposta final do assistente intactas.
+    fixando arquivos ativos e decisões verificadas quando fornecidos.
     """
     if not messages:
         return []
 
     compactor = ccr or ContextualCompressorWithRetrieval(max_inline_chars=budget_chars)
     compacted_messages = []
+    any_compacted = False
 
     cutoff_index = max(0, len(messages) - 2)
 
@@ -46,8 +49,17 @@ def compress_conversation_turns(
             source = msg_copy.get("tool_name", f"turn_{i}")
             compacted_content, _ = compactor.compress(source, content)
             msg_copy["content"] = compacted_content
+            any_compacted = True
 
         compacted_messages.append(msg_copy)
+
+    if any_compacted and (active_files or decisions):
+        parts = ["[PINNED_STATE]"]
+        if active_files:
+            parts.append("Arquivos ativos: " + ", ".join(active_files))
+        if decisions:
+            parts.append("Decisões verificadas: " + " | ".join(decisions))
+        compacted_messages.insert(0, {"role": "system", "content": "\n".join(parts)})
 
     return compacted_messages
 
@@ -93,7 +105,7 @@ class ContextualCompressorWithRetrieval:
         stub = (
             f"[CCR_COMPACT id={doc_id} source={source_name} | {len(lines)} lines, {len(clean_content)} chars]\n"
             f"{preview}\n"
-            f"[Full output cached: use agy-compact --expand {doc_id} to view full content]"
+            f"[Full output cached: use xp compact --expand {doc_id} to view full content]"
         )
         return stub, doc_id
 

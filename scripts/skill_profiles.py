@@ -2,7 +2,7 @@
 """
 scripts/skill_profiles.py
 Gerenciador de Perfis de Skills do XP Multi-Agent Kit v4 (xp skills-profile).
-Alterna perfis (core, backend, frontend, all) sobre as 23 skills reais do v4,
+Alterna perfis (core, backend, frontend, all) sobre as 24 skills reais do v4,
 lendo descrições diretamente do frontmatter de `.agents/skills/*/SKILL.md`.
 """
 from __future__ import annotations
@@ -61,7 +61,7 @@ PROFILE_META: Dict[str, Dict[str, str]] = {
     "core": {"label": "Core XP & Governance", "description": "TDD, Spec Pyramid, hygiene, memory, worktree, CI auto-heal."},
     "backend": {"label": "Backend, Data & Security", "description": "Core + APIs, DB, async resilience, Zero Trust, STRIDE, deploy."},
     "frontend": {"label": "Frontend, UI/UX & Craft", "description": "Core + Craft design suite, CRO/SEO, Playwright E2E."},
-    "all": {"label": "Full Kit Catalog", "description": "All 23 v4 skills enabled."},
+    "all": {"label": "Full Kit Catalog", "description": "All 24 v4 skills enabled."},
 }
 
 

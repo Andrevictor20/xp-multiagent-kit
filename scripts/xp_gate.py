@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""scripts/xp_gate.py — Gate determinístico barato-primeiro do XP Kit (AC-3); <= 300 linhas."""
+"""scripts/xp_gate.py — Gate determinístico barato-primeiro do XP Kit (AC-3); <= 400 linhas."""
 from __future__ import annotations
 
 import argparse
@@ -128,7 +128,7 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
                 fail = _fail(3, "Teste congelado modificado", f"SHA-256 {orig_sha}", "SHA-256 divergente", "Anti-test-bypass", tried, "Testes RED não podem ser alterados")
                 return 1, f"GATE FAIL step=3 test_mutated={fpath}", fail
 
-    code_paths = [Path(f) for f in files if Path(f).is_file() and f.endswith((".py", ".ts", ".js", ".go", ".rs", ".java"))]
+    code_paths = [Path(f) for f in files if Path(f).is_file() and f.endswith((".py", ".ts", ".tsx", ".js", ".jsx", ".go", ".rs", ".java"))]
     stubs_count = big_count = 0
     if code_paths:
         audit_res = audit_code_completeness(code_paths, max_lines=499)
@@ -159,6 +159,11 @@ def run_gate(dry_run: bool = False, changed_files: Optional[List[str]] = None, r
         if stale:
             fail = _fail(6, "Evidência obsoleta", "Execução após última modificação dos arquivos", "Arquivos alterados após evidência aprovada", "Evidence freshness", tried, "Execute 'xp gate record -- <cmd>' novamente")
             return 1, "GATE FAIL step=6 reason=stale_evidence", fail
+
+    if not dry_run:
+        vis_fail = _check_visual_evidence(contract, files)
+        if vis_fail is not None:
+            return vis_fail
 
     if not contract.get("refactor", False) and risk in ("L1", "L2", "L3") and not dry_run:
         red_seen = green_ok = False
@@ -257,6 +262,60 @@ def sync_memory(summary_line: str, root_dir: Optional[Path] = None) -> bool:
         return False
     return True
 
+_VISUAL_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".mp4", ".webm", ".mov"}
+_UI_EXTS = {".html", ".css", ".scss", ".tsx", ".jsx", ".vue", ".svelte", ".dart", ".swift", ".kt"}
+
+
+def _check_visual_evidence(contract: Dict[str, Any], files: List[str]) -> Optional[Tuple[int, str, str]]:
+    if not contract.get("visual_required"):
+        return None
+    tried = contract.get("tried", [])
+    entries = [
+        e for e in contract.get("visual_evidence", [])
+        if isinstance(e, dict) and e.get("path") and Path(e["path"]).is_file() and Path(e["path"]).stat().st_size > 0
+    ]
+    if not entries:
+        fail = _fail(
+            6, "Evidência visual ausente", "Screenshot ou vídeo registrado em run.json",
+            "Nenhuma evidência visual encontrada", "Visual verification", tried,
+            "Renderize a UI, inspecione a imagem/vídeo e execute: xp gate record-visual <caminho.png>",
+        )
+        return 1, "GATE FAIL step=6 reason=missing_visual_evidence", fail
+    latest_ts = max(float(e.get("ts", 0)) for e in entries)
+    ui_files = [f for f in (files or contract.get("scope_files", [])) if Path(f).suffix.lower() in _UI_EXTS and Path(f).is_file()]
+    if any(Path(f).stat().st_mtime > latest_ts for f in ui_files):
+        fail = _fail(
+            6, "Evidência visual obsoleta", "Screenshot após última edição de UI",
+            "UI alterada após último registro visual", "Visual freshness", tried,
+            "Re-renderize, inspecione visualmente e execute: xp gate record-visual <caminho.png>",
+        )
+        return 1, "GATE FAIL step=6 reason=stale_visual_evidence", fail
+    return None
+
+
+def record_visual_evidence(paths: List[str], note: str = "") -> int:
+    from scripts.xp_contract import load_contract, save_contract
+    if not paths:
+        print("❌ Informe ao menos um caminho de imagem/vídeo para 'xp gate record-visual <arquivo>'", file=sys.stderr)
+        return 1
+    contract = load_contract()
+    if not contract:
+        print("❌ Contrato ativo ausente em run.json.", file=sys.stderr)
+        return 1
+    recorded = contract.setdefault("visual_evidence", [])
+    for raw in paths:
+        p = Path(raw)
+        if not p.is_file() or p.stat().st_size == 0 or p.suffix.lower() not in _VISUAL_EXTS:
+            print(f"❌ Evidência visual inválida ou vazia: {raw}", file=sys.stderr)
+            return 1
+        sha = hashlib.sha256(p.read_bytes()).hexdigest()[:16]
+        recorded.append({"path": str(p), "sha256": sha, "bytes": p.stat().st_size, "ts": round(time.time(), 3), "note": note})
+        print(f"[visual-record] {p} ({p.stat().st_size} B, sha={sha[:8]})")
+    save_contract(contract)
+    emit("visual_evidence", count=len(paths))
+    return 0
+
+
 def record_execution(command: str) -> int:
     from scripts.xp_contract import load_contract
     contract = load_contract()
@@ -287,6 +346,18 @@ def main() -> int:
         record_review(rev, verd, get_git_diff_hash())
         print(f"[review-record] {rev} -> {verd} (diff={get_git_diff_hash()[:8]})")
         return 0
+    if args.action == "record-visual":
+        vis_paths: List[str] = []
+        note = ""
+        i = 0
+        while i < len(all_cmd):
+            if all_cmd[i] == "--note" and i + 1 < len(all_cmd):
+                note = all_cmd[i + 1]
+                i += 2
+            else:
+                vis_paths.append(all_cmd[i])
+                i += 1
+        return record_visual_evidence(vis_paths, note=note)
     if args.action == "record":
         cmd = " ".join(all_cmd).strip()
         if not cmd:

@@ -32,12 +32,14 @@ def init_contract(
     approval_required: Optional[List[str]] = None, verify_cmd: str = "",
     checks: Optional[List[str]] = None, max_attempts: int = 3, refactor: bool = False,
     known: Optional[Dict[str, Any]] = None, next_step: str = "", never: Optional[List[str]] = None,
+    visual_required: bool = False,
 ) -> Dict[str, Any]:
     contract = {
         "risk": risk.upper(), "goal": goal, "acs": acs or [],
         "scope_files": scope_files or [], "constraints": constraints or [],
         "approval_required": approval_required or [], "verify_cmd": verify_cmd,
         "checks": checks or [], "max_attempts": max_attempts, "refactor": refactor,
+        "visual_required": bool(visual_required), "visual_evidence": [],
         "tried": [], "known": known or {}, "next": next_step, "never": never or [],
     }
     save_contract(contract)
@@ -93,52 +95,54 @@ def add_never(item: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="XP Contract CLI")
     sub = parser.add_subparsers(dest="subcommand")
-
     p_init = sub.add_parser("init", help="Inicializa novo contrato")
-    p_init.add_argument("--risk", default="L1", help="Risco L0-L3")
+    p_init.add_argument("--risk", default="L1", choices=["L0", "L1", "L2", "L3", "l0", "l1", "l2", "l3"], help="Risco L0-L3")
     p_init.add_argument("--goal", required=True, help="Meta da tarefa")
     p_init.add_argument("--acs", nargs="*", default=[], help="Critérios de aceite")
     p_init.add_argument("--scope", nargs="*", default=[], help="Arquivos no escopo")
     p_init.add_argument("--verify", default="", help="Comando de verificação")
     p_init.add_argument("--refactor", action="store_true", help="Modo refactor")
-
+    p_init.add_argument("--ui", action="store_true", dest="visual_required", help="Exige evidência visual no gate")
     p_get = sub.add_parser("get", aliases=["show"], help="Exibe o contrato ativo")
     p_get.add_argument("--json", action="store_true", help="Saída em JSON")
-
     p_dead = sub.add_parser("record-dead-end", help="Registra beco sem saída")
     p_dead.add_argument("--sig", required=True, help="Assinatura da falha")
     p_dead.add_argument("--reason", required=True, help="Motivo da falha")
-
-    p_val = sub.add_parser("validate", help="Valida especificação contra contrato")
-    p_val.add_argument("spec", help="Caminho do arquivo de especificação")
-
+    p_val = sub.add_parser("validate", help="Valida especificação ou contrato ativo")
+    p_val.add_argument("spec", nargs="?", default="", help="Arquivo de spec (opcional; valida run.json ativo se omitido)")
     args = parser.parse_args()
     if args.subcommand == "init":
         bad_acs = [a for a in args.acs if not AC_ID_RE.search(a)]
         if bad_acs:
             print(f"Erro: --acs exige IDs AC-01, AC-02... nos testes (ex: def test_ac_01_...). Recebido: {bad_acs}. Em L0/L1 simples, omita --acs.", file=sys.stderr)
             return 2
-        c = init_contract(risk=args.risk, goal=args.goal, acs=args.acs, scope_files=args.scope, verify_cmd=args.verify, refactor=args.refactor)
+        c = init_contract(risk=args.risk, goal=args.goal, acs=args.acs, scope_files=args.scope, verify_cmd=args.verify, refactor=args.refactor, visual_required=args.visual_required)
         print(f"Contract initialized: {c['risk']} - {c['goal']}")
         return 0
-    elif args.subcommand in ("get", "show"):
+    if args.subcommand in ("get", "show"):
         c = load_contract()
         print(json.dumps(c, indent=2, ensure_ascii=False) if getattr(args, "json", False) else c)
         return 0
-    elif args.subcommand == "record-dead-end":
+    if args.subcommand == "record-dead-end":
         record_dead_end(args.sig, args.reason)
         print(f"Dead end recorded: {args.sig}")
         return 0
-    elif args.subcommand == "validate":
-        spec_tool = Path(__file__).resolve().parent / "spec_tool.py"
-        if spec_tool.is_file():
-            import subprocess
-            return subprocess.run([sys.executable, str(spec_tool), "validate", args.spec]).returncode
-        print(f"Validação de especificação OK: {args.spec}")
+    if args.subcommand == "validate":
+        if args.spec:
+            spec_tool = Path(__file__).resolve().parent / "spec_tool.py"
+            if spec_tool.is_file():
+                import subprocess
+                return subprocess.run([sys.executable, str(spec_tool), "validate", args.spec]).returncode
+            print(f"Validação de especificação OK: {args.spec}")
+            return 0
+        c = load_contract()
+        if not c or not c.get("goal") or c.get("risk") not in ("L0", "L1", "L2", "L3"):
+            print("❌ Contrato ativo inválido ou ausente em run.json.", file=sys.stderr)
+            return 1
+        print(f"Contrato ativo OK: {c['risk']} - {c['goal']}")
         return 0
-    else:
-        parser.print_help()
-        return 1
+    parser.print_help()
+    return 1
 
 
 if __name__ == "__main__":

@@ -19,7 +19,7 @@ Deterministic governance Thin Harness for AI agent pair-programming (**Antigravi
 ├────────────────────────────────────────────────────────────────────────┤
 │ 3. GRAPH: workflow.yaml (9 flows) + xp flow (whiteboard/loops/parallel)│
 ├────────────────────────────────────────────────────────────────────────┤
-│ 4. CORE: 6 core agents + 23 skills + packs (.agents/packs/)            │
+│ 4. CORE: 6 core agents + 24 skills + packs (.agents/packs/)            │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -30,7 +30,7 @@ Deterministic governance Thin Harness for AI agent pair-programming (**Antigravi
    - **Deterministic Loops (`on_fail: retry` / `reopen:<node>`):** Automatic writer-critic refinement cycles with circuit breaker (`max_retries`).
    - **Concurrent Execution (`parallel:`):** Runs independent verification branches concurrently via stdlib `ThreadPoolExecutor`.
    - **RED Test Freezing:** SHA-256 tamper protection on RED unit tests.
-4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 23 on-demand skills with concise frontmatter descriptions (≤ 110 chars enforced by linter), plus optional bundles in `.agents/packs/`.
+4. **Core (Specialists):** 6 core agents (`orchestrator`, `builder`, `reviewer`, `sentinel`, `designer`, `shipper`) and 24 on-demand skills with concise frontmatter descriptions (≤ 110 chars enforced by linter), plus optional bundles in `.agents/packs/`.
 
 ---
 

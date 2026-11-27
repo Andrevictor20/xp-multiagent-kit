@@ -53,7 +53,7 @@ class TestSkillProfilesDefinitions(unittest.TestCase):
         self.assertIn("craft-critique", frontend)
 
     def test_skill_descriptions_loaded_from_frontmatter(self):
-        self.assertEqual(len(SKILL_DESCRIPTIONS), 23)
+        self.assertEqual(len(SKILL_DESCRIPTIONS), 24)
         for name, desc in SKILL_DESCRIPTIONS.items():
             self.assertTrue(desc, f"Descrição vazia para {name}")
             self.assertLessEqual(len(desc), 110, f"Descrição longa demais para {name}: {len(desc)}")

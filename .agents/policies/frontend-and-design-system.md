@@ -9,3 +9,7 @@
 1. **6-State Machine:** Every interactive component must handle: Default, Hover/Focus, Active/Pressed, Loading (skeleton), Empty, and Error states.
 2. **Viewport & Mobile Ergonomics:** Use dynamic viewport units `100dvh` (never static `100vh`), touch targets minimum `48x48px`, and GPU-safe transitions (`transform`, `opacity`).
 3. **Accessibility (WCAG AA):** Ensure minimum 4.5:1 text contrast, complete keyboard accessibility (`:focus-visible`), and semantic HTML/ARIA attributes.
+
+## 3. Visual References & Verification
+1. **Render & Inspect:** For layout, spacing, or motion work, prefer reference images/clips and inspect the rendered PNG/video directly before declaring done.
+2. **Visual Gate:** Register the inspected screenshot/clip with `xp gate record-visual <path>` on UI contracts (`--ui` or `design` workflow).
